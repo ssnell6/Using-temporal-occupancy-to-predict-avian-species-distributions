@@ -65,7 +65,7 @@ for(i in sp_list){
   # print(length(sdm_input$stateroute))
   if(length(unique(sdm_input$stateroute)) > 40){
   glm_occ <- glm2(occ ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = gaussian(link = "identity"), data = sdm_input)
-  glm_pres <- glm2(presence ~ elev.mean + ndvi.mean + bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = gaussian(link = "identity"), data = sdm_input)
+  glm_pres <- glm2(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = gaussian(link = "identity"), data = sdm_input)
   predocc <- predict(glm_occ,type=c("response"))
   predpr <- predict(glm_pres,type=c("response"))
  sdm_output = cbind(sdm_input,predpr, predocc)
@@ -76,7 +76,7 @@ for(i in sp_list){
 # rocpres <- roc(sdm_output$presence ~ sdm_output$predpr)
 # auc_pres =  roc(sdm_output$presence ~ sdm_output$predpr)$auc[1]
  
- auc_df = rbind(auc_df, c(i, auc, auc_pres))
+ auc_df = rbind(auc_df, c(i, auc))
  plot = plot(roccurve, main = paste("AUC Curve for AOU", i, ".csv",   
                                      sep=""))
  # lines(rocpres, col = "red")
