@@ -78,8 +78,7 @@ pdf('AUC_Curves.pdf', height = 8, width = 10)
 par(mfrow = c(2, 3))
 auc_df = c()
 
-sp_list = bbs_final_occ_ll[!bbs_final_occ_ll$Aou %in% c(3250),]
-sp_list = unique(sp_list$Aou)
+sp_list = unique(bbs_final_occ_ll$Aou)
 
 for(i in sp_list){
   sdm_output = c()
