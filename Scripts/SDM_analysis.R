@@ -2,10 +2,17 @@ library(dplyr)
 library(glm2)
 
 bbs_occ = read.csv("data/bbs_sub1.csv", header=TRUE)
+bbs_occ_sub = bbs_occ %>% filter(Aou > 2880) %>%
+  filter(Aou < 3650 | Aou > 3810) %>%
+  filter(Aou < 3900 | Aou > 3910) %>%
+  filter(Aou < 4160 | Aou > 4210) %>%
+  filter(Aou != 7010)
+
 exp_pres = read.csv("data/expect_pres.csv", header = TRUE)
 exp_pres = exp_pres[,c("stateroute","spAOU")]
 traits = read.csv("data/Master_RO_Correlates.csv", header = TRUE)
 lat_long = read.csv("data/latlongs.csv", header = TRUE)
+tax_code = read.csv("data/Tax_AOU_Alpha.csv", header = TRUE)
 bi_env = read.csv("data/all_env.csv", header = TRUE)
 bi_means = bi_env[,c("stateroute","mat.mean", "elev.mean", "map.mean", "ndvi.mean")]
 env_bio = read.csv("data/env_bio.csv", header = TRUE)
@@ -15,18 +22,31 @@ env_bio_sub = env_bio[,c(1, 21:39)]
 
 all_env = left_join(bi_means, env_bio_sub, by = "stateroute")
 
+#update tax_code Winter Wren
+tax_code$AOU_OUT[tax_code$AOU_OUT == 7220] <- 7222
+tax_code$AOU_OUT[tax_code$AOU_OUT == 4810] = 4812
+tax_code$AOU_OUT[tax_code$AOU_OUT == 4123] = 4120
+
 # BBS cleaning
-bbs_inc_absence = full_join(bbs_occ, exp_pres, by = c("Aou" ="spAOU", "stateroute" = "stateroute"))
+bbs_inc_absence = full_join(bbs_occ_sub, exp_pres, by = c("Aou" ="spAOU", "stateroute" = "stateroute"))
 bbs_inc_absence$occ[is.na(bbs_inc_absence$occ)] <- 0
 bbs_inc_absence$presence = 0
 bbs_inc_absence$presence[bbs_inc_absence$occ > 0] <- 1
 num_occ = bbs_inc_absence %>% group_by(Aou) %>% tally(presence) %>% left_join(bbs_inc_absence, ., by = "Aou")
-# 586 focal species
+
+# 412 focal species
 bbs_final_occ = filter(num_occ,nn > 1)
-bbs_final_occ_ll = left_join(bbs_final_occ, lat_long, by = "stateroute")
-bbs_final_occ_ll = bbs_final_occ_ll[,c("Aou", "stateroute", "occ", "presence", 
-                                       "latitude", "longitude")]
+bbs_occ_code = left_join(bbs_final_occ, tax_code, by = c("Aou" = "AOU_OUT"))
+
+# 319 focal species
+bi_focal_spp = filter(bbs_occ_code, Aou %in% exp_pres$spAOU)
   
+bbs_final_occ_ll = left_join(bi_focal_spp , lat_long, by = "stateroute")
+bbs_final_occ_ll = bbs_final_occ_ll[,c("Aou", "stateroute", "occ", "presence", "ALPHA.CODE",
+                                       "latitude", "longitude")]
+bbs_final_occ_ll$sp_success = 15 * bbs_final_occ_ll$occ
+bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ) 
+
 # Thuiller 2014 source for choosing these vars
 # http://worldclim.org/bioclim
 # BIO4 = temperature seasonality (intra-annual standard deviation * 100)
@@ -41,6 +61,8 @@ bbs_final_occ_ll = bbs_final_occ_ll[,c("Aou", "stateroute", "occ", "presence",
 
 # you need to do cor.test and not excede 5 vars for power. Need  >= 50 presences
 sdm_input_global <- left_join(bbs_final_occ_ll, all_env, by = "stateroute")
+
+
 test = cor(na.omit(sdm_input_global))
 
 corrplot(test)
@@ -55,7 +77,10 @@ setwd("Data/sdm_dfs/")
 pdf('AUC_Curves.pdf', height = 8, width = 10)
 par(mfrow = c(2, 3))
 auc_df = c()
-sp_list = unique(bbs_final_occ_ll$Aou)
+
+sp_list = bbs_final_occ_ll[!bbs_final_occ_ll$Aou %in% c(3250),]
+sp_list = unique(sp_list$Aou)
+
 for(i in sp_list){
   sdm_output = c()
   bbs_sub <- filter(bbs_final_occ_ll, Aou == i)
@@ -64,8 +89,9 @@ for(i in sp_list){
   sdm_input = na.omit(sdm_input)
   # print(length(sdm_input$stateroute))
   if(length(unique(sdm_input$stateroute)) > 40){
-  glm_occ <- glm2(occ ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = gaussian(link = "identity"), data = sdm_input)
-  glm_pres <- glm2(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = gaussian(link = "identity"), data = sdm_input)
+ #   if(levels(as.factor(sdm_input$presence)) > 1){
+  glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
+  glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
   predocc <- predict(glm_occ,type=c("response"))
   predpr <- predict(glm_pres,type=c("response"))
  sdm_output = cbind(sdm_input,predpr, predocc)
@@ -73,14 +99,16 @@ for(i in sp_list){
  roccurve <- roc(sdm_output$occ ~ sdm_output$predocc)
  auc =  roc(sdm_output$occ ~ sdm_output$predocc)$auc[1]
  
-# rocpres <- roc(sdm_output$presence ~ sdm_output$predpr)
-# auc_pres =  roc(sdm_output$presence ~ sdm_output$predpr)$auc[1]
+ rocpres <- roc(sdm_output$presence ~ sdm_output$predpr)
+ auc_pres =  roc(sdm_output$presence ~ sdm_output$predpr)$auc[1]
  
- auc_df = rbind(auc_df, c(i, auc))
- plot = plot(roccurve, main = paste("AUC Curve for AOU", i, ".csv",   
+ auc_df = rbind(auc_df, c(i, auc, auc_pres))
+ j = unique(sdm_input$ALPHA.CODE)
+ plot = plot(roccurve, main = paste("AUC Curve for ", j, ".csv",   
                                      sep=""))
  # lines(rocpres, col = "red")
- }
+#    }
+  }
  write.csv(sdm_output, paste("sdm_output_", i, ".csv",   
                             sep=""), row.names = FALSE)
 }
@@ -89,5 +117,5 @@ dev.off()
 
 auc_df = data.frame(auc_df)
 write.csv(auc_df, "auc_df.csv", row.names = FALSE)
-names(auc_df) = c("AOU", "AUC")
+names(auc_df) = c("AOU", "AUC", "pres_AUC")
 test = dplyr::filter(auc_df, AUC > 0.75 & AUC < 1.0)
