@@ -1,5 +1,6 @@
 library(dplyr)
 library(glm2)
+library(ggplot2)
 
 bbs_occ = read.csv("data/bbs_sub1.csv", header=TRUE)
 bbs_occ_sub = bbs_occ %>% filter(Aou > 2880) %>%
@@ -118,3 +119,12 @@ auc_df = data.frame(auc_df)
 write.csv(auc_df, "auc_df.csv", row.names = FALSE)
 names(auc_df) = c("AOU", "AUC", "pres_AUC")
 test = dplyr::filter(auc_df, AUC > 0.75 & AUC < 1.0)
+
+# plot GLM occ v pres
+r1 = ggplot(auc_df, aes(x = AUC, y = pres_AUC)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy AUC")) + ylab(bquote("Presence AUC"))+
+  geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(cex =4, shape=24)+geom_smooth(method='lm', se=FALSE, col="#dd1c77",linetype="longdash", lwd =2.5) +
+  geom_smooth(auc_df, aes(x = AUC, y = pres_AUC), method='lm', se=FALSE, col="#2ca25f",linetype="longdash", lwd = 2.5) + 
+  + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32))+ scale_colour_manual("", values=c("#dd1c77","#2ca25f","dark gray"))+guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_text(size=36), legend.position = c(0.8,0.2), legend.key.width=unit(2, "lines"), legend.key.height =unit(3, "lines")) + scale_y_continuous(limits = c(0, 0.8), breaks = c(0,0.2, 0.4, 0.6, 0.8, 1)) #+geom_label(data = R2plot2, aes(Total.x,Total.y, label = FocalAOU))
+ggsave("C:/Git/Biotic-Interactions/Figures/occvabun_lines.pdf", height = 8, width = 12)
+
+
