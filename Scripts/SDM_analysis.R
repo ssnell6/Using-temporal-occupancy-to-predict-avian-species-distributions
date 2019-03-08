@@ -1,6 +1,8 @@
 library(dplyr)
 library(glm2)
 library(ggplot2)
+library(dismo)
+library(maptools)
 
 bbs_occ = read.csv("data/bbs_sub1.csv", header=TRUE)
 bbs_occ_sub = bbs_occ %>% filter(Aou > 2880) %>%
@@ -68,8 +70,6 @@ test = cor(na.omit(sdm_input_global))
 
 corrplot(test)
 
-# the XY coordinates of species data
-coords <- CRS("+proj=longlat +datum=WGS84")
 
 # running mods on each spp
 # need to add in presence absence!
@@ -115,16 +115,52 @@ for(i in sp_list){
 
 dev.off()
 
+setwd("C:/Git/SDMs")
 auc_df = data.frame(auc_df)
-write.csv(auc_df, "auc_df.csv", row.names = FALSE)
 names(auc_df) = c("AOU", "AUC", "pres_AUC")
+# write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
 test = dplyr::filter(auc_df, AUC > 0.75 & AUC < 1.0)
+
+#### Mapping for spp ####
+# the XY coordinates of species data
+coords <- CRS("+proj=longlat +datum=WGS84")
+
+# Determine geographic extent of our data using AOU = i
+max.lat <- ceiling(max(sdm_input$latitude))
+min.lat <- floor(min(sdm_input$latitude))
+max.lon <- ceiling(max(sdm_input$longitude))
+min.lon <- floor(min(sdm_input$longitude))
+geographic.extent <- extent(x = c(min.lon, max.lon, min.lat, max.lat))
+env.data = as.matrix(sdm_input[,c("latitude", "longitude", "elev.mean", "ndvi.mean", "bio.mean.bio1", "bio.mean.bio12")])
+env.data = raster(env.data)
+
+data(wrld_simpl)
+# Plot the base map
+plot(wrld_simpl, 
+     xlim = c(min.lon, max.lon),
+     ylim = c(min.lat, max.lat),
+     axes = TRUE, 
+     col = "grey95")
+
+# Add the points for individual observation
+points(x = sdm_input$longitude, 
+       y = sdm_input$latitude, 
+       col = "olivedrab", 
+       pch = 20, 
+       cex = 0.75)
+box()
+
+# Build species distribution model
+obs.data = sdm_input[,c("longitude","latitude")]
+
+rbrick = brick(env.data)
+plot(rbrick)
 
 # plot GLM occ v pres
 r1 = ggplot(auc_df, aes(x = AUC, y = pres_AUC)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy AUC")) + ylab(bquote("Presence AUC"))+
   geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(cex =4, shape=24)+geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) +
   theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32))+ scale_colour_manual("", values=c("#dd1c77","#2ca25f","dark gray"))+
   guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_text(size=36), legend.position = c(0.8,0.2), legend.key.width=unit(2, "lines"), legend.key.height =unit(3, "lines")) 
-ggsave("C:/Git/Biotic-Interactions/Figures/occvabun_lines.pdf", height = 8, width = 12)
+ggsave("Figures/Occ_Pres.pdf", height = 8, width = 12)
 
 
