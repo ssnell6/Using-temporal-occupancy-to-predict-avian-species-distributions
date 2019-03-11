@@ -49,6 +49,7 @@ bbs_final_occ_ll = bbs_final_occ_ll[,c("Aou", "stateroute", "occ", "presence", "
                                        "latitude", "longitude")]
 bbs_final_occ_ll$sp_success = 15 * bbs_final_occ_ll$occ
 bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ) 
+# write.csv(bbs_final_occ_ll, "Data/final_focal_spp.csv", row.names = FALSE)
 
 # Thuiller 2014 source for choosing these vars
 # http://worldclim.org/bioclim
@@ -186,7 +187,7 @@ for(i in unique(sp_list_bigauc$Aou)){
 
 dev.off()
 
-
+setwd("C:/Git/SDMs")
 
 env.data = as.matrix(sdm_input[,c("latitude", "longitude", "elev.mean", "ndvi.mean", "bio.mean.bio1", "bio.mean.bio12")])
 
@@ -198,12 +199,18 @@ env.proj.raster = rasterize(env.proj, r)
 env.stack = raster::stack(env.proj.raster@data$elev.mean, env.proj.raster@data$ndvi.mean)
 
 
+num_routes = bbs_final_occ_ll %>% group_by(Aou) %>% 
+  summarise(n = n_distinct(stateroute))  %>%
+  filter(., n >= 40)
 
-# plot GLM occ v pres
-r1 = ggplot(auc_df, aes(x = AUC, y = pres_AUC)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy AUC")) + ylab(bquote("Presence AUC"))+
-  geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(cex =4, shape=24)+geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) +
-  theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32))+ scale_colour_manual("", values=c("#dd1c77","#2ca25f","dark gray"))+
-  guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_text(size=36), legend.position = c(0.8,0.2), legend.key.width=unit(2, "lines"), legend.key.height =unit(3, "lines")) 
+auc_df_merge = left_join(auc_df, num_routes, by = c("AOU" = "Aou"))
+# plot GLM occ v pres + geom_label(data = auc_df, aes(x = AUC, y = pres_AUC, label = AOU))
+# aes(size = auc_df_merge$n), to change size of points
+r1 = ggplot(auc_df, aes(x = AUC, y = pres_AUC)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy AUC")) + ylab(bquote("Presence AUC"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
+  geom_point(shape=16)  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) +
+  theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32))+ scale_colour_manual("", values=c("#dd1c77","#2ca25f","dark gray")) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=36), legend.position = c(0.8,0.2), legend.key.width=unit(2, "lines"), legend.key.height =unit(3, "lines")) 
 ggsave("Figures/Occ_Pres.pdf", height = 8, width = 12)
 
 
