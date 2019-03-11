@@ -18,8 +18,8 @@ shapefile_path = 'Z:/GIS/birds/All/All/'
 all_spp_list = list.files(shapefile_path)
 
 bbs_final_occ_ll = read.csv("Data/final_focal_spp.csv", header = TRUE)
-bbs_final_names = left_join(bbs_final_occ_ll, AOU[,c("AOU_OUT", "SCI_NAME")], by = c("Aou" = "AOU_OUT"))
-bbs_final_names$focalcat = gsub(" ", "_",bbs_final_names$SCI_NAME)
+bbs_final_names = left_join(bbs_final_occ_ll, AOU[,c("AOU_OUT", "CRC_SCI_NAME")], by = c("Aou" = "AOU_OUT"))
+bbs_final_names$focalcat = gsub(" ", "_",bbs_final_names$CRC_SCI_NAME)
 
 # test to see which species d/n have matching names
 all_spp_list2 = gsub("(.*)_.*", "\\1", all_spp_list) 
