@@ -127,8 +127,10 @@ setwd("Figures/maps/")
 pdf('SDM_glm_occ_maps.pdf', height = 8, width = 10)
 par(mfrow = c(2, 3)) # makes plots too small
 
+sp_list_bigauc = filter(bbs_final_occ_ll, Aou %in% test$AOU)
+
 # making sdm plot maps
-for(i in sp_list){
+for(i in unique(sp_list_bigauc$Aou)){
   sdm_output = c()
   
   bbs_sub <- filter(bbs_final_occ_ll, Aou == i)
@@ -173,7 +175,9 @@ for(i in sp_list){
   
   plot(plot.r$predocc, add = TRUE)
   # Add the points for individual observation if necessary
-  # points(x = sdm_input$longitude, y = sdm_input$latitude, col = sdm_input$presence, pch = 20, cex = 0.75)
+  # sdm_input$presence <-droplevels(sdm_input$presence, exclude = c("0"))
+  # sdm_input$col = c("black", "white")
+  points(x = sdm_input$longitude, y = sdm_input$latitude, col = sdm_input$presence, pch = 20, cex = 0.75)
 
   box()
   }
