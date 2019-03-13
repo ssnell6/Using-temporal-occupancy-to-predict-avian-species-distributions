@@ -4,21 +4,21 @@ library(ggplot2)
 library(dismo)
 library(maptools)
 
-bbs_occ = read.csv("data/bbs_sub1.csv", header=TRUE)
+bbs_occ = read.csv("Data/bbs_sub1.csv", header=TRUE)
 bbs_occ_sub = bbs_occ %>% filter(Aou > 2880) %>%
   filter(Aou < 3650 | Aou > 3810) %>%
   filter(Aou < 3900 | Aou > 3910) %>%
   filter(Aou < 4160 | Aou > 4210) %>%
   filter(Aou != 7010)
 
-exp_pres = read.csv("data/expect_pres.csv", header = TRUE)
+exp_pres = read.csv("Data/expect_pres.csv", header = TRUE)
 exp_pres = exp_pres[,c("stateroute","spAOU")]
-traits = read.csv("data/Master_RO_Correlates.csv", header = TRUE)
-lat_long = read.csv("data/latlongs.csv", header = TRUE)
-tax_code = read.csv("data/Tax_AOU_Alpha.csv", header = TRUE)
-bi_env = read.csv("data/all_env.csv", header = TRUE)
+traits = read.csv("Data/Master_RO_Correlates.csv", header = TRUE)
+lat_long = read.csv("Data/latlongs.csv", header = TRUE)
+tax_code = read.csv("Data/Tax_AOU_Alpha.csv", header = TRUE)
+bi_env = read.csv("Data/all_env.csv", header = TRUE)
 bi_means = bi_env[,c("stateroute","mat.mean", "elev.mean", "map.mean", "ndvi.mean")]
-env_bio = read.csv("data/env_bio.csv", header = TRUE)
+env_bio = read.csv("Data/env_bio.csv", header = TRUE)
 env_bio = na.omit(env_bio)
 env_bio_sub = env_bio[,c(1, 21:39)]
 # env_bio[,c("stateroute","bio.mean.bio4", "bio.mean.bio5", "bio.mean.bio6", "bio.mean.bio13", "bio.mean.bio14")]
@@ -42,14 +42,14 @@ bbs_final_occ = filter(num_occ,nn > 1)
 bbs_occ_code = left_join(bbs_final_occ, tax_code, by = c("Aou" = "AOU_OUT"))
 
 # 319 focal species
-bi_focal_spp = filter(bbs_occ_code, Aou %in% exp_pres$spAOU)
+# bi_focal_spp = filter(bbs_occ_code, Aou %in% exp_pres$spAOU)
   
 bbs_final_occ_ll = left_join(bi_focal_spp , lat_long, by = "stateroute")
 bbs_final_occ_ll = bbs_final_occ_ll[,c("Aou", "stateroute", "occ", "presence", "ALPHA.CODE",
                                        "latitude", "longitude")]
 bbs_final_occ_ll$sp_success = 15 * bbs_final_occ_ll$occ
 bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ) 
-# write.csv(bbs_final_occ_ll, "Data/final_focal_spp.csv", row.names = FALSE)
+# write.csv(bbs_occ_code, "Data/final_focal_spp.csv", row.names = FALSE)
 
 # Thuiller 2014 source for choosing these vars
 # http://worldclim.org/bioclim
@@ -205,9 +205,9 @@ num_routes = bbs_final_occ_ll %>% group_by(Aou) %>%
 
 auc_df_merge = left_join(auc_df, num_routes, by = c("AOU" = "Aou"))
 # plot GLM occ v pres + geom_label(data = auc_df, aes(x = AUC, y = pres_AUC, label = AOU))
-# aes(size = auc_df_merge$n), to change size of points
+# , to change size of points
 r1 = ggplot(auc_df, aes(x = AUC, y = pres_AUC)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy AUC")) + ylab(bquote("Presence AUC"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-  geom_point(shape=16)  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) +
+  geom_point(shape=16, aes(size = auc_df_merge$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) +
   theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32))+ scale_colour_manual("", values=c("#dd1c77","#2ca25f","dark gray")) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=36), legend.position = c(0.8,0.2), legend.key.width=unit(2, "lines"), legend.key.height =unit(3, "lines")) 
