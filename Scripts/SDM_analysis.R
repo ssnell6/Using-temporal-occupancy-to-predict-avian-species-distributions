@@ -4,7 +4,7 @@ library(gam)
 library(randomForest)
 library(ggplot2)
 library(dismo)
-library(maptools)
+library(raster)
 
 bbs_occ = read.csv("Data/bbs_sub1.csv", header=TRUE)
 bbs_occ_sub = bbs_occ %>% filter(Aou > 2880) %>%
@@ -144,6 +144,7 @@ test = dplyr::filter(auc_df, AUC > 0.75 & AUC < 1.0)
 bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'), ordered = TRUE)
 
 #### MAPS #####
+auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 setwd("Figures/maps/")
 # temp filter for vis purposes
 sp_list_bigauc = filter(bbs_final_occ_ll, Aou %in% test$AOU)
@@ -151,7 +152,9 @@ sp_list_bigauc = filter(bbs_final_occ_ll, Aou %in% test$AOU)
 mapfun = function(mod, vec, pdf_name){ 
 pdf(pdf_name, height = 8, width = 10)
 par(mfrow = c(2, 3)) # makes plots too small
+
 for(i in unique(sp_list_bigauc$Aou)){
+  print(i)
   sdm_output = c()
   
   bbs_sub <- filter(bbs_final_occ_ll, Aou == i)
@@ -161,7 +164,7 @@ for(i in unique(sp_list_bigauc$Aou)){
   j = unique(sdm_input$ALPHA.CODE)
   
   # print(length(sdm_input$stateroute))
-  if(length(unique(sdm_input$stateroute)) > 40){
+  if(length(unique(sdm_input$stateroute)) > 40  & length(unique(sdm_input$presence)) >1){
     #   if(levels(as.factor(sdm_input$presence)) > 1){
     glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
@@ -187,7 +190,7 @@ for(i in unique(sp_list_bigauc$Aou)){
 
 
   mod.r <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
-   data = sdm_output[,c("latitude", "longitude","Aou", paste(vec))], 
+   data = sdm_output[,c("latitude", "longitude","Aou", vec)], 
    proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
   r = raster(mod.r)
   plot.r = rasterize(mod.r, r)
@@ -210,13 +213,13 @@ for(i in unique(sp_list_bigauc$Aou)){
 
   box()
   }
+
+}
 dev.off()
 }
+dev.off()
 
-}
-
-
-
+# there is still something weird about the dev.off(), need to run dev off or restart R to get running
 mapfun(plot.r$pred_glm_pr, "pred_glm_pr", 'SDM_glm_pres_maps.pdf')
 mapfun(plot.r$pred_glm_occ, "pred_glm_occ", 'SDM_glm_occ_maps.pdf')
 mapfun(plot.r$pred_rf_pr, "pred_rf_pr", 'SDM_rf_pres_maps.pdf')
