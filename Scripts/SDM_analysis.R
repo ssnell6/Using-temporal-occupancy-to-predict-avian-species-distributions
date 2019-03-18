@@ -5,6 +5,7 @@ library(randomForest)
 library(ggplot2)
 library(dismo)
 library(raster)
+library(pROC)
 
 bbs_occ = read.csv("Data/bbs_sub1.csv", header=TRUE)
 bbs_occ_sub = bbs_occ %>% filter(Aou > 2880) %>%
@@ -80,7 +81,7 @@ corrplot(test)
 # 2. GAM
 # 3. RF
 
-library(pROC)
+
 setwd("Data/sdm_dfs/")
 pdf('AUC_Curves.pdf', height = 8, width = 10)
 par(mfrow = c(2, 3))
@@ -99,10 +100,20 @@ for(i in sp_list){
  #   if(levels(as.factor(sdm_input$presence)) > 1){
     glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
-   # gam_occ <- gam(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
+   # gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
    # gam_pres <- gam(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     rf_occ <- randomForest(sp_success ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
+   
+    
+    max_env = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
+     data = sdm_input[,c("latitude", "longitude","bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], 
+     proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
+    max_env_rast = raster(max_env, layer = 4)
+    max_pres_sub = sdm_input[,c("stateroute", "presence")]
+    max_pres = maxent(max_env_rast, max_pres_sub)
+    
+    # predict
     pred_glm_occ <- predict(glm_occ,type=c("response"))
     pred_glm_pr <- predict(glm_pres,type=c("response"))
     # pred_gam_occ <- predict(gam_occ,type=c("response"))
@@ -194,8 +205,6 @@ for(i in unique(sp_list_bigauc$Aou)){
    proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
   r = raster(mod.r)
   plot.r = rasterize(mod.r, r)
-  # plot.r.2 = mask(plot.r, wrld_simpl)
-
 
   data(wrld_simpl)
   # Plot the base map
