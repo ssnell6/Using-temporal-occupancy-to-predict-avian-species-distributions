@@ -107,9 +107,9 @@ for(i in sp_list){
    
     
     max_env = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
-     data = sdm_input[,c("latitude", "longitude","bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], 
+     data = sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], 
      proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
-    max_env_rast = raster(max_env, layer = 4)
+    max_env_rast = raster(max_env)
     max_pres_sub = sdm_input[,c("stateroute", "presence")]
     max_pres = maxent(max_env_rast, max_pres_sub)
     
