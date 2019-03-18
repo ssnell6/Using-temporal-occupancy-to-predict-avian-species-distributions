@@ -5,6 +5,7 @@ library(randomForest)
 library(ggplot2)
 library(dismo)
 library(raster)
+library(maptools)
 library(pROC)
 
 bbs_occ = read.csv("Data/bbs_sub1.csv", header=TRUE)
@@ -105,13 +106,14 @@ for(i in sp_list){
     rf_occ <- randomForest(sp_success ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
    
-    
-    max_env = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
-     data = sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], 
+    max_pres = filter(sdm_input, presence == 1)
+    max_env = SpatialPointsDataFrame(coords = max_pres[,c("longitude", "latitude")],
+     data = max_pres[,c("longitude", "latitude","bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean", "presence")], 
      proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
-    max_env_rast = raster(max_env)
-    max_pres_sub = sdm_input[,c("stateroute", "presence")]
-    max_pres = maxent(max_env_rast, max_pres_sub)
+    rast = raster(max_env)
+    max_env_rast = rasterize(max_env, rast)
+
+    max_ind = maxent(max_env_rast, max_env[,c("longitude", "latitude")])
     
     # predict
     pred_glm_occ <- predict(glm_occ,type=c("response"))
