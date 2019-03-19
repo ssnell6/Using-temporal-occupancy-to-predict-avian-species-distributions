@@ -76,13 +76,6 @@ sdm_input_global <- left_join(bbs_final_occ_ll, all_env, by = "stateroute")
 test = cor(na.omit(sdm_input_global))
 corrplot(test)
 
-
-# running mods on each spp using
-# 1. GLM
-# 2. GAM
-# 3. RF
-
-
 setwd("Data/sdm_dfs/")
 pdf('AUC_Curves.pdf', height = 8, width = 10)
 par(mfrow = c(2, 3))
@@ -106,16 +99,11 @@ for(i in sp_list){
     rf_occ <- randomForest(sp_success ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
    
-    max_pres = max_env = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
+    max_pres = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
        data = sdm_input[,c("longitude", "latitude", "presence")], 
        proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
-    max_env = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
-     data = sdm_input[,c("longitude", "latitude","bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean", "presence")], 
-     proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
-    rast = raster(max_env)
-    max_env_rast = rasterize(max_env, rast)
-
-    max_ind = maxent(sdm_input[,c("longitude", "latitude","bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean", "presence")], sdm_input$presence)
+    max_ind_pres = dismo::maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], sdm_input$presence)
+   # max_ind_occ = maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], sdm_input$occ)
     
     # predict
     pred_glm_occ <- predict(glm_occ,type=c("response"))
@@ -124,7 +112,10 @@ for(i in sp_list){
     # pred_gam_pr <- predict(gam_pres,type=c("response"))
     pred_rf_occ <- predict(rf_occ,type=c("response"))
     pred_rf_pr <- predict(rf_pres,type=c("response"))
-    sdm_output = cbind(sdm_input,pred_glm_pr, pred_glm_occ, pred_rf_occ, pred_rf_pr) #, pred_gam_pr, pred_gam_occ)
+    max_pred_pres <- predict(max_ind_pres, sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")])
+   # max_pred_occ <- predict(max_ind_occ, sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")])
+    
+    sdm_output = cbind(sdm_input,pred_glm_pr, pred_glm_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
  
  roccurve <- roc(sdm_output$occ ~ sdm_output$pred_glm_occ)
  auc =  roc(sdm_output$occ ~ sdm_output$pred_glm_occ)$auc[1]
@@ -138,7 +129,10 @@ for(i in sp_list){
  rocpres_rf <- roc(sdm_output$presence ~ sdm_output$pred_rf_pr)
  auc_pres_rf =  roc(sdm_output$presence ~ sdm_output$pred_rf_pr)$auc[1]
  
- auc_df = rbind(auc_df, c(i, auc, auc_pres, auc_rf, auc_pres_rf))
+ rocpres_me <- roc(sdm_output$presence ~ sdm_output$max_pred_pres)
+ auc_pres_me =  roc(sdm_output$presence ~ sdm_output$max_pred_pres)$auc[1]
+ 
+ auc_df = rbind(auc_df, c(i, auc, auc_pres, auc_rf, auc_pres_rf, auc_pres_me))
  j = unique(sdm_input$ALPHA.CODE)
  plot = plot(roccurve, main = paste("AUC Curve for ", j, ".csv",   
                                      sep=""))
@@ -151,7 +145,7 @@ dev.off()
 
 setwd("C:/Git/SDMs")
 auc_df = data.frame(auc_df)
-names(auc_df) = c("AOU", "AUC", "AUC_pres", "AUC_RF", "AUC_RF_pres")
+names(auc_df) = c("AOU", "AUC", "AUC_pres", "AUC_RF", "AUC_RF_pres", "AUC_me_pres")
 # write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
 test = dplyr::filter(auc_df, AUC > 0.75 & AUC < 1.0)
 
@@ -165,7 +159,8 @@ setwd("Figures/maps/")
 sp_list_bigauc = filter(bbs_final_occ_ll, Aou %in% test$AOU)
 
 mapfun = function(mod, vec, pdf_name){ 
-pdf(pdf_name, height = 8, width = 10)
+
+  pdf(pdf_name, height = 8, width = 10)
 par(mfrow = c(2, 3)) # makes plots too small
 
 for(i in unique(sp_list_bigauc$Aou)){
@@ -187,6 +182,11 @@ for(i in unique(sp_list_bigauc$Aou)){
     rf_occ <- randomForest(sp_success ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     
+    max_pres = max_env = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
+       data = sdm_input[,c("longitude", "latitude", "presence")], 
+       proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
+    max_ind_pres = maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], sdm_input$presence)
+    
     pred_glm_occ <- predict(glm_occ,type=c("response"))
     pred_glm_pr <- predict(glm_pres,type=c("response"))
     
@@ -205,9 +205,10 @@ for(i in unique(sp_list_bigauc$Aou)){
 
 
   mod.r <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
-   data = sdm_output[,c("latitude", "longitude","Aou", vec)], 
+   data = sdm_output[,c("latitude", "longitude","bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], 
    proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
-  r = raster(mod.r)
+  r = raster(mod.r) # change the resolution here to be finer, d/n want it to take an average, 40x40 km
+  # bioclim is 4 km
   plot.r = rasterize(mod.r, r)
 
   data(wrld_simpl)
@@ -218,7 +219,7 @@ for(i in unique(sp_list_bigauc$Aou)){
      axes = TRUE, 
      col = "grey95", main = paste("SDM plot for ", j, sep=""))
   
-  plot(mod, add = TRUE)
+  plot(plot.r, add = TRUE)
   # Add the points for individual observation if necessary
   # sdm_input$presence <-droplevels(sdm_input$presence, exclude = c("0"))
   # sdm_input$col = c("black", "white")
@@ -237,6 +238,7 @@ mapfun(plot.r$pred_glm_pr, "pred_glm_pr", 'SDM_glm_pres_maps.pdf')
 mapfun(plot.r$pred_glm_occ, "pred_glm_occ", 'SDM_glm_occ_maps.pdf')
 mapfun(plot.r$pred_rf_pr, "pred_rf_pr", 'SDM_rf_pres_maps.pdf')
 mapfun(plot.r$pred_rf_occ, "pred_rf_occ", 'SDM_rf_occ_maps.pdf')
+mapfun(plot.r$pred_me_pres, "pred_me_pres", 'SDM_me_pres_maps.pdf')
 
 setwd("C:/Git/SDMs")
 
