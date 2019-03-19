@@ -205,7 +205,11 @@ for(i in unique(sp_list_bigauc$Aou)){
 
 
   mod.r <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
+<<<<<<< HEAD
    data = sdm_output[,c("latitude", "longitude","bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], 
+=======
+   data = sdm_output[,c("latitude", "longitude","Aou", "pred_glm_occ")], 
+>>>>>>> 5f06dd1af766bd83b283ab0c6d264edd89d0745d
    proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
   r = raster(mod.r) # change the resolution here to be finer, d/n want it to take an average, 40x40 km
   # bioclim is 4 km
@@ -219,7 +223,11 @@ for(i in unique(sp_list_bigauc$Aou)){
      axes = TRUE, 
      col = "grey95", main = paste("SDM plot for ", j, sep=""))
   
+<<<<<<< HEAD
   plot(plot.r, add = TRUE)
+=======
+  plot(plot.r$pred_glm_occ, add = TRUE)
+>>>>>>> 5f06dd1af766bd83b283ab0c6d264edd89d0745d
   # Add the points for individual observation if necessary
   # sdm_input$presence <-droplevels(sdm_input$presence, exclude = c("0"))
   # sdm_input$col = c("black", "white")
