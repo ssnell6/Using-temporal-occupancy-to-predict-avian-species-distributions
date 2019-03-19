@@ -205,7 +205,7 @@ for(i in unique(sp_list_bigauc$Aou)){
 
 
   mod.r <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
-   data = sdm_output[,c("latitude", "longitude","Aou", vec)], 
+   data = sdm_output[,c("latitude", "longitude","Aou", "pred_glm_occ")], 
    proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
   r = raster(mod.r)
   plot.r = rasterize(mod.r, r)
@@ -218,7 +218,7 @@ for(i in unique(sp_list_bigauc$Aou)){
      axes = TRUE, 
      col = "grey95", main = paste("SDM plot for ", j, sep=""))
   
-  plot(mod, add = TRUE)
+  plot(plot.r$pred_glm_occ, add = TRUE)
   # Add the points for individual observation if necessary
   # sdm_input$presence <-droplevels(sdm_input$presence, exclude = c("0"))
   # sdm_input$col = c("black", "white")
