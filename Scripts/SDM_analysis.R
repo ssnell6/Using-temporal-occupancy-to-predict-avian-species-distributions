@@ -182,10 +182,10 @@ for(i in unique(sp_list_bigauc$Aou)){
     rf_occ <- randomForest(sp_success ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     
-    max_pres = max_env = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
-       data = sdm_input[,c("longitude", "latitude", "presence")], 
-       proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
-    max_ind_pres = maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], sdm_input$presence)
+    # max_pres = max_env = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
+     #  data = sdm_input[,c("longitude", "latitude", "presence")], 
+     #  proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
+   #  max_ind_pres = maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], sdm_input$presence)
     
     pred_glm_occ <- predict(glm_occ,type=c("response"))
     pred_glm_pr <- predict(glm_pres,type=c("response"))
@@ -205,7 +205,7 @@ for(i in unique(sp_list_bigauc$Aou)){
 
 
   mod.r <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
-   data = sdm_output[,c("latitude", "longitude","bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean", "pred_glm_occ")], 
+   data = sdm_output[,c("latitude", "longitude","bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean", vec)], 
    proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
   r = raster(mod.r, res = 0.6) # 40x40 km/111 (degrees) * 2 tp eliminate holes
   # bioclim is 4 km
@@ -219,7 +219,7 @@ for(i in unique(sp_list_bigauc$Aou)){
      axes = TRUE, 
      col = "grey95", main = paste("SDM plot for ", j, sep=""))
 
-  plot(plot.r$pred_glm_occ, add = TRUE)
+  plot(mod, add = TRUE)
 
   # Add the points for individual observation if necessary
   # sdm_input$presence <-droplevels(sdm_input$presence, exclude = c("0"))
