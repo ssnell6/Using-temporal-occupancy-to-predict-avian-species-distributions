@@ -95,7 +95,7 @@ for(i in sp_list){
     glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio1) + s(bio.mean.bio12), family = binomial(link = logit), data = sdm_input)
-    gam_pres <- gam(presence ~  s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio1) + s(bio.mean.bio12), family = binomial(link = logit), data = sdm_input)
+    gam_pres <- mgcv::gam(presence ~  s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio1) + s(bio.mean.bio12), family = binomial(link = logit), data = sdm_input)
     rf_occ <- randomForest(sp_success ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
    
@@ -115,7 +115,7 @@ for(i in sp_list){
     max_pred_pres <- predict(max_ind_pres, sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")])
    # max_pred_occ <- predict(max_ind_occ, sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")])
     
-    sdm_output = cbind(sdm_input,pred_glm_pr, pred_glm_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
+    sdm_output = cbind(sdm_input,pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
  
  roccurve <- roc(sdm_output$occ ~ sdm_output$pred_glm_occ)
  auc =  roc(sdm_output$occ ~ sdm_output$pred_glm_occ)$auc[1]
