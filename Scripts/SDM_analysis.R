@@ -123,6 +123,13 @@ for(i in sp_list){
  rocpres <- roc(sdm_output$presence ~ sdm_output$pred_glm_pr)
  auc_pres =  roc(sdm_output$presence ~ sdm_output$pred_glm_pr)$auc[1]
  
+ roccurve_gam <- roc(sdm_output$occ ~ sdm_output$pred_gam_occ)
+ auc_gam =  roc(sdm_output$occ ~ sdm_output$pred_gam_occ)$auc[1]
+ 
+ rocpres_gam <- roc(sdm_output$presence ~ sdm_output$pred_gam_pr)
+ auc_pres_gam =  roc(sdm_output$presence ~ sdm_output$pred_gam_pr)$auc[1]
+ 
+ 
  roccurve_rf <- roc(sdm_output$occ ~ sdm_output$pred_rf_occ)
  auc_rf =  roc(sdm_output$occ ~ sdm_output$pred_rf_occ)$auc[1]
  
@@ -132,7 +139,7 @@ for(i in sp_list){
  rocpres_me <- roc(sdm_output$presence ~ sdm_output$max_pred_pres)
  auc_pres_me =  roc(sdm_output$presence ~ sdm_output$max_pred_pres)$auc[1]
  
- auc_df = rbind(auc_df, c(i, auc, auc_pres, auc_rf, auc_pres_rf, auc_pres_me))
+ auc_df = rbind(auc_df, c(i, auc, auc_pres, auc_rf, auc_gam, auc_pres_gam, auc_pres_rf, auc_pres_me))
  j = unique(sdm_input$ALPHA.CODE)
  plot = plot(roccurve, main = paste("AUC Curve for ", j, ".csv",   
                                      sep=""))
