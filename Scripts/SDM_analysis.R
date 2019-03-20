@@ -94,8 +94,8 @@ for(i in sp_list){
  #   if(levels(as.factor(sdm_input$presence)) > 1){
     glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
-   # gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
-   # gam_pres <- gam(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
+    gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio1) + s(bio.mean.bio12), family = binomial(link = logit), data = sdm_input)
+    gam_pres <- gam(presence ~  s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio1) + s(bio.mean.bio12), family = binomial(link = logit), data = sdm_input)
     rf_occ <- randomForest(sp_success ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
     rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
    
@@ -108,8 +108,8 @@ for(i in sp_list){
     # predict
     pred_glm_occ <- predict(glm_occ,type=c("response"))
     pred_glm_pr <- predict(glm_pres,type=c("response"))
-    # pred_gam_occ <- predict(gam_occ,type=c("response"))
-    # pred_gam_pr <- predict(gam_pres,type=c("response"))
+    pred_gam_occ <- predict(gam_occ,type=c("response"))
+    pred_gam_pr <- predict(gam_pres,type=c("response"))
     pred_rf_occ <- predict(rf_occ,type=c("response"))
     pred_rf_pr <- predict(rf_pres,type=c("response"))
     max_pred_pres <- predict(max_ind_pres, sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")])
