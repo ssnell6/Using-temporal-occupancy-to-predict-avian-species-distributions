@@ -153,7 +153,7 @@ dev.off()
 
 setwd("C:/Git/SDMs")
 auc_df = data.frame(auc_df)
-names(auc_df) = c("AOU", "AUC", "AUC_pres", "AUC_gam", "AUC_gam_pres", "AUC_RF", "AUC_RF_pres", "AUC_me_pres")
+names(auc_df) = c("AOU", "AUC", "AUC_pres","AUC_RF", "AUC_gam", "AUC_gam_pres",  "AUC_RF_pres", "AUC_me_pres")
 # write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
 test = dplyr::filter(auc_df, AUC > 0.75 & AUC < 1.0)
 
@@ -166,7 +166,7 @@ setwd("Figures/maps/")
 # temp filter for vis purposes
 sp_list_bigauc = filter(bbs_final_occ_ll, Aou %in% test$AOU)
 
-mapfun <- function(pdf_name, vec, mod){ 
+mapfun <- function(pdf_name, vec, num){ 
 
   pdf(pdf_name, height = 8, width = 10)
   par(mfrow = c(2, 3)) # makes plots too small
@@ -213,7 +213,7 @@ for(i in unique(sp_list)){
 
 
   mod.r <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
-   data = sdm_output[,c("latitude", "longitude","bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean", vec)], 
+   data = sdm_output[,c("latitude", "longitude", "pred_glm_pr", "pred_glm_occ", "pred_rf_occ")], 
    proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
   r = raster(mod.r, res = 0.6) # 40x40 km/111 (degrees) * 2 tp eliminate holes
   # bioclim is 4 km
@@ -227,10 +227,10 @@ for(i in unique(sp_list)){
      axes = TRUE, 
      col = "grey95", main = paste("SDM plot for ", j, sep=""))
 
-  plot(plot.r$pred_glm_pr, add = TRUE)
+  plot(plot.r[[num]], add = TRUE)
 
   # Add the points for individual observation if necessary
-  # sdm_input$presence <-droplevels(sdm_input$presence, exclude = c("0"))
+  sdm_input$presence <-droplevels(sdm_input$presence, exclude = c("0"))
   # sdm_input$col = c("black", "white")
   points(x = sdm_input$longitude, y = sdm_input$latitude, col = sdm_input$presence, pch = 20, cex = 0.75)
 
@@ -238,18 +238,18 @@ for(i in unique(sp_list)){
   }
 
 }
-# dev.off()
+  dev.off()
 }
-dev.off()
+# dev.off()
 
 # there is still something weird about the dev.off(), need to run dev off or restart R to get running
-mapfun(pdf_name = 'SDM_glm_pres_maps.pdf',vec = "pred_glm_pr", mod = plot.r$pred_glm_pr)
+mapfun(pdf_name = 'SDM_glm_pres_maps.pdf',vec = "pred_glm_pr", 4)
 
-mapfun(pdf_name = 'SDM_glm_occ_maps.pdf', vec = "pred_glm_occ", mod = plot.r$pred_glm_occ)
+mapfun(pdf_name = 'SDM_glm_occ_maps.pdf', vec = "pred_glm_occ", 5)
 
-mapfun(pdf_name = 'SDM_rf_pres_maps.pdf', vec = "pred_rf_pr", mod = plot.r$pred_rf_pr)
+# mapfun(pdf_name = 'SDM_rf_pres_maps.pdf', vec = "pred_rf_pr", mod = plot.r$pred_rf_pr)
 
-mapfun(pdf_name = 'SDM_rf_occ_maps.pdf', vec = "pred_rf_occ", mod = plot.r$pred_rf_occ)
+mapfun(pdf_name = 'SDM_rf_occ_maps.pdf', vec = "pred_rf_occ", 6)
 
 mapfun(pdf_name = 'SDM_me_pres_maps.pdf', vec = "pred_me_pres", mod = plot.r$pred_me_pres)
 
