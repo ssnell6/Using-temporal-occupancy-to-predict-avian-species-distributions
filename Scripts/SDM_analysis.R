@@ -71,10 +71,11 @@ bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ)
 
 # you need to do cor.test and not excede 5 vars for power. Need  >= 50 presences
 sdm_input_global <- left_join(bbs_final_occ_ll, all_env, by = "stateroute")
+Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_201') # for 64-bit version
 
 
-test = cor(na.omit(sdm_input_global))
-corrplot(test)
+# test = cor(na.omit(sdm_input_global))
+# corrplot(test)
 
 setwd("Data/sdm_dfs/")
 pdf('AUC_Curves.pdf', height = 8, width = 10)
@@ -152,7 +153,7 @@ dev.off()
 
 setwd("C:/Git/SDMs")
 auc_df = data.frame(auc_df)
-names(auc_df) = c("AOU", "AUC", "AUC_pres", "AUC_RF", "AUC_RF_pres", "AUC_me_pres")
+names(auc_df) = c("AOU", "AUC", "AUC_pres", "AUC_gam", "AUC_gam_pres", "AUC_RF", "AUC_RF_pres", "AUC_me_pres")
 # write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
 test = dplyr::filter(auc_df, AUC > 0.75 & AUC < 1.0)
 
@@ -165,12 +166,12 @@ setwd("Figures/maps/")
 # temp filter for vis purposes
 sp_list_bigauc = filter(bbs_final_occ_ll, Aou %in% test$AOU)
 
-mapfun = function(mod, vec, pdf_name){ 
+mapfun <- function(pdf_name, vec, mod){ 
 
   pdf(pdf_name, height = 8, width = 10)
-par(mfrow = c(2, 3)) # makes plots too small
+  par(mfrow = c(2, 3)) # makes plots too small
 
-for(i in unique(sp_list_bigauc$Aou)){
+for(i in unique(sp_list)){
   print(i)
   sdm_output = c()
   
@@ -226,7 +227,7 @@ for(i in unique(sp_list_bigauc$Aou)){
      axes = TRUE, 
      col = "grey95", main = paste("SDM plot for ", j, sep=""))
 
-  plot(mod, add = TRUE)
+  plot(plot.r$pred_glm_pr, add = TRUE)
 
   # Add the points for individual observation if necessary
   # sdm_input$presence <-droplevels(sdm_input$presence, exclude = c("0"))
@@ -237,16 +238,20 @@ for(i in unique(sp_list_bigauc$Aou)){
   }
 
 }
-dev.off()
+# dev.off()
 }
 dev.off()
 
 # there is still something weird about the dev.off(), need to run dev off or restart R to get running
-mapfun(plot.r$pred_glm_pr, "pred_glm_pr", 'SDM_glm_pres_maps.pdf')
-mapfun(plot.r$pred_glm_occ, "pred_glm_occ", 'SDM_glm_occ_maps.pdf')
-mapfun(plot.r$pred_rf_pr, "pred_rf_pr", 'SDM_rf_pres_maps.pdf')
-mapfun(plot.r$pred_rf_occ, "pred_rf_occ", 'SDM_rf_occ_maps.pdf')
-mapfun(plot.r$pred_me_pres, "pred_me_pres", 'SDM_me_pres_maps.pdf')
+mapfun(pdf_name = 'SDM_glm_pres_maps.pdf',vec = "pred_glm_pr", mod = plot.r$pred_glm_pr)
+
+mapfun(pdf_name = 'SDM_glm_occ_maps.pdf', vec = "pred_glm_occ", mod = plot.r$pred_glm_occ)
+
+mapfun(pdf_name = 'SDM_rf_pres_maps.pdf', vec = "pred_rf_pr", mod = plot.r$pred_rf_pr)
+
+mapfun(pdf_name = 'SDM_rf_occ_maps.pdf', vec = "pred_rf_occ", mod = plot.r$pred_rf_occ)
+
+mapfun(pdf_name = 'SDM_me_pres_maps.pdf', vec = "pred_me_pres", mod = plot.r$pred_me_pres)
 
 setwd("C:/Git/SDMs")
 
