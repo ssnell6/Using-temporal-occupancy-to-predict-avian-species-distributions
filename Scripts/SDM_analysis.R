@@ -296,6 +296,13 @@ r2 = ggplot(auc_df_traits, aes(x = AUC_RF, y = AUC_RF_pres)) +theme_classic()+ t
     theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines"))
 #  ggsave("Figures/Occ_numPres_RF.pdf", height = 8, width = 12)
 
+r2 = ggplot(auc_df_traits, aes(x = AUC_gam, y = AUC_gam_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy AUC")) + ylab(bquote("Presence AUC"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + scale_y_continuous(limit = c(.5, 1), breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1)) + scale_x_continuous(breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1))  + 
+  geom_point(shape=16, aes(size = auc_df_traits$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines"))
+#  ggsave("Figures/Occ_numPres_gam.pdf", height = 8, width = 12)
+
+
 # density plot
 auc_plot = gather(auc_df, mod, AUC, AUC:AUC_me_pres)
 ggplot(auc_plot, aes(AUC, color = mod)) + geom_density(lwd = 1.5)  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + guides(colour = guide_legend(override.aes = list(shape = 15))) +
