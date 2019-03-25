@@ -264,30 +264,7 @@ r = raster(env.proj)
 env.proj.raster = rasterize(env.proj, r)
 env.stack = raster::stack(env.proj.raster@data$elev.mean, env.proj.raster@data$ndvi.mean)
 
-
-num_routes = bbs_final_occ_ll %>% group_by(Aou) %>% 
-  summarise(n = n_distinct(stateroute))  %>%
-  filter(., n >= 40)
-
-auc_df_merge = left_join(auc_df, num_pres, by = c("AOU" = "Aou"))
-auc_df_traits = left_join(auc_df_merge, traits, by = "AOU") 
-# plot GLM occ v pres 
-# + geom_label(data = auc_df, aes(x = AUC, y = pres_AUC, label = AOU))
-r1 = ggplot(auc_df_traits, aes(x = AUC, y = pres_AUC)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy AUC")) + ylab(bquote("Presence AUC"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-  geom_point(shape=16, aes(size = auc_df_traits$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) +
-  theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
-  guides(colour = guide_legend(override.aes = list(shape = 15))) +
-  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
-# ggsave("Figures/Occ_Pres_numpres.pdf", height = 8, width = 12)
-  
-  
-r2 = ggplot(auc_df_traits, aes(x = AUC_RF, y = AUC_RF_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy AUC")) + ylab(bquote("Presence AUC"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-    geom_point(shape=16, aes(size = auc_df_traits$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
-    guides(colour = guide_legend(override.aes = list(shape = 15))) +
-    theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines"))
-#  ggsave("Figures/Occ_numPres_RF.pdf", height = 8, width = 12)
-
-auc_df_traits$diff = auc_df_traits$AUC_RF - auc_df_traits$AUC_RF_pres
+auc_df_traits$diff = auc_df_traits$AUC - auc_df_traits$AUC_pres
 occ_sub = subset(auc_df_traits,diff >= 0)
 pres_sub = subset(auc_df_traits,diff < 0)
 
@@ -295,4 +272,32 @@ num_pres = bbs_final_occ_ll %>%
   group_by(Aou) %>% 
   filter(., presence == "1") %>%
   summarise(n = n_distinct(stateroute))  
+
+num_routes = bbs_final_occ_ll %>% group_by(Aou) %>% 
+  summarise(n = n_distinct(stateroute))  %>%
+  filter(., n >= 40)
+
+auc_df_merge = left_join(auc_df, num_pres, by = c("AOU" = "Aou"))
+auc_df_traits = left_join(auc_df_merge, traits, by = "AOU") %>%
+  left_join(., tax_code, by = c("AOU" = "AOU_OUT"))
+# plot GLM occ v pres 
+#  + geom_label(data = auc_df_traits, aes(x = AUC, y = AUC_pres, label = ALPHA.CODE))
+r1 = ggplot(auc_df_traits, aes(x = AUC, y = AUC_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy AUC")) + ylab(bquote("Presence AUC"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
+  geom_point(shape=16, aes(size = auc_df_traits$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + scale_y_continuous(limit = c(.5, 1), breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1)) + scale_x_continuous(breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1)) +
+  theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
+# ggsave("Figures/Occ_Pres_labelled.pdf", height = 8, width = 12)
   
+  
+r2 = ggplot(auc_df_traits, aes(x = AUC_RF, y = AUC_RF_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy AUC")) + ylab(bquote("Presence AUC"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + scale_y_continuous(limit = c(.5, 1), breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1)) + scale_x_continuous(breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1))  + 
+    geom_point(shape=16, aes(size = auc_df_traits$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
+    guides(colour = guide_legend(override.aes = list(shape = 15))) +
+    theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines"))
+#  ggsave("Figures/Occ_numPres_RF.pdf", height = 8, width = 12)
+
+# density plot
+auc_plot = gather(auc_df, mod, AUC, AUC:AUC_me_pres)
+ggplot(auc_plot, aes(AUC, color = mod)) + geom_density(lwd = 1.5)  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines"))
+#  ggsave("Figures/density_mod_comp.pdf", height = 9, width = 12)
