@@ -86,13 +86,14 @@ sp_list = unique(bbs_final_occ_ll$Aou)
 
 for(i in sp_list){
   sdm_output = c()
+  print(i)
   bbs_sub <- filter(bbs_final_occ_ll, Aou == i)
   temp <- filter(all_env, stateroute %in% bbs_sub$stateroute)
   sdm_input <- left_join(bbs_sub, temp, by = "stateroute")
   sdm_input = na.omit(sdm_input)
   # print(length(sdm_input$stateroute))
   if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
- #   if(levels(as.factor(sdm_input$presence)) > 1){
+  if(nrow(filter(sdm_input, presence == 1)) > 20){
     glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
     glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
     gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio1) + s(bio.mean.bio2) + s(bio.mean.bio3) + s(bio.mean.bio4) + s(bio.mean.bio7) + s(bio.mean.bio8) + s(bio.mean.bio9) + s(bio.mean.bio10) + s(bio.mean.bio11) + s(bio.mean.bio12) + s(bio.mean.bio13) + s(bio.mean.bio14) + s(bio.mean.bio15) + s(bio.mean.bio16) + s(bio.mean.bio17) + s(bio.mean.bio18) + s(bio.mean.bio19), family = binomial(link = logit), data = sdm_input)
@@ -116,34 +117,34 @@ for(i in sp_list){
     max_pred_pres <- predict(max_ind_pres, sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2","bio.mean.bio3","bio.mean.bio4","bio.mean.bio7","bio.mean.bio8","bio.mean.bio9","bio.mean.bio10","bio.mean.bio11","bio.mean.bio12","bio.mean.bio13","bio.mean.bio14","bio.mean.bio15","bio.mean.bio16","bio.mean.bio17","bio.mean.bio18","bio.mean.bio19", "ndvi.mean")])
    # max_pred_occ <- predict(max_ind_occ, sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")])
     
-    sdm_output = cbind(sdm_input,pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
- 
- roccurve <- roc(sdm_output$occ ~ sdm_output$pred_glm_occ)
+    sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
+    
+ rmse_occ <- rmse(sdm_output$pred_glm_occ, sdm_output$occ)
  auc =  roc(sdm_output$occ ~ sdm_output$pred_glm_occ)$auc[1]
  
- rocpres <- roc(sdm_output$presence ~ sdm_output$pred_glm_pr)
+ rmse_pres <- rmse(sdm_output$pred_glm_pr, sdm_output$presence)
  auc_pres =  roc(sdm_output$presence ~ sdm_output$pred_glm_pr)$auc[1]
  
- roccurve_gam <- roc(sdm_output$occ ~ sdm_output$pred_gam_occ)
+ rmse_gam <- rmse(as.vector(sdm_output$pred_gam_occ), sdm_output$occ)
  auc_gam =  roc(sdm_output$occ ~ sdm_output$pred_gam_occ)$auc[1]
  
- rocpres_gam <- roc(sdm_output$presence ~ sdm_output$pred_gam_pr)
- auc_pres_gam =  roc(sdm_output$presence ~ sdm_output$pred_gam_pr)$auc[1]
+ rmse_gam_pres <- rmse(as.vector(sdm_output$pred_gam_pr), sdm_output$presence)
+ auc_gam_pres = roc(sdm_output$presence ~ sdm_output$pred_gam_pr)$auc[1]
  
- 
- roccurve_rf <- roc(sdm_output$occ ~ sdm_output$pred_rf_occ)
+ rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
  auc_rf =  roc(sdm_output$occ ~ sdm_output$pred_rf_occ)$auc[1]
  
- rocpres_rf <- roc(sdm_output$presence ~ sdm_output$pred_rf_pr)
- auc_pres_rf =  roc(sdm_output$presence ~ sdm_output$pred_rf_pr)$auc[1]
+ rmse_rf_pres <- rmse(sdm_output$pred_rf_pr, sdm_output$presence)
+ auc_rf_pres =  roc(sdm_output$presence ~ sdm_output$pred_rf_pr)$auc[1]
  
- rocpres_me <- roc(sdm_output$presence ~ sdm_output$max_pred_pres)
- auc_pres_me =  roc(sdm_output$presence ~ sdm_output$max_pred_pres)$auc[1]
+ rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$presence)
+ auc_me_pres =  roc(sdm_output$presence ~ sdm_output$max_pred_pres)$auc[1]
  
- auc_df = rbind(auc_df, c(i, auc, auc_pres, auc_rf, auc_gam, auc_pres_gam, auc_pres_rf, auc_pres_me))
+ auc_df = rbind(auc_df, c(i, rmse_occ, auc, rmse_pres, auc_pres, rmse_gam, auc_gam, rmse_gam_pres, auc_gam_pres,  rmse_rf, auc_rf, rmse_rf_pres, auc_rf_pres, auc_me_pres))
  j = unique(sdm_input$ALPHA.CODE)
  plot = plot(roccurve, main = paste("AUC Curve for ", j, ".csv",   
                                      sep=""))
+  }
   }
  write.csv(sdm_output, paste("sdm_output_", i, ".csv",   
                             sep=""), row.names = FALSE)
