@@ -7,6 +7,7 @@ library(dismo)
 library(raster)
 library(maptools)
 library(pROC)
+library(hydroGOF)
 
 bbs_occ = read.csv("Data/bbs_sub1.csv", header=TRUE)
 bbs_occ_sub = bbs_occ %>% filter(Aou > 2880) %>%
@@ -84,28 +85,27 @@ auc_df = c()
 
 sp_list = unique(bbs_final_occ_ll$Aou)
 
-for(i in sp_list){
+for(i in sp_list[119:319]){
   sdm_output = c()
   print(i)
   bbs_sub <- filter(bbs_final_occ_ll, Aou == i)
   temp <- filter(all_env, stateroute %in% bbs_sub$stateroute)
   sdm_input <- left_join(bbs_sub, temp, by = "stateroute")
   sdm_input = na.omit(sdm_input)
-  # print(length(sdm_input$stateroute))
   if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
-  if(nrow(filter(sdm_input, presence == 1)) > 20){
-    glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
-    glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
-    gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio1) + s(bio.mean.bio2) + s(bio.mean.bio3) + s(bio.mean.bio4) + s(bio.mean.bio7) + s(bio.mean.bio8) + s(bio.mean.bio9) + s(bio.mean.bio10) + s(bio.mean.bio11) + s(bio.mean.bio12) + s(bio.mean.bio13) + s(bio.mean.bio14) + s(bio.mean.bio15) + s(bio.mean.bio16) + s(bio.mean.bio17) + s(bio.mean.bio18) + s(bio.mean.bio19), family = binomial(link = logit), data = sdm_input)
-    gam_pres <- mgcv::gam(presence ~  s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio1) + s(bio.mean.bio2) + s(bio.mean.bio3) + s(bio.mean.bio4) + s(bio.mean.bio7) + s(bio.mean.bio8) + s(bio.mean.bio9) + s(bio.mean.bio10) + s(bio.mean.bio11) + s(bio.mean.bio12) + s(bio.mean.bio13) + s(bio.mean.bio14) + s(bio.mean.bio15) + s(bio.mean.bio16) + s(bio.mean.bio17) + s(bio.mean.bio18) + s(bio.mean.bio19), family = binomial(link = logit), data = sdm_input)
-    rf_occ <- randomForest(sp_success ~elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
-    rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
+  if(nrow(filter(sdm_input, presence == 1)) > 49){
+    glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+    glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+    gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = sdm_input)
+    gam_pres <- mgcv::gam(presence ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = sdm_input)
+    rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+    rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
    
     max_pres = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
      data = sdm_input[,c("longitude", "latitude", "presence")], 
      proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
    # max_ind_occ = dismo::maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], sdm_input$presence)
-    max_ind_pres = maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2","bio.mean.bio3","bio.mean.bio4","bio.mean.bio7","bio.mean.bio8","bio.mean.bio9","bio.mean.bio10","bio.mean.bio11","bio.mean.bio12","bio.mean.bio13","bio.mean.bio14","bio.mean.bio15","bio.mean.bio16","bio.mean.bio17","bio.mean.bio18","bio.mean.bio19", "ndvi.mean")], sdm_input$presence)
+    max_ind_pres = maxent(sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_input$presence)
     
     # predict
     pred_glm_occ <- predict(glm_occ,type=c("response"))
@@ -114,7 +114,7 @@ for(i in sp_list){
     pred_gam_pr <- predict(gam_pres,type=c("response"))
     pred_rf_occ <- predict(rf_occ,type=c("response"))
     pred_rf_pr <- predict(rf_pres,type=c("response"))
-    max_pred_pres <- predict(max_ind_pres, sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2","bio.mean.bio3","bio.mean.bio4","bio.mean.bio7","bio.mean.bio8","bio.mean.bio9","bio.mean.bio10","bio.mean.bio11","bio.mean.bio12","bio.mean.bio13","bio.mean.bio14","bio.mean.bio15","bio.mean.bio16","bio.mean.bio17","bio.mean.bio18","bio.mean.bio19", "ndvi.mean")])
+    max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
    # max_pred_occ <- predict(max_ind_occ, sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")])
     
     sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
@@ -142,24 +142,39 @@ for(i in sp_list){
  
  auc_df = rbind(auc_df, c(i, rmse_occ, auc, rmse_pres, auc_pres, rmse_gam, auc_gam, rmse_gam_pres, auc_gam_pres,  rmse_rf, auc_rf, rmse_rf_pres, auc_rf_pres, auc_me_pres))
  j = unique(sdm_input$ALPHA.CODE)
- plot = plot(roccurve, main = paste("AUC Curve for ", j, ".csv",   
-                                     sep=""))
+ plot = plot(roccurve, main = paste("AUC Curve for ", j, ".csv", sep=""))
   }
   }
- write.csv(sdm_output, paste("sdm_output_", i, ".csv",   
-                            sep=""), row.names = FALSE)
+ write.csv(sdm_output, paste("sdm_output_", i, ".csv",  sep=""), row.names = FALSE)
 }
 
 dev.off()
 
 setwd("C:/Git/SDMs")
 auc_df = data.frame(auc_df)
-names(auc_df) = c("AOU", "AUC", "AUC_pres","AUC_RF", "AUC_gam", "AUC_gam_pres",  "AUC_RF_pres", "AUC_me_pres")
+names(auc_df) = c("AOU", "rmse_occ", "AUC", "rmse_pres","AUC_pres", "rmse_gam", "AUC_gam", "rmse_gam_pres", "AUC_gam_pres",  "rmse_rf", "AUC_RF", "rmse_rf_pres", "AUC_RF_pres", "AUC_me_pres")
 # write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
 test = dplyr::filter(auc_df, AUC > 0.75 & AUC < 1.0)
 
 
 bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'), ordered = TRUE)
+
+#### temp backup ####
+glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
+glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
+gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio1) + s(bio.mean.bio2) + s(bio.mean.bio3) + s(bio.mean.bio4) + s(bio.mean.bio7) + s(bio.mean.bio8) + s(bio.mean.bio9) + s(bio.mean.bio10) + s(bio.mean.bio11) + s(bio.mean.bio12) + s(bio.mean.bio13) + s(bio.mean.bio14) + s(bio.mean.bio15) + s(bio.mean.bio16) + s(bio.mean.bio17) + s(bio.mean.bio18) + s(bio.mean.bio19), family = binomial(link = logit), data = sdm_input)
+gam_pres <- mgcv::gam(presence ~  s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio1) + s(bio.mean.bio2) + s(bio.mean.bio3) + s(bio.mean.bio4) + s(bio.mean.bio7) + s(bio.mean.bio8) + s(bio.mean.bio9) + s(bio.mean.bio10) + s(bio.mean.bio11) + s(bio.mean.bio12) + s(bio.mean.bio13) + s(bio.mean.bio14) + s(bio.mean.bio15) + s(bio.mean.bio16) + s(bio.mean.bio17) + s(bio.mean.bio18) + s(bio.mean.bio19), family = binomial(link = logit), data = sdm_input)
+rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
+rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
+
+max_pres = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
+                                  data = sdm_input[,c("longitude", "latitude", "presence")], 
+                                  proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
+# max_ind_occ = dismo::maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], sdm_input$presence)
+max_ind_pres = maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2","bio.mean.bio3","bio.mean.bio4","bio.mean.bio7","bio.mean.bio8","bio.mean.bio9","bio.mean.bio10","bio.mean.bio11","bio.mean.bio12","bio.mean.bio13","bio.mean.bio14","bio.mean.bio15","bio.mean.bio16","bio.mean.bio17","bio.mean.bio18","bio.mean.bio19", "ndvi.mean")], sdm_input$presence)
+########################################
+
+
 
 #### MAPS #####
 auc_df = read.csv("Data/auc_df.csv", header = TRUE)
@@ -265,10 +280,6 @@ r = raster(env.proj)
 env.proj.raster = rasterize(env.proj, r)
 env.stack = raster::stack(env.proj.raster@data$elev.mean, env.proj.raster@data$ndvi.mean)
 
-auc_df_traits$diff = auc_df_traits$AUC - auc_df_traits$AUC_pres
-occ_sub = subset(auc_df_traits,diff >= 0)
-pres_sub = subset(auc_df_traits,diff < 0)
-
 num_pres = bbs_final_occ_ll %>%
   group_by(Aou) %>% 
   filter(., presence == "1") %>%
@@ -281,10 +292,16 @@ num_routes = bbs_final_occ_ll %>% group_by(Aou) %>%
 auc_df_merge = left_join(auc_df, num_pres, by = c("AOU" = "Aou"))
 auc_df_traits = left_join(auc_df_merge, traits, by = "AOU") %>%
   left_join(., tax_code, by = c("AOU" = "AOU_OUT"))
+
+
+auc_df_traits$diff = auc_df_traits$AUC - auc_df_traits$AUC_pres
+occ_sub = subset(auc_df_traits,diff >= 0)
+pres_sub = subset(auc_df_traits,diff < 0)
+
 # plot GLM occ v pres 
 #  + geom_label(data = auc_df_traits, aes(x = AUC, y = AUC_pres, label = ALPHA.CODE))
-r1 = ggplot(auc_df_traits, aes(x = AUC, y = AUC_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy AUC")) + ylab(bquote("Presence AUC"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-  geom_point(shape=16, aes(size = auc_df_traits$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + scale_y_continuous(limit = c(.5, 1), breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1)) + scale_x_continuous(breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1)) +
+r1 = ggplot(auc_df_traits, aes(x = rmse_occ, y = rmse_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy RMSE")) + ylab(bquote("Presence RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
+  geom_point(shape=16, aes(size = auc_df_traits$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
   theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
@@ -305,7 +322,8 @@ r2 = ggplot(auc_df_traits, aes(x = AUC_gam, y = AUC_gam_pres)) +theme_classic()+
 
 
 # density plot
-auc_plot = gather(auc_df, mod, AUC, AUC:AUC_me_pres)
-ggplot(auc_plot, aes(AUC, color = mod)) + geom_density(lwd = 1.5)  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + guides(colour = guide_legend(override.aes = list(shape = 15))) +
-  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines"))
+auc_plot = gather(auc_df, mod, AUC, c("AUC", "AUC_pres", "AUC_gam", "AUC_gam_pres", "AUC_RF", "AUC_RF_pres", "AUC_me_pres"))
+rmse_plot = gather(auc_df, mod, rmse, c("rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres"))
+ggplot(rmse_plot, aes(rmse, color = mod)) + geom_density(lwd = 1.5)  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.key.width=unit(2, "lines"))
 #  ggsave("Figures/density_mod_comp.pdf", height = 9, width = 12)
