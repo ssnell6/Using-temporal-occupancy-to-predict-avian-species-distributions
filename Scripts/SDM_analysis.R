@@ -153,23 +153,6 @@ test = dplyr::filter(auc_df, AUC > 0.75 & AUC < 1.0)
 
 bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'), ordered = TRUE)
 
-#### temp backup ####
-glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
-glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
-gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio1) + s(bio.mean.bio2) + s(bio.mean.bio3) + s(bio.mean.bio4) + s(bio.mean.bio7) + s(bio.mean.bio8) + s(bio.mean.bio9) + s(bio.mean.bio10) + s(bio.mean.bio11) + s(bio.mean.bio12) + s(bio.mean.bio13) + s(bio.mean.bio14) + s(bio.mean.bio15) + s(bio.mean.bio16) + s(bio.mean.bio17) + s(bio.mean.bio18) + s(bio.mean.bio19), family = binomial(link = logit), data = sdm_input)
-gam_pres <- mgcv::gam(presence ~  s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio1) + s(bio.mean.bio2) + s(bio.mean.bio3) + s(bio.mean.bio4) + s(bio.mean.bio7) + s(bio.mean.bio8) + s(bio.mean.bio9) + s(bio.mean.bio10) + s(bio.mean.bio11) + s(bio.mean.bio12) + s(bio.mean.bio13) + s(bio.mean.bio14) + s(bio.mean.bio15) + s(bio.mean.bio16) + s(bio.mean.bio17) + s(bio.mean.bio18) + s(bio.mean.bio19), family = binomial(link = logit), data = sdm_input)
-rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
-rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio2 + bio.mean.bio3 + bio.mean.bio4 + bio.mean.bio7 + bio.mean.bio8 + bio.mean.bio9 + bio.mean.bio10 + bio.mean.bio11 + bio.mean.bio12 + bio.mean.bio13 + bio.mean.bio14 +bio.mean.bio15+ bio.mean.bio16 +bio.mean.bio17 +bio.mean.bio18 +bio.mean.bio19, family = binomial(link = logit), data = sdm_input)
-
-max_pres = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
-                                  data = sdm_input[,c("longitude", "latitude", "presence")], 
-                                  proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
-# max_ind_occ = dismo::maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], sdm_input$presence)
-max_ind_pres = maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2","bio.mean.bio3","bio.mean.bio4","bio.mean.bio7","bio.mean.bio8","bio.mean.bio9","bio.mean.bio10","bio.mean.bio11","bio.mean.bio12","bio.mean.bio13","bio.mean.bio14","bio.mean.bio15","bio.mean.bio16","bio.mean.bio17","bio.mean.bio18","bio.mean.bio19", "ndvi.mean")], sdm_input$presence)
-########################################
-
-
-
 #### MAPS #####
 auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 setwd("Figures/maps/")
