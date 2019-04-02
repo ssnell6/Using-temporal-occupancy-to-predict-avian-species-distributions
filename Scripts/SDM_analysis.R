@@ -174,7 +174,7 @@ max_ind_pres = maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2"
 auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 setwd("Figures/maps/")
 # temp filter for vis purposes
-sp_list_bigauc = filter(bbs_final_occ_ll, Aou %in% test$AOU)
+sp_list = unique(auc_df$AOU)
 
 mapfun <- function(pdf_name, vec, num){ 
 
@@ -201,7 +201,7 @@ for(i in unique(sp_list)){
     rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
     rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
     
-    max_ind_pres = maxent(sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_input$presence)
+    max_ind_pres = dismo::maxent(sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_input$presence)
     
     # predict
     pred_glm_occ <- predict(glm_occ,type=c("response"))
@@ -264,7 +264,7 @@ for(i in unique(sp_list)){
   plot(plot.r[[num]], add = TRUE)
 
   # Add the points for individual observation if necessary
-  sdm_input$presence <-droplevels(sdm_input$presence, exclude = c("0"))
+  # sdm_input$presence <-droplevels(sdm_input$presence, exclude = c("0"))
   # sdm_input$col = c("black", "white")
   points(x = sdm_input$longitude, y = sdm_input$latitude, col = sdm_input$presence, pch = 20, cex = 0.75)
 
