@@ -1,8 +1,7 @@
-library(dplyr)
+library(tidyverse)
 library(glm2)
 library(gam)
 library(randomForest)
-library(ggplot2)
 library(dismo)
 library(raster)
 library(maptools)
@@ -72,7 +71,7 @@ bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ)
 
 # you need to do cor.test and not excede 5 vars for power. Need  >= 50 presences
 sdm_input_global <- left_join(bbs_final_occ_ll, all_env, by = "stateroute")
-Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_201') # for 64-bit version
+Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_202') # for 64-bit version
 
 
 # test = cor(na.omit(sdm_input_global))
@@ -85,7 +84,7 @@ auc_df = c()
 
 sp_list = unique(bbs_final_occ_ll$Aou)
 
-for(i in sp_list[119:319]){
+for(i in sp_list){
   sdm_output = c()
   print(i)
   bbs_sub <- filter(bbs_final_occ_ll, Aou == i)
@@ -101,10 +100,6 @@ for(i in sp_list[119:319]){
     rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
     rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
    
-    max_pres = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
-     data = sdm_input[,c("longitude", "latitude", "presence")], 
-     proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
-   # max_ind_occ = dismo::maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], sdm_input$presence)
     max_ind_pres = maxent(sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_input$presence)
     
     # predict
@@ -115,7 +110,6 @@ for(i in sp_list[119:319]){
     pred_rf_occ <- predict(rf_occ,type=c("response"))
     pred_rf_pr <- predict(rf_pres,type=c("response"))
     max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
-   # max_pred_occ <- predict(max_ind_occ, sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")])
     
     sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
     
@@ -133,16 +127,16 @@ for(i in sp_list[119:319]){
  
  rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
  auc_rf =  roc(sdm_output$occ ~ sdm_output$pred_rf_occ)$auc[1]
- 
- rmse_rf_pres <- rmse(sdm_output$pred_rf_pr, sdm_output$presence)
+
+ rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$presence)
  auc_rf_pres =  roc(sdm_output$presence ~ sdm_output$pred_rf_pr)$auc[1]
  
  rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$presence)
  auc_me_pres =  roc(sdm_output$presence ~ sdm_output$max_pred_pres)$auc[1]
  
- auc_df = rbind(auc_df, c(i, rmse_occ, auc, rmse_pres, auc_pres, rmse_gam, auc_gam, rmse_gam_pres, auc_gam_pres,  rmse_rf, auc_rf, rmse_rf_pres, auc_rf_pres, auc_me_pres))
+ auc_df = rbind(auc_df, c(i, rmse_occ, auc, rmse_pres, auc_pres, rmse_gam, auc_gam, rmse_gam_pres, auc_gam_pres,  rmse_rf, auc_rf, rmse_rf_pres, auc_rf_pres, rmse_me_pres, auc_me_pres))
  j = unique(sdm_input$ALPHA.CODE)
- plot = plot(roccurve, main = paste("AUC Curve for ", j, ".csv", sep=""))
+ plot = plot(auc, main = paste("AUC Curve for ", j, ".csv", sep=""))
   }
   }
  write.csv(sdm_output, paste("sdm_output_", i, ".csv",  sep=""), row.names = FALSE)
@@ -152,7 +146,7 @@ dev.off()
 
 setwd("C:/Git/SDMs")
 auc_df = data.frame(auc_df)
-names(auc_df) = c("AOU", "rmse_occ", "AUC", "rmse_pres","AUC_pres", "rmse_gam", "AUC_gam", "rmse_gam_pres", "AUC_gam_pres",  "rmse_rf", "AUC_RF", "rmse_rf_pres", "AUC_RF_pres", "AUC_me_pres")
+names(auc_df) = c("AOU", "rmse_occ", "AUC", "rmse_pres","AUC_pres", "rmse_gam", "AUC_gam", "rmse_gam_pres", "AUC_gam_pres",  "rmse_rf", "AUC_RF", "rmse_rf_pres", "AUC_RF_pres","rmse_me_pres", "AUC_me_pres")
 # write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
 test = dplyr::filter(auc_df, AUC > 0.75 & AUC < 1.0)
 
@@ -200,22 +194,46 @@ for(i in unique(sp_list)){
   # print(length(sdm_input$stateroute))
   if(length(unique(sdm_input$stateroute)) > 40  & length(unique(sdm_input$presence)) >1){
     #   if(levels(as.factor(sdm_input$presence)) > 1){
-    glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
-    glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
+    glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+    glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+    gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = sdm_input)
+    gam_pres <- mgcv::gam(presence ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = sdm_input)
+    rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+    rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
     
-    rf_occ <- randomForest(sp_success ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
-    rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio1 + bio.mean.bio12, family = binomial(link = logit), data = sdm_input)
+    max_ind_pres = maxent(sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_input$presence)
     
-    # max_pres = max_env = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
-     #  data = sdm_input[,c("longitude", "latitude", "presence")], 
-     #  proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
-   #  max_ind_pres = maxent(sdm_input[,c("bio.mean.bio1", "elev.mean", "bio.mean.bio2", "ndvi.mean")], sdm_input$presence)
-    
+    # predict
     pred_glm_occ <- predict(glm_occ,type=c("response"))
     pred_glm_pr <- predict(glm_pres,type=c("response"))
-    
+    pred_gam_occ <- predict(gam_occ,type=c("response"))
+    pred_gam_pr <- predict(gam_pres,type=c("response"))
     pred_rf_occ <- predict(rf_occ,type=c("response"))
     pred_rf_pr <- predict(rf_pres,type=c("response"))
+    max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
+    
+    sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
+    
+    rmse_occ <- rmse(sdm_output$pred_glm_occ, sdm_output$occ)
+    auc =  roc(sdm_output$occ ~ sdm_output$pred_glm_occ)$auc[1]
+    
+    rmse_pres <- rmse(sdm_output$pred_glm_pr, sdm_output$presence)
+    auc_pres =  roc(sdm_output$presence ~ sdm_output$pred_glm_pr)$auc[1]
+    
+    rmse_gam <- rmse(as.vector(sdm_output$pred_gam_occ), sdm_output$occ)
+    auc_gam =  roc(sdm_output$occ ~ sdm_output$pred_gam_occ)$auc[1]
+    
+    rmse_gam_pres <- rmse(as.vector(sdm_output$pred_gam_pr), sdm_output$presence)
+    auc_gam_pres = roc(sdm_output$presence ~ sdm_output$pred_gam_pr)$auc[1]
+    
+    rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
+    auc_rf =  roc(sdm_output$occ ~ sdm_output$pred_rf_occ)$auc[1]
+    
+    rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$presence)
+    auc_rf_pres =  roc(sdm_output$presence ~ sdm_output$pred_rf_pr)$auc[1]
+    
+    rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$presence)
+    auc_me_pres =  roc(sdm_output$presence ~ sdm_output$max_pred_pres)$auc[1]
     
     sdm_output = cbind(sdm_input,pred_glm_pr, pred_glm_occ, pred_rf_occ, pred_rf_pr) 
   
@@ -280,6 +298,8 @@ r = raster(env.proj)
 env.proj.raster = rasterize(env.proj, r)
 env.stack = raster::stack(env.proj.raster@data$elev.mean, env.proj.raster@data$ndvi.mean)
 
+
+###### global plots ####
 num_pres = bbs_final_occ_ll %>%
   group_by(Aou) %>% 
   filter(., presence == "1") %>%
@@ -308,22 +328,21 @@ r1 = ggplot(auc_df_traits, aes(x = rmse_occ, y = rmse_pres)) +theme_classic()+ t
 # ggsave("Figures/Occ_Pres_labelled.pdf", height = 8, width = 12)
   
   
-r2 = ggplot(auc_df_traits, aes(x = AUC_RF, y = AUC_RF_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy AUC")) + ylab(bquote("Presence AUC"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + scale_y_continuous(limit = c(.5, 1), breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1)) + scale_x_continuous(breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1))  + 
-    geom_point(shape=16, aes(size = auc_df_traits$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
+r2 = ggplot(auc_df_traits, aes(x = rmse_gam, y = rmse_gam_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("GAM RMSE")) + ylab(bquote("Presence GAM RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(shape=16, aes(size = auc_df_traits$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5)+ scale_y_continuous(limit = c(0, .5)) + scale_x_continuous(limit = c(0, .5))  + 
+    theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
     guides(colour = guide_legend(override.aes = list(shape = 15))) +
     theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines"))
 #  ggsave("Figures/Occ_numPres_RF.pdf", height = 8, width = 12)
 
-r2 = ggplot(auc_df_traits, aes(x = AUC_gam, y = AUC_gam_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("Occupancy AUC")) + ylab(bquote("Presence AUC"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + scale_y_continuous(limit = c(.5, 1), breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1)) + scale_x_continuous(breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1))  + 
-  geom_point(shape=16, aes(size = auc_df_traits$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
-  guides(colour = guide_legend(override.aes = list(shape = 15))) +
-  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines"))
+r3 = ggplot(auc_df_traits, aes(x = rmse_rf, y = rmse_rf_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("RF RMSE")) + ylab(bquote("Presence RF RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + scale_y_continuous(limit = c(0, .5)) + scale_x_continuous(limit = c(0, .5)) + geom_point(shape=16, aes(size = auc_df_traits$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + guides(colour = guide_legend(override.aes = list(shape = 15))) + theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines"))
 #  ggsave("Figures/Occ_numPres_gam.pdf", height = 8, width = 12)
 
 
 # density plot
 auc_plot = gather(auc_df, mod, AUC, c("AUC", "AUC_pres", "AUC_gam", "AUC_gam_pres", "AUC_RF", "AUC_RF_pres", "AUC_me_pres"))
-rmse_plot = gather(auc_df, mod, rmse, c("rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres"))
-ggplot(rmse_plot, aes(rmse, color = mod)) + geom_density(lwd = 1.5)  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + guides(colour = guide_legend(override.aes = list(shape = 15))) +
-  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.key.width=unit(2, "lines"))
+rmse_plot = gather(auc_df, mod, rmse, c("rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres", "rmse_me_pres"))
+
+ggplot(rmse_plot, aes(rmse, color = mod)) + geom_density(lwd = 1.5)  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + scale_color_manual(values=c("blue","red", "purple","navy",  "darksalmon", "turquoise4", "maroon"), labels=c("rmse_gam", "rmse_gam_pres",  "rmse_me_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) + guides(colour = guide_legend(override.aes = list(shape = 15))) + theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.key.width=unit(2, "lines"))
+
 #  ggsave("Figures/density_mod_comp.pdf", height = 9, width = 12)
+ggplot(auc_plot, aes(AUC, color = mod)) + geom_density(lwd = 1.5)  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + scale_color_manual(values=c("blue","red", "navy", "darksalmon", "turquoise4", "maroon", "darkgreen"), labels=c("AUC", "AUC_pres", "AUC_gam", "AUC_gam_pres", "AUC_RF", "AUC_RF_pres", "AUC_me_pres")) + guides(colour = guide_legend(override.aes = list(shape = 15))) + theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.key.width=unit(2, "lines"))
