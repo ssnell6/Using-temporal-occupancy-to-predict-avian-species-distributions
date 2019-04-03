@@ -157,8 +157,7 @@ bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'
 auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 setwd("Figures/maps/")
 # temp filter for vis purposes
-sp_list = 6280
-  # unique(auc_df$AOU)
+sp_list = unique(auc_df$AOU)
 
 mapfun <- function(pdf_name, vec, num){ 
 
