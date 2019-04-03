@@ -157,7 +157,8 @@ bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'
 auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 setwd("Figures/maps/")
 # temp filter for vis purposes
-sp_list = unique(auc_df$AOU)
+sp_list = 6280
+  # unique(auc_df$AOU)
 
 mapfun <- function(pdf_name, vec, num){ 
 
@@ -195,31 +196,9 @@ for(i in unique(sp_list)){
     pred_rf_pr <- predict(rf_pres,type=c("response"))
     max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
     
-    sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
+    sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres)  
     
-    rmse_occ <- rmse(sdm_output$pred_glm_occ, sdm_output$occ)
-    auc =  roc(sdm_output$occ ~ sdm_output$pred_glm_occ)$auc[1]
-    
-    rmse_pres <- rmse(sdm_output$pred_glm_pr, sdm_output$presence)
-    auc_pres =  roc(sdm_output$presence ~ sdm_output$pred_glm_pr)$auc[1]
-    
-    rmse_gam <- rmse(as.vector(sdm_output$pred_gam_occ), sdm_output$occ)
-    auc_gam =  roc(sdm_output$occ ~ sdm_output$pred_gam_occ)$auc[1]
-    
-    rmse_gam_pres <- rmse(as.vector(sdm_output$pred_gam_pr), sdm_output$presence)
-    auc_gam_pres = roc(sdm_output$presence ~ sdm_output$pred_gam_pr)$auc[1]
-    
-    rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
-    auc_rf =  roc(sdm_output$occ ~ sdm_output$pred_rf_occ)$auc[1]
-    
-    rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$presence)
-    auc_rf_pres =  roc(sdm_output$presence ~ sdm_output$pred_rf_pr)$auc[1]
-    
-    rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$presence)
-    auc_me_pres =  roc(sdm_output$presence ~ sdm_output$max_pred_pres)$auc[1]
-    
-    sdm_output = cbind(sdm_input,pred_glm_pr, pred_glm_occ, pred_rf_occ, pred_rf_pr) 
-  
+   
     # Determine geographic extent of our data using AOU = i
   max.lat <- ceiling(max(sdm_input$latitude))
   min.lat <- floor(min(sdm_input$latitude))
@@ -230,7 +209,7 @@ for(i in unique(sp_list)){
 
 
   mod.r <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
-   data = sdm_output[,c("latitude", "longitude", "pred_glm_pr", "pred_glm_occ", "pred_rf_occ")], 
+   data = sdm_output[,c("latitude", "longitude", "pred_glm_pr", "pred_glm_occ", "pred_gam_pr", "pred_gam_occ",  "pred_rf_pr", "pred_rf_occ","max_pred_pres")], 
    proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
   r = raster(mod.r, res = 0.6) # 40x40 km/111 (degrees) * 2 tp eliminate holes
   # bioclim is 4 km
@@ -259,16 +238,20 @@ for(i in unique(sp_list)){
 }
 # dev.off()
 
-# there is still something weird about the dev.off(), need to run dev off or restart R to get running
+# using function to generate maps for all methods
 mapfun(pdf_name = 'SDM_glm_pres_maps.pdf',vec = "pred_glm_pr", 4)
 
 mapfun(pdf_name = 'SDM_glm_occ_maps.pdf', vec = "pred_glm_occ", 5)
 
-# mapfun(pdf_name = 'SDM_rf_pres_maps.pdf', vec = "pred_rf_pr", mod = plot.r$pred_rf_pr)
+mapfun(pdf_name = 'SDM_gam_pres_maps.pdf',vec = "pred_gam_pr", 6)
 
-mapfun(pdf_name = 'SDM_rf_occ_maps.pdf', vec = "pred_rf_occ", 6)
+mapfun(pdf_name = 'SDM_gam_occ_maps.pdf', vec = "pred_gam_occ", 7)
 
-mapfun(pdf_name = 'SDM_me_pres_maps.pdf', vec = "pred_me_pres", mod = plot.r$pred_me_pres)
+mapfun(pdf_name = 'SDM_rf_pr_maps.pdf', vec = "pred_rf_pr", 8)
+
+mapfun(pdf_name = 'SDM_rf_occ_maps.pdf', vec = "pred_rf_occ", 9)
+
+mapfun(pdf_name = 'SDM_me_pres_maps.pdf', vec = "pred_me_pres", 10)
 
 setwd("C:/Git/SDMs")
 
@@ -325,7 +308,7 @@ r3 = ggplot(auc_df_traits, aes(x = rmse_rf, y = rmse_rf_pres)) +theme_classic()+
 auc_plot = gather(auc_df, mod, AUC, c("AUC", "AUC_pres", "AUC_gam", "AUC_gam_pres", "AUC_RF", "AUC_RF_pres", "AUC_me_pres"))
 rmse_plot = gather(auc_df, mod, rmse, c("rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres", "rmse_me_pres"))
 
-ggplot(rmse_plot, aes(rmse, color = mod)) + geom_density(lwd = 1.5)  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + scale_color_manual(values=c("blue","red", "purple","navy",  "darksalmon", "turquoise4", "maroon"), labels=c("rmse_gam", "rmse_gam_pres",  "rmse_me_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) + guides(colour = guide_legend(override.aes = list(shape = 15))) + theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.key.width=unit(2, "lines"))
+ggplot(rmse_plot, aes(rmse)) + geom_density(lwd = 1.5, aes(color = mod))  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + scale_color_manual(values=c("blue","red", "purple","navy",  "darksalmon", "turquoise4", "maroon"), labels=c("rmse_gam", "rmse_gam_pres",  "rmse_me_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_text(size=36), legend.position = c(0.2,0.8), legend.key.width =unit(3, "line")) 
 
 #  ggsave("Figures/density_mod_comp.pdf", height = 9, width = 12)
 ggplot(auc_plot, aes(AUC, color = mod)) + geom_density(lwd = 1.5)  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + scale_color_manual(values=c("blue","red", "navy", "darksalmon", "turquoise4", "maroon", "darkgreen"), labels=c("AUC", "AUC_pres", "AUC_gam", "AUC_gam_pres", "AUC_RF", "AUC_RF_pres", "AUC_me_pres")) + guides(colour = guide_legend(override.aes = list(shape = 15))) + theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.key.width=unit(2, "lines"))
