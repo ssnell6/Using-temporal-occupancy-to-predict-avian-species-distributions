@@ -87,7 +87,7 @@ sp_list = unique(bbs_final_occ_ll$Aou)
 for(i in sp_list){
   sdm_output = c()
   print(i)
-  bbs_sub <- filter(bbs_final_occ_ll, Aou == i)
+  bbs_sub <- filter(bbs_final_occ_ll, Aou == i) %>% filter(occ <= 0.33333333)
   temp <- filter(all_env, stateroute %in% bbs_sub$stateroute)
   sdm_input <- left_join(bbs_sub, temp, by = "stateroute")
   sdm_input = na.omit(sdm_input)
@@ -139,7 +139,7 @@ for(i in sp_list){
  plot = plot(auc, main = paste("AUC Curve for ", j, ".csv", sep=""))
   }
   }
- write.csv(sdm_output, paste("sdm_output_", i, ".csv",  sep=""), row.names = FALSE)
+ write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
 }
 
 dev.off()
@@ -148,7 +148,6 @@ setwd("C:/Git/SDMs")
 auc_df = data.frame(auc_df)
 names(auc_df) = c("AOU", "rmse_occ", "AUC", "rmse_pres","AUC_pres", "rmse_gam", "AUC_gam", "rmse_gam_pres", "AUC_gam_pres",  "rmse_rf", "AUC_RF", "rmse_rf_pres", "AUC_RF_pres","rmse_me_pres", "AUC_me_pres")
 # write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
-test = dplyr::filter(auc_df, AUC > 0.75 & AUC < 1.0)
 
 
 bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'), ordered = TRUE)
@@ -229,7 +228,7 @@ for(i in unique(sp_list)){
   # Add the points for individual observation if necessary
   # sdm_input$presence <-droplevels(sdm_input$presence, exclude = c("0"))
   # sdm_input$col = c("black", "white")
-  # points(x = sdm_input$longitude, y = sdm_input$latitude, col = sdm_input$presence, pch = 20, cex = 0.75)
+  points(x = sdm_input$longitude, y = sdm_input$latitude, col = sdm_input$presence, pch = 20, cex = 0.75)
 
   box()
   }
@@ -309,13 +308,13 @@ r3 = ggplot(auc_df_traits, aes(x = rmse_rf, y = rmse_rf_pres)) +theme_classic()+
 auc_plot = gather(auc_df, mod, AUC, c("AUC", "AUC_pres", "AUC_gam", "AUC_gam_pres", "AUC_RF", "AUC_RF_pres", "AUC_me_pres"))
 rmse_plot = gather(auc_df, mod, rmse, c("rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres", "rmse_me_pres"))
 
-r4 = ggplot(rmse_plot, aes(rmse)) + geom_density(lwd = 1.5, aes(color = mod))  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + scale_color_manual(values=c("blue","#006d2c", "purple","navy",  "#66c2a4", "steelblue2", "springgreen2"), labels=c("rmse_gam", "rmse_gam_pres",  "rmse_me_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) + xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_text(size=36), legend.position = c(0.2,0.8), legend.key.width =unit(3, "line")) 
+r4 = ggplot(rmse_plot, aes(rmse)) + geom_density(lwd = 1.5, aes(color = mod))  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + scale_color_manual(values=c("blue","#006d2c", "purple","navy",  "#66c2a4", "steelblue2", "springgreen2"), labels=c("rmse_gam", "rmse_gam_pres",  "rmse_me_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) + xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
 
 #  ggsave("Figures/density_mod_comp.pdf", height = 9, width = 12)
 ggplot(auc_plot, aes(AUC, color = mod)) + geom_density(lwd = 1.5)  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + scale_color_manual(values=c("blue","#006d2c", "purple","navy",  "#66c2a4", "steelblue2", "springgreen2"), labels=c("AUC", "AUC_pres", "AUC_gam", "AUC_gam_pres", "AUC_RF", "AUC_RF_pres", "AUC_me_pres")) + guides(colour = guide_legend(override.aes = list(shape = 15))) + theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.key.width=unit(2, "lines"))
 
 
-legend <- ggplot(rmse_plot, aes(rmse, mod)) + geom_line(lwd = 1.5, aes(color = mod)) + scale_color_manual(values=c("blue","#006d2c", "purple","navy",  "#66c2a4", "steelblue2", "springgreen2"), labels=c("RMSE GAM", "RMSE GAM pres",  "RMSE MaxEnt pres", "RMSE GLM", "RMSE GLM pres", "RMSE RF", "RMSE RF pres"))
+legend <- ggplot(rmse_plot, aes(rmse, mod)) + geom_line(lwd = 1.5, aes(color = mod)) + scale_color_manual(values=c("blue","#006d2c", "purple","navy",  "#66c2a4", "steelblue2", "springgreen2"), labels=c("GAM", "GAM pres",  "MaxEnt pres", "GLM", "GLM pres", "RF", "RF pres"))
 
 library(cowplot)
 theme_set(theme_cowplot(font_size=20,font_family = "URWHelvetica"))
@@ -327,5 +326,5 @@ plot_grid(r1 + theme(legend.position="none"),
           # labels = c("a","b", "c", "d"),
           label_size = 20,
           nrow = 2) 
-ggsave("Figures/rmse.pdf", height = 10, width = 12)
+ggsave("Figures/rmse_notrans.pdf", height = 10, width = 14)
 
