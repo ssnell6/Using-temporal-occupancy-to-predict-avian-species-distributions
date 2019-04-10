@@ -363,8 +363,7 @@ r3 =  ggplot(pres_pres1, aes(x = rmse_rf_pres, y = rmse_rf_pres_notrans)) +theme
 
 
 r4 =  ggplot(pres_pres1, aes(x = rmse_me_pres, y = rmse_me_pres_notrans)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("ME Pres")) + ylab(bquote("ME No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-  geom_point(shape=16, aes(size = pres_pres1$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
-  theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
+  geom_point(shape=16, aes(size = pres_pres1$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
 
