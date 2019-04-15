@@ -372,7 +372,7 @@ rmse_plot_pres = gather(pres_pres1, mod, rmse, c("rmse_pres_notrans","rmse_gam_p
 
 r5 = ggplot(rmse_plot_pres, aes(rmse)) + geom_density(lwd = 1.5, aes(color = mod))  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + scale_color_manual(values=c("#fecc5c","#e34a33", "#8856a7","#810f7c", "steelblue2", "#045a8d", "#31a354", "dark green"), labels=c("rmse_gam_pres","rmse_gam_pres_notrans",  "rmse_me_pres","rmse_me_pres_notrans", "rmse_pres","rmse_pres_notrans",  "rmse_rf_pres", "rmse_rf_pres_notrans")) + xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
 
-legend <- ggplot(rmse_plot, aes(rmse, mod)) + geom_line(lwd = 1.5, aes(color = mod)) + scale_color_manual(values=c("#fecc5c","#e34a33", "#8856a7","#810f7c", "steelblue2", "#045a8d", "#31a354", "dark green"), labels=c("GAM pres","GAM pres notrans",  "MaxEnt pres","MaxEnt pres notrans", "GLM pres","GLM pres notrans",  "RF pres", "RF pres notrans")) 
+legend <- ggplot(rmse_plot_pres, aes(rmse, mod)) + geom_line(lwd = 1.5, aes(color = mod)) + scale_color_manual(values=c("#fecc5c","#e34a33", "#8856a7","#810f7c", "steelblue2", "#045a8d", "#31a354", "dark green"), labels=c("GAM pres","GAM pres notrans",  "MaxEnt pres","MaxEnt pres notrans", "GLM pres","GLM pres notrans",  "RF pres", "RF pres notrans")) 
 
 library(cowplot)
 theme_set(theme_cowplot(font_size=20,font_family = "URWHelvetica"))
