@@ -61,6 +61,7 @@ bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ)
 # temp filter for vis purposes
 auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 
+#### change spp here #####
 sdm_input <- filter(bbs_final_occ_ll, Aou == 6280) %>% left_join(all_env, by = "stateroute") %>% na.omit(.)
 sdm_notrans <- filter(sdm_input, occ >= 0.33) %>% na.omit(.)
 
@@ -103,21 +104,30 @@ r.core = raster(mod.core, res = 0.6) # 40x40 km/111 (degrees) * 2 tp eliminate h
 # bioclim is 4 km
 plot.core = rasterize(mod.core, r.core)
 
+sdm_output$presence <- factor(sdm_output$presence,
+                              levels = c(1,0), ordered = TRUE)
 
+us_sf <- read_sf("Z:/GIS/geography/continent.shp")
+us_sf <- st_transform(us_sf, crs = "+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km")
+# spData::us_states
+# read_sf("Z:/GIS/birds/BCR.shp")
 
-us_sf <- read_sf("Z:/GIS/geography/cb_2015_us_nation_20m.shp")
 routes_sf <- st_as_sf(sdm_output,  coords = c("longitude", "latitude"))
+# CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km")
 routes_notrans <- st_as_sf(sdm_notrans, coords = c("longitude", "latitude"))
 
-us <- tm_shape(us_sf) + tm_borders() + tm_fill(col = "gray")
-tmax_map <- us + tm_shape(routes_sf) + 
-  tm_dots(col = "presence", palette = c("black", "gray"), midpoint = NA, size = 0.2, style = "discrete", title = "Tmax")
+us <- tm_shape(us_sf) + tm_borders() + tm_fill(col = "white")
+tmax_map <- us + tm_shape(routes_sf) + tm_symbols(size = 0.5, shape="presence", shapes = c(20,5)) 
+# + tm_dots(col = "presence", palette = c("black"), midpoint = NA,  style = "cat", title = "Tmax")
 tmax_map
-tmap_save(tmax_map, "routes_tmax_map.tiff", units = "in")
-
-
-
-
+# tmap_save(tmax_map, "routes_tmax_map.tiff", units = "in")
+pal8 <- c("#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#d9ef8b", "#a6d96a", "#66bd63", "#1a9850", "#006837")
+sdm_occ <- tm_shape(plot.r) + tm_raster("pred_glm_occ", palette = pal8, style = "cont") + tm_shape(us_sf) + tm_borders( "black", lwd = 0.5) 
+sdm_occ
+sdm_pr <- tm_shape(plot.r) + tm_raster("pred_glm_pr", palette = pal8, style = "cont") + tm_shape(us_sf) + tm_borders(col = "black") 
+sdm_pr
+sdm_core <- tm_shape(plot.core) + tm_raster("pred_glm_pr", palette = pal8, style = "cont") + tm_shape(us_sf) + tm_borders(col = "black") 
+sdm_core
 
 
 
