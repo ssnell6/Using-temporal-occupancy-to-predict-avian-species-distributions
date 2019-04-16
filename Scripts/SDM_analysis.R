@@ -155,10 +155,7 @@ bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'
 #### MAPS #####
 auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 setwd("Figures/maps/")
-# temp filter for vis purposes
-sp_list = 6280
 
-  # unique(auc_df$AOU)
 
 mapfun <- function(pdf_name, vec, num){ 
 
@@ -263,6 +260,100 @@ env.proj = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")
 r = raster(env.proj)
 env.proj.raster = rasterize(env.proj, r)
 env.stack = raster::stack(env.proj.raster@data$elev.mean, env.proj.raster@data$ndvi.mean)
+
+
+
+# temp filter for vis purposes
+sdm_input <- filter(bbs_final_occ_ll, Aou == 6280) %>% left_join(all_env, by = "stateroute") 
+sdm_notrans <- filter(sdm_input, occ >= 0.33) 
+
+# Determine geographic extent of our data using AOU = i
+max.lat <- ceiling(max(sdm_input$latitude))
+min.lat <- floor(min(sdm_input$latitude))
+max.lon <- ceiling(max(sdm_input$longitude))
+min.lon <- floor(min(sdm_input$longitude))
+
+#   if(levels(as.factor(sdm_input$presence)) > 1){
+glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+
+# predict
+pred_glm_occ <- predict(glm_occ,type=c("response"))
+pred_glm_pr <- predict(glm_pres,type=c("response"))
+
+sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ)  
+
+mod.r <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
+          data = sdm_output[,c("latitude", "longitude", "pred_glm_pr", "pred_glm_occ")], 
+          proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
+r = raster(mod.r, res = 0.6) # 40x40 km/111 (degrees) * 2 tp eliminate holes
+# bioclim is 4 km
+plot.r = rasterize(mod.r, r)
+
+glm_occ_notrans <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_notrans)
+glm_pres_notrans <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_notrans)
+
+# predict
+pred_glm_occ_notrans <- predict(glm_occ_notrans,type=c("response"))
+pred_glm_pr_notrans <- predict(glm_pres_notrans,type=c("response"))
+
+sdm_output_notrans = cbind(sdm_notrans, pred_glm_pr_notrans, pred_glm_occ_notrans)  
+
+mod.core <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
+          data = sdm_output[,c("latitude", "longitude", "pred_glm_pr", "pred_glm_occ")], 
+           proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
+r.core = raster(mod.core, res = 0.6) # 40x40 km/111 (degrees) * 2 tp eliminate holes
+# bioclim is 4 km
+plot.core = rasterize(mod.core, r.core)
+
+# panel 1
+data(wrld_simpl)
+# Plot the base map
+plot(wrld_simpl, 
+     xlim = c(min.lon, max.lon),
+     ylim = c(min.lat, max.lat),
+     axes = TRUE, 
+     col = "grey95")
+
+points(x = sdm_input$longitude, y = sdm_input$latitude, col = c("gray", "black")[as.factor(sdm_input$presence)], pch = c(20, 4)[as.factor(sdm_input$presence)], cex = 1.6)
+points(x = sdm_notrans$longitude, y = sdm_notrans$latitude, col = "black", pch = 20, cex = 1.6)
+box()
+
+# panel 2 pres
+data(wrld_simpl)
+# Plot the base map
+plot(wrld_simpl, 
+     xlim = c(min.lon, max.lon),
+     ylim = c(min.lat, max.lat),
+     axes = TRUE, 
+     col = "grey95")
+
+plot(plot.r[[4]], add = TRUE)
+box()
+
+# panel 3 occ
+data(wrld_simpl)
+# Plot the base map
+plot(wrld_simpl, 
+     xlim = c(min.lon, max.lon),
+     ylim = c(min.lat, max.lat),
+     axes = TRUE, 
+     col = "grey95")
+
+plot(plot.r[[5]], add = TRUE)
+box()
+
+# panel 4 core
+# Plot the base map
+plot(wrld_simpl, 
+     xlim = c(min.lon, max.lon),
+     ylim = c(min.lat, max.lat),
+     axes = TRUE, 
+     col = "grey95")
+
+plot(plot.core[[4]], add = TRUE)
+box()
+
 
 
 ###### global plots ####
