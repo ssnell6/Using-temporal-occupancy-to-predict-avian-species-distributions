@@ -131,7 +131,7 @@ sdm_pr
 sdm_core <- tm_shape(plot.core) + tm_raster("pred_glm_pr_notrans", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("", legend.title.size = 2, legend.text.size = 0.75, legend.position = c("right","bottom"), legend.bg.color = "white")
 sdm_core
 
-### can legend be fixeD?
+### can legend be fixeD? need to get them all to start at 0.05 right?
 tmap_arrange(point_map, sdm_occ, sdm_pr, sdm_core)
 
 
