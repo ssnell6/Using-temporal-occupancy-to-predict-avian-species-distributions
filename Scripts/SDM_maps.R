@@ -63,7 +63,7 @@ auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 
 #### change spp here #####
 sdm_input <- filter(bbs_final_occ_ll, Aou == 6280) %>% left_join(all_env, by = "stateroute") %>% na.omit(.)
-sdm_notrans <- filter(sdm_input, occ > 0.33) %>% na.omit(.)
+sdm_notrans <- filter(sdm_input, occ > 0.33| occ == 0) %>% na.omit(.)
 
 # Determine geographic extent of our data using AOU = i
 max.lat <- ceiling(max(sdm_input$latitude))
@@ -118,16 +118,20 @@ routes_sf <- st_as_sf(sdm_output,  coords = c("longitude", "latitude"))
 routes_notrans <- st_as_sf(sdm_notrans, coords = c("longitude", "latitude"))
 
 us <- tm_shape(us_sf) + tm_borders() + tm_fill(col = "white")
-point_map <- tm_shape(routes_sf) + tm_symbols(size = 0.75, shape="presence", shapes = c(16,4)) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) 
+
+#### need to add in core spp ####
+point_map <- tm_shape(routes_sf) + tm_symbols(size = 0.75, shape="presence", shapes = c(16,4)) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 0.75, legend.position = c("right","bottom"), legend.bg.color = "white")
 point_map
 
-sdm_occ <- tm_shape(plot.r) + tm_raster("pred_glm_occ", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders( "black", lwd = 3) 
+sdm_occ <- tm_shape(plot.r) + tm_raster("pred_glm_occ", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 0.75, legend.position = c("right","bottom"), legend.bg.color = "white")
 sdm_occ
-sdm_pr <- tm_shape(plot.r) + tm_raster("pred_glm_pr", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) 
+
+sdm_pr <- tm_shape(plot.r) + tm_raster("pred_glm_pr", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 0.75, legend.position = c("right","bottom"), legend.bg.color = "white")
 sdm_pr
-sdm_core <- tm_shape(plot.core) + tm_raster("pred_glm_pr", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) 
+sdm_core <- tm_shape(plot.core) + tm_raster("pred_glm_pr_notrans", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("", legend.title.size = 2, legend.text.size = 0.75, legend.position = c("right","bottom"), legend.bg.color = "white")
 sdm_core
 
+### can legend be fixeD?
 tmap_arrange(point_map, sdm_occ, sdm_pr, sdm_core)
 
 
