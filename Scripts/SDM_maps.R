@@ -123,6 +123,20 @@ us <- tm_shape(us_sf) + tm_borders() + tm_fill(col = "white")
 point_map <- tm_shape(routes_sf) + tm_symbols(size = 0.75, shape="presence", shapes = c(16,4)) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 0.75, legend.position = c("right","bottom"), legend.bg.color = "white")
 point_map
 
+
+## ex 
+#tmap_mode("plot")
+## tmap mode set to plotting
+#tm_shape(land) +
+#  tm_raster("elevation", palette = terrain.colors(10)) +
+#  tm_shape(World) +
+#  tm_borders("white", lwd = .5) +
+#  tm_text("iso_a3", size = "AREA") +
+#  tm_shape(metro) +
+#  tm_symbols(col = "red", size = "pop2020", scale = .5) +
+#  tm_legend(show = FALS
+
+
 sdm_occ <- tm_shape(plot.r) + tm_raster("pred_glm_occ", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 0.75, legend.position = c("right","bottom"), legend.bg.color = "white")
 sdm_occ
 
