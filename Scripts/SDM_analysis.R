@@ -110,6 +110,7 @@ for(i in sp_list){
     pred_glm_occ <- predict(glm_occ,type=c("response"))
     pred_glm_pr <- predict(glm_pres,type=c("response"))
     # validation across time
+    # need to get predict fct working, currently super low. Need to tie to stateroute somehow. Need to set threshold.
     # pred_glm_occ_val <- predict(sdm_input$presence, glm_occ)
       # pred_glm_occ[pred_glm_occ > 0.3]
     pred_2016 <- bbs_new_sub$presence - pred_glm_pr_val
