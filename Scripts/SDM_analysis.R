@@ -28,6 +28,9 @@ env_bio = na.omit(env_bio)
 env_bio_sub = env_bio[,c(1, 21:39)]
 
 # read in raw bbs data for 2016
+bbs_new <- read.csv("Data/bbs_2015_on.csv", header = TRUE) %>%
+  filter(Year == 2016)
+bbs_new$presence = 1
 
 all_env = left_join(bi_means, env_bio_sub, by = "stateroute")
 
@@ -88,6 +91,7 @@ for(i in sp_list){
   sdm_output = c()
   print(i)
   bbs_sub <- filter(bbs_final_occ_ll, Aou == i) # %>% filter(occ <= 0.33333333) RUN FOR EXCL TRANS
+  bbs_new_sub <- filter(bbs_new, aou == i) 
   temp <- filter(all_env, stateroute %in% bbs_sub$stateroute)
   sdm_input <- left_join(bbs_sub, temp, by = "stateroute")
   sdm_input = na.omit(sdm_input)
@@ -104,9 +108,11 @@ for(i in sp_list){
     
     # predict
     pred_glm_occ <- predict(glm_occ,type=c("response"))
-    # validation across time
-    pred_glm_occ - []
     pred_glm_pr <- predict(glm_pres,type=c("response"))
+    # validation across time
+    # pred_glm_occ_val <- predict(sdm_input$presence, glm_occ)
+      # pred_glm_occ[pred_glm_occ > 0.3]
+    pred_2016 <- bbs_new_sub$presence - pred_glm_pr_val
     pred_gam_occ <- predict(gam_occ,type=c("response"))
     pred_gam_pr <- predict(gam_pres,type=c("response"))
     pred_rf_occ <- predict(rf_occ,type=c("response"))
@@ -136,7 +142,7 @@ for(i in sp_list){
  rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$presence)
  auc_me_pres =  roc(sdm_output$presence ~ sdm_output$max_pred_pres)$auc[1]
  
- auc_df = rbind(auc_df, c(i, rmse_occ, auc, rmse_pres, auc_pres, rmse_gam, auc_gam, rmse_gam_pres, auc_gam_pres,  rmse_rf, auc_rf, rmse_rf_pres, auc_rf_pres, rmse_me_pres, auc_me_pres))
+ auc_df = rbind(auc_df, c(i, rmse_occ, auc, rmse_pres, auc_pres, rmse_gam, auc_gam, rmse_gam_pres, auc_gam_pres,  rmse_rf, auc_rf, rmse_rf_pres, auc_rf_pres, rmse_me_pres, auc_me_pres, pred_2016))
  j = unique(sdm_input$ALPHA.CODE)
  plot = plot(auc, main = paste("AUC Curve for ", j, ".csv", sep=""))
   }
@@ -148,7 +154,7 @@ dev.off()
 
 setwd("C:/Git/SDMs")
 auc_df = data.frame(auc_df)
-names(auc_df) = c("AOU", "rmse_occ", "AUC", "rmse_pres","AUC_pres", "rmse_gam", "AUC_gam", "rmse_gam_pres", "AUC_gam_pres",  "rmse_rf", "AUC_RF", "rmse_rf_pres", "AUC_RF_pres","rmse_me_pres", "AUC_me_pres")
+names(auc_df) = c("AOU", "rmse_occ", "AUC", "rmse_pres","AUC_pres", "rmse_gam", "AUC_gam", "rmse_gam_pres", "AUC_gam_pres",  "rmse_rf", "AUC_RF", "rmse_rf_pres", "AUC_RF_pres","rmse_me_pres", "AUC_me_pres", "pred_2016")
 # write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
 
 
