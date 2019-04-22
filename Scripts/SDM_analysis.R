@@ -27,7 +27,7 @@ env_bio = read.csv("Data/env_bio.csv", header = TRUE)
 env_bio = na.omit(env_bio)
 env_bio_sub = env_bio[,c(1, 21:39)]
 
-# env_bio[,c("stateroute","bio.mean.bio4", "bio.mean.bio5", "bio.mean.bio6", "bio.mean.bio13", "bio.mean.bio14")]
+# read in raw bbs data for 2016
 
 all_env = left_join(bi_means, env_bio_sub, by = "stateroute")
 
@@ -104,6 +104,8 @@ for(i in sp_list){
     
     # predict
     pred_glm_occ <- predict(glm_occ,type=c("response"))
+    # validation across time
+    pred_glm_occ - []
     pred_glm_pr <- predict(glm_pres,type=c("response"))
     pred_gam_occ <- predict(gam_occ,type=c("response"))
     pred_gam_pr <- predict(gam_pres,type=c("response"))

@@ -115,37 +115,24 @@ sdm_output$core <- 0
 sdm_output$core[sdm_output$stateroute %in% sdm_output_notrans$stateroute] <- 1
 routes_sf <- st_as_sf(sdm_output,  coords = c("longitude", "latitude"))
 # CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km")
-routes_notrans <- st_as_sf(sdm_notrans, coords = c("longitude", "latitude"))
+routes_notrans <- st_as_sf(sdm_output[sdm_output$occ > 0.34,], coords = c("longitude", "latitude"))
 
 us <- tm_shape(us_sf) + tm_borders() + tm_fill(col = "white")
 
 #### need to add in core spp ####
-point_map <- tm_shape(routes_sf) + tm_symbols(size = 0.75, shape="presence", shapes = c(16,4)) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 0.75, legend.position = c("right","bottom"), legend.bg.color = "white")
-point_map
+point_map <- tm_shape(routes_sf) + tm_symbols(size = 0.75, shape="presence", shapes = c(16,4)) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_shape(routes_notrans)  + tm_symbols(col = "presence", palette = "PRGn", size = 0.75, shapes = c(16,4)) + tm_legend(outside = TRUE)
+#point_map
 
+sdm_occ <- tm_shape(plot.r) + tm_raster("pred_glm_occ", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
+#sdm_occ
 
-## ex 
-#tmap_mode("plot")
-## tmap mode set to plotting
-#tm_shape(land) +
-#  tm_raster("elevation", palette = terrain.colors(10)) +
-#  tm_shape(World) +
-#  tm_borders("white", lwd = .5) +
-#  tm_text("iso_a3", size = "AREA") +
-#  tm_shape(metro) +
-#  tm_symbols(col = "red", size = "pop2020", scale = .5) +
-#  tm_legend(show = FALS
+sdm_pr <- tm_shape(plot.r) + tm_raster("pred_glm_pr", palette = "PRGn", style = "cont", breaks=c(0.05,0.1,0.15 ,0.2,0.25)) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
+#sdm_pr
 
-
-sdm_occ <- tm_shape(plot.r) + tm_raster("pred_glm_occ", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 0.75, legend.position = c("right","bottom"), legend.bg.color = "white")
-sdm_occ
-
-sdm_pr <- tm_shape(plot.r) + tm_raster("pred_glm_pr", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 0.75, legend.position = c("right","bottom"), legend.bg.color = "white")
-sdm_pr
-sdm_core <- tm_shape(plot.core) + tm_raster("pred_glm_pr_notrans", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("", legend.title.size = 2, legend.text.size = 0.75, legend.position = c("right","bottom"), legend.bg.color = "white")
-sdm_core
+sdm_core <- tm_shape(plot.core) + tm_raster("pred_glm_pr_notrans", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
+#sdm_core
 
 ### can legend be fixeD? need to get them all to start at 0.05 right?
-tmap_arrange(point_map, sdm_occ, sdm_pr, sdm_core)
-
+fig_1 <- tmap_arrange(point_map, sdm_occ, sdm_pr, sdm_core)
+tmap_save(fig_1, "Figures/Fig1.pdf", height = 6, width = 12)
 
