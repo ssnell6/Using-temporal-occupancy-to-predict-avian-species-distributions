@@ -92,6 +92,7 @@ for(i in sp_list){
   print(i)
   bbs_sub <- filter(bbs_final_occ_ll, Aou == i) # %>% filter(occ <= 0.33333333) RUN FOR EXCL TRANS
   bbs_new_sub <- filter(bbs_new, aou == i) 
+  bbs_new_sub$pres_2016 <- bbs_new_sub$presence
   temp <- filter(all_env, stateroute %in% bbs_sub$stateroute)
   sdm_input <- left_join(bbs_sub, temp, by = "stateroute")
   sdm_input = na.omit(sdm_input)
@@ -113,7 +114,7 @@ for(i in sp_list){
     # need to get predict fct working, currently super low. Need to tie to stateroute somehow. Need to set threshold.
     # pred_glm_occ_val <- predict(sdm_input$presence, glm_occ)
       # pred_glm_occ[pred_glm_occ > 0.3]
-    pred_2016 <- bbs_new_sub$presence - pred_glm_pr_val
+ 
     pred_gam_occ <- predict(gam_occ,type=c("response"))
     pred_gam_pr <- predict(gam_pres,type=c("response"))
     pred_rf_occ <- predict(rf_occ,type=c("response"))
@@ -121,6 +122,7 @@ for(i in sp_list){
     max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
     
     sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
+    pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute")
     
  rmse_occ <- rmse(sdm_output$pred_glm_occ, sdm_output$occ)
  auc =  roc(sdm_output$occ ~ sdm_output$pred_glm_occ)$auc[1]
