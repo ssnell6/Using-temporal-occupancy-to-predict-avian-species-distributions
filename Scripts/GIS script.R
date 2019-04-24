@@ -17,8 +17,10 @@ shapefile_path = 'Z:/GIS/birds/All/All/'
 # on mac shapefile_path = '/Volumes/hurlbertlab/GIS/birds/All/All'
 all_spp_list = list.files(shapefile_path)
 
-bbs_final_occ_ll = read.csv("Data/final_focal_spp.csv", header = TRUE)
-bbs_final_names.1 = left_join(bbs_final_occ_ll, AOU[,c("AOU_OUT", "CRC_SCI_NAME")], by = c("Aou" = "AOU_OUT"))
+bbs_final_occ_ll = read.csv("Data/bbs_2015_on.csv", header = TRUE) %>%
+  filter(Year == 2016)
+  # read.csv("Data/final_focal_spp.csv", header = TRUE)
+bbs_final_names.1 = left_join(bbs_final_occ_ll, AOU[,c("AOU_OUT", "CRC_SCI_NAME")], by = c("aou" = "AOU_OUT"))
 bbs_final_names.1$focalcat = gsub(" ", "_",bbs_final_names.1$CRC_SCI_NAME)
 bbs_final_names.2 = bbs_final_names.1[-grep("_spuh", bbs_final_names.1$focalcat),] 
 bbs_final_names.3 = bbs_final_names.2[-grep("/", bbs_final_names.2$focalcat),] 
@@ -149,7 +151,7 @@ for (sp in sp_list){
   print(sp)
   
   focalAOU = subset(bbs_final_names, focalcat == sp)
-  spAOU = unique(focalAOU$Aou)
+  spAOU = unique(focalAOU$aou)
   
   t1 = all_spp_list[grep(sp, all_spp_list)]
   t2 = t1[grep('.shp', t1)]
@@ -171,5 +173,5 @@ for (sp in sp_list){
 
 expect_pres = data.frame(expect_pres)
 expect_pres = dplyr::select(expect_pres, -optional)
-
+write.csv(expect_pres, "Data/expect_pres_2016.csv", row.names = FALSE)
 # write.csv(expect_pres, "Data/expect_pres.csv", row.names = FALSE)

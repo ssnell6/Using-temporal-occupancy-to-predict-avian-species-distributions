@@ -123,6 +123,8 @@ for(i in sp_list){
     
     sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
     pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute")
+    thresh <- max(pred_2016$pred_gam_occ) * 0.7
+    gam_rescale <- filter(pred_2016, pred_gam_occ > thresh)
     
  rmse_occ <- rmse(sdm_output$pred_glm_occ, sdm_output$occ)
  auc =  roc(sdm_output$occ ~ sdm_output$pred_glm_occ)$auc[1]
