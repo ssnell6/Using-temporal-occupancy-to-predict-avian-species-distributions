@@ -31,6 +31,10 @@ env_bio_sub = env_bio[,c(1, 21:39)]
 bbs_new <- read.csv("Data/bbs_2015_on.csv", header = TRUE) %>%
   filter(Year == 2016)
 bbs_new$presence = 1
+bbs_new_exp_pres <- read.csv("Data/expect_pres_2016.csv", header = TRUE)
+bbs_new_all <- left_join(bbs_new_exp_pres, bbs_new, by = c("spAOU"="aou", "stateroute" = "stateroute"))
+bbs_new_all$presence <- case_when(is.na(bbs_new_all$presence) == TRUE ~ 0, 
+                                  bbs_new_all$presence == 1 ~ 1)
 
 all_env = left_join(bi_means, env_bio_sub, by = "stateroute")
 

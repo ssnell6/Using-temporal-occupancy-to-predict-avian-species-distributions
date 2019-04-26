@@ -12,6 +12,7 @@ library(dplyr)
 # read in lat long data
 bbs_routes = read.csv("Data/latlongs.csv",header =TRUE)
 AOU = read.csv("Data/Bird_Taxonomy.csv", header = TRUE) # taxonomy data
+auc_df <- read.csv("Data/auc_df.csv", header = TRUE)
 # read in bird range shps
 shapefile_path = 'Z:/GIS/birds/All/All/'
 # on mac shapefile_path = '/Volumes/hurlbertlab/GIS/birds/All/All'
@@ -26,7 +27,8 @@ bbs_final_names.2 = bbs_final_names.1[-grep("_spuh", bbs_final_names.1$focalcat)
 bbs_final_names.3 = bbs_final_names.2[-grep("/", bbs_final_names.2$focalcat),] 
 # bbs_final_names.4 = bbs_final_names.3[-grep("", bbs_final_names.3$focalcat),] 
 
-bbs_final_names = unique(bbs_final_names.3)
+bbs_final_names = bbs_final_names.3 %>% filter(aou %in% auc_df$AOU) %>%
+  unique() 
 
 # data cleaning 
 bbs_final_names$focalcat[bbs_final_names$focalcat =="Oreothlypis_peregrina"] = "Vermivora_peregrina"
@@ -131,21 +133,24 @@ coordinates(bbs_routes) <- c("longitude", "latitude")
 proj4string(bbs_routes) <- intl_proj
 
 # dropping non-intersecting polygons
-focal_spp = filter(bbs_final_names, !focalcat %in% match) %>%  
+focal_spp1 = filter(bbs_final_names, !focalcat %in% match) %>%  
   filter(., focalcat != "Columba_livia") %>%  
   filter(., focalcat != "Circus_cyaneus") %>%  
   filter(., focalcat != "Buteo_nitidus") %>%  
   filter(., focalcat != "Trogon_elegans")  %>%  
   filter(., focalcat != "Aphelocoma_ultramarina") %>%
   filter(., focalcat != "Phylloscopus_borealis") %>%
-  filter(., focalcat != "Streptopelia_decaocto")
+  filter(., focalcat != "Streptopelia_decaocto") %>%
+  filter(., focalcat != "Falco_rusticolus")
+
+focal_spp <- focal_spp1 %>% group_by(stateroute, aou) %>%
+  filter(., unique(stateroute) > 40)
 
 sp_list = unique(focal_spp$focalcat)
 
 expect_pres = c()
 
 file_names = dir('sp_routes/')
-setwd("sp_routes/")
 
 for (sp in sp_list){
   print(sp)

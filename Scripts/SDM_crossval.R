@@ -1,10 +1,75 @@
+library(tidyverse)
+library(glm2)
+library(gam)
+library(randomForest)
+library(dismo)
+library(raster)
+library(maptools)
+library(pROC)
+library(purrr)
+
+bbs_occ = read.csv("Data/bbs_sub1.csv", header=TRUE)
+bbs_occ_sub = bbs_occ %>% filter(Aou > 2880) %>%
+  filter(Aou < 3650 | Aou > 3810) %>%
+  filter(Aou < 3900 | Aou > 3910) %>%
+  filter(Aou < 4160 | Aou > 4210) %>%
+  filter(Aou != 7010)
+
+exp_pres = read.csv("Data/expect_pres.csv", header = TRUE)
+exp_pres = exp_pres[,c("stateroute","spAOU")] 
+traits = read.csv("Data/Master_RO_Correlates.csv", header = TRUE)
+bsize = read.csv("data/DunningBodySize_old_2008.11.12.csv", header = TRUE)
+lat_long = read.csv("Data/latlongs.csv", header = TRUE)
+tax_code = read.csv("Data/Tax_AOU_Alpha.csv", header = TRUE)
+bi_env = read.csv("Data/all_env.csv", header = TRUE)
+bi_means = bi_env[,c("stateroute","mat.mean", "elev.mean", "map.mean", "ndvi.mean")]
+env_bio = read.csv("Data/env_bio.csv", header = TRUE)
+env_bio = na.omit(env_bio)
+env_bio_sub = env_bio[,c(1, 21:39)]
+
+# read in raw bbs data for 2016
+bbs_new <- read.csv("Data/bbs_2015_on.csv", header = TRUE) %>%
+  filter(Year == 2016)
+bbs_new$presence = 1
+bbs_new_exp_pres <- read.csv("Data/expect_pres_2016.csv", header = TRUE)
+bbs_new_all <- left_join(bbs_new_exp_pres, bbs_new, by = c("spAOU"="aou", "stateroute" = "stateroute"))
+bbs_new_all$presence <- case_when(is.na(bbs_new_all$presence) == TRUE ~ 0, 
+                                  bbs_new_all$presence == 1 ~ 1)
+
+all_env = left_join(bi_means, env_bio_sub, by = "stateroute")
+
+#update tax_code Winter Wren
+tax_code$AOU_OUT[tax_code$AOU_OUT == 7220] <- 7222
+tax_code$AOU_OUT[tax_code$AOU_OUT == 4810] = 4812
+tax_code$AOU_OUT[tax_code$AOU_OUT == 4123] = 4120
+
+# BBS cleaning
+bbs_inc_absence = full_join(bbs_occ_sub, exp_pres, by = c("Aou" ="spAOU", "stateroute" = "stateroute"))
+bbs_inc_absence$occ[is.na(bbs_inc_absence$occ)] <- 0
+bbs_inc_absence$presence = 0
+bbs_inc_absence$presence[bbs_inc_absence$occ > 0] <- 1
+num_occ = bbs_inc_absence %>% group_by(Aou) %>% tally(presence) %>% left_join(bbs_inc_absence, ., by = "Aou")
+
+# 412 focal species
+bbs_final_occ = filter(num_occ,nn > 1)
+bbs_occ_code = left_join(bbs_final_occ, tax_code, by = c("Aou" = "AOU_OUT"))
+
+# 319 focal species
+bbs_focal_spp = filter(bbs_occ_code, Aou %in% tax_code$AOU_OUT)
+
+bbs_final_occ_ll = left_join(bbs_focal_spp, lat_long, by = "stateroute")
+bbs_final_occ_ll = bbs_final_occ_ll[,c("Aou", "stateroute", "occ", "presence", "ALPHA.CODE",
+                                       "latitude", "longitude")]
+bbs_final_occ_ll$sp_success = 15 * bbs_final_occ_ll$occ
+bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ) 
+
 sp_list = unique(bbs_final_occ_ll$Aou)
 test_df = c()
 for(i in sp_list){
   sdm_output = c()
   print(i)
   bbs_sub <- filter(bbs_final_occ_ll, Aou == i) # %>% filter(occ <= 0.33333333) RUN FOR EXCL TRANS
-  bbs_new_sub <- filter(bbs_new, aou == i) 
+  bbs_new_sub <- filter(bbs_new_all, spAOU == i) 
   bbs_new_sub$pres_2016 <- bbs_new_sub$presence
   temp <- filter(all_env, stateroute %in% bbs_sub$stateroute)
   sdm_input <- left_join(bbs_sub, temp, by = "stateroute")
@@ -24,9 +89,34 @@ for(i in sp_list){
       gam_rescale$rescale <- 1 # discretize the data
       # get absences back in, make a table of the zeroes and ones
       # nest by species
-      table(sdm_output$pres_2016, sdm_output$presence)
+      
       test_df = rbind(test_df, gam_rescale)
     }
   }
 }
+
+test_df <- data.frame(test_df)
+test_df %>%  group_by(species) %>%
+  nest() %>%
+  purrr::map(., ~{
+    table <- table(pres_2016, presence)
+  })
+
+
+(test_df$Aou, )
+
+# example from grace
+bbc %>%
+  nest() %>%
+  mutate(nsites = map_dbl(data, ~{
+    df <- .
+    length(unique(df$siteID))
+  })) %>%
+  filter(nsites > 5)
+
+
+
+
+
+
 
