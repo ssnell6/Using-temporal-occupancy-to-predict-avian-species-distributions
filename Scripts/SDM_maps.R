@@ -120,7 +120,7 @@ routes_notrans <- st_as_sf(sdm_output[sdm_output$occ > 0.34,], coords = c("longi
 us <- tm_shape(us_sf) + tm_borders() + tm_fill(col = "white")
 
 #### need to add in core spp ####
-point_map <- tm_shape(routes_sf) + tm_symbols(size = 0.75, shape="presence", shapes = c(16,4)) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_shape(routes_notrans)  + tm_symbols(col = "presence", palette = "PRGn", size = 0.75, shapes = c(16,4)) + tm_legend(outside = TRUE)
+point_map <- tm_shape(routes_sf) + tm_symbols(size = 0.75, shape="presence", shapes = c(16,4), alpha = 0.5, col = 'presence', palette = c("#5E5E5E", "#3E3E3E")) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_shape(routes_notrans)  + tm_symbols(col = "presence", palette = "-PRGn", size = 0.75, shapes = c(16,4)) + tm_legend(outside = TRUE)
 #point_map
 
 sdm_occ <- tm_shape(plot.r) + tm_raster("pred_glm_occ", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)

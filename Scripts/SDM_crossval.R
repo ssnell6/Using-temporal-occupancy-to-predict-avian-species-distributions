@@ -96,27 +96,20 @@ for(i in sp_list){
 }
 
 test_df <- data.frame(test_df)
-test_df %>%  group_by(species) %>%
+pres_diff <- test_df %>%
+  group_by(Aou) %>%
+  summarise(pres_diff <- sum(pres_2016) - sum(presence))
+
+
+newdf <- test_df %>%  group_by(Aou) %>%
   nest() %>%
-  purrr::map(., ~{
-    table <- table(pres_2016, presence)
-  })
+  mutate(tables = purrr::map(data, ~{
+    data <- .
+   data.frame(table(data$pres_2016, data$presence))
+  }))
 
 
-(test_df$Aou, )
-
-# example from grace
-bbc %>%
-  nest() %>%
-  mutate(nsites = map_dbl(data, ~{
-    df <- .
-    length(unique(df$siteID))
-  })) %>%
-  filter(nsites > 5)
-
-
-
-
+pplot = ggplot(test_df, aes(x = pres_2016, y = presence)) + geom_point() + theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)
 
 
 
