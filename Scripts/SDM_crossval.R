@@ -81,16 +81,13 @@ for(i in sp_list){
    
       pred_gam_occ <- predict(gam_occ,type=c("response"))
      
-      sdm_output = cbind(sdm_input, pred_gam_occ) 
-      pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute")
-      thresh <- max(pred_2016$pred_gam_occ) * 0.7
-      gam_rescale <- filter(pred_2016, pred_gam_occ > thresh) %>%
-        dplyr::select(Aou, stateroute,occ, presence, latitude, longitude, pred_gam_occ, pres_2016)
-      gam_rescale$rescale <- 1 # discretize the data
-      # get absences back in, make a table of the zeroes and ones
-      # nest by species
+      thresh <- max(pred_gam_occ) * 0.7 # can test 0.5-0.9
       
-      test_df = rbind(test_df, gam_rescale)
+      sdm_output = cbind(sdm_input, pred_gam_occ) 
+      pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute") %>%
+        mutate(predicted_pres = ifelse(pred_gamm_occ > thresh, 1, 0))
+        dplyr::select(Aou, stateroute,occ, presence, latitude, longitude, pred_gam_occ, pres_2016, predicted_pres)
+      test_df = rbind(test_df, pred_2016)
     }
   }
 }
