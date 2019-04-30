@@ -85,7 +85,7 @@ for(i in sp_list){
       
       sdm_output = cbind(sdm_input, pred_gam_occ) 
       pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute") %>%
-        mutate(predicted_pres = ifelse(pred_gamm_occ > thresh, 1, 0))
+        mutate(predicted_pres = ifelse(pred_gam_occ > thresh, 1, 0)) %>%
         dplyr::select(Aou, stateroute,occ, presence, latitude, longitude, pred_gam_occ, pres_2016, predicted_pres)
       test_df = rbind(test_df, pred_2016)
     }
@@ -93,6 +93,7 @@ for(i in sp_list){
 }
 
 test_df <- data.frame(test_df)
+# write.csv(test_df, "temporal_crossval_df.csv", row.names = FALSE)
 pres_diff <- test_df %>%
   group_by(Aou) %>%
   summarise(pres_diff <- sum(pres_2016) - sum(presence))
