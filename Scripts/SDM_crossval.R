@@ -94,6 +94,8 @@ for(i in sp_list){
 
 test_df <- data.frame(test_df)
 # write.csv(test_df, "temporal_crossval_df.csv", row.names = FALSE)
+test_df <- read.csv("Data/temporal_crossval_df.csv", header = TRUE)
+
 pres_diff <- test_df %>%
   group_by(Aou) %>%
   summarise(pres_diff <- sum(pres_2016) - sum(presence))
@@ -108,5 +110,6 @@ newdf <- test_df %>%  group_by(Aou) %>%
 
 pplot = ggplot(test_df, aes(x = pres_2016, y = presence)) + geom_point() + theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)
 
+t.test(test_df$pres_2016, test_df$presence, paired = TRUE, alternative= "two.sided")
 
 

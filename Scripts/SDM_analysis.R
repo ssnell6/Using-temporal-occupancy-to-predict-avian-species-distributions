@@ -379,12 +379,12 @@ auc_df_notrans <- read.csv("Data/auc_df_notrans.csv", header = TRUE)
 
 num_pres = bbs_final_occ_ll %>%
   group_by(Aou) %>% 
-  filter(., presence == "1") %>%
-  summarise(n = n_distinct(stateroute))  
+  dplyr::filter(., presence == "1") %>%
+  dplyr::summarise(n = n_distinct(stateroute))  
 
 num_routes = bbs_final_occ_ll %>% group_by(Aou) %>% 
-  summarise(n = n_distinct(stateroute))  %>%
-  filter(., n >= 40)
+  dplyr::summarise(n = n_distinct(stateroute))  %>%
+  dplyr::filter(., n >= 40)
 
 auc_df_merge = left_join(auc_df, num_pres, by = c("AOU" = "Aou"))
 auc_df_traits = left_join(auc_df_merge, traits, by = "AOU") %>%
@@ -427,6 +427,7 @@ ggplot(auc_plot, aes(AUC, color = mod)) + geom_density(lwd = 1.5)  + theme_class
 
 legend <- ggplot(rmse_plot, aes(rmse, mod)) + geom_line(lwd = 1.5, aes(color = mod)) + scale_color_manual(values=c("blue","#006d2c", "purple","navy",  "#66c2a4", "steelblue2", "springgreen2"), labels=c("GAM", "GAM pres",  "MaxEnt pres", "GLM", "GLM pres", "RF", "RF pres"))
 
+
 library(cowplot)
 theme_set(theme_cowplot(font_size=20,font_family = "URWHelvetica"))
 plot_grid(r1 + theme(legend.position="none"),
@@ -447,7 +448,7 @@ pres_pres <- left_join(auc_df_notrans, auc_df[,c("AOU","rmse_pres","rmse_gam_pre
 
 pres_pres1 = left_join(pres_pres, num_pres, by = c("AOU" = "Aou"))
 # plot GLM occ v pres 
-r1 = ggplot(pres_pres1, aes(x = rmse_pres, y = rmse_pres_notrans)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("GLM Pres")) + ylab(bquote("GLM No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
+r1 = ggplot(pres_pres1, aes(x = rmse_pres_notrans, y = rmse_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + ylab(bquote("Pres GLM RMSE")) + xlab(bquote("GLM No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
   geom_point(shape=16, aes(size = pres_pres1$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
   theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
@@ -455,14 +456,14 @@ r1 = ggplot(pres_pres1, aes(x = rmse_pres, y = rmse_pres_notrans)) +theme_classi
 # ggsave("Figures/Occ_Pres_labelled.pdf", height = 8, width = 12)
 
 
-r2 =  ggplot(pres_pres1, aes(x = rmse_gam_pres, y = rmse_gam_pres_notrans)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("GAM Pres")) + ylab(bquote("GAM No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
+r2 =  ggplot(pres_pres1, aes(x = rmse_gam_pres_notrans, y = rmse_gam_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + ylab(bquote("Pres GAM RMSE")) + xlab(bquote("GAM No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
   geom_point(shape=16, aes(size = pres_pres1$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
   theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
 #  ggsave("Figures/Occ_numPres_RF.pdf", height = 8, width = 12)
 
-r3 =  ggplot(pres_pres1, aes(x = rmse_rf_pres, y = rmse_rf_pres_notrans)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("RF Pres")) + ylab(bquote("RF No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
+r3 =  ggplot(pres_pres1, aes(x = rmse_rf_pres_notrans, y = rmse_rf_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + ylab(bquote("Pres RF RMSE")) + xlab(bquote("RF No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
   geom_point(shape=16, aes(size = pres_pres1$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
   theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
@@ -470,7 +471,7 @@ r3 =  ggplot(pres_pres1, aes(x = rmse_rf_pres, y = rmse_rf_pres_notrans)) +theme
 #  ggsave("Figures/Occ_numPres_gam.pdf", height = 8, width = 12)
 
 
-r4 =  ggplot(pres_pres1, aes(x = rmse_me_pres, y = rmse_me_pres_notrans)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + xlab(bquote("ME Pres")) + ylab(bquote("ME No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
+r4 =  ggplot(pres_pres1, aes(x = rmse_me_pres_notrans, y = rmse_me_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + ylab(bquote("Pres ME RMSE")) + xlab(bquote("ME No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
   geom_point(shape=16, aes(size = pres_pres1$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
@@ -478,9 +479,10 @@ r4 =  ggplot(pres_pres1, aes(x = rmse_me_pres, y = rmse_me_pres_notrans)) +theme
 # density plot
 rmse_plot_pres = gather(pres_pres1, mod, rmse, c("rmse_pres_notrans","rmse_gam_pres_notrans", "rmse_rf_pres_notrans", "rmse_me_pres_notrans", "rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres"))
 
-r5 = ggplot(rmse_plot_pres, aes(rmse)) + geom_density(lwd = 1.5, aes(color = mod))  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + scale_color_manual(values=c("#fecc5c","#e34a33", "#8856a7","#810f7c", "steelblue2", "#045a8d", "#31a354", "dark green"), labels=c("rmse_gam_pres","rmse_gam_pres_notrans",  "rmse_me_pres","rmse_me_pres_notrans", "rmse_pres","rmse_pres_notrans",  "rmse_rf_pres", "rmse_rf_pres_notrans")) + xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
+r5 = ggplot(rmse_plot_pres, aes(rmse)) + geom_density(lwd = 2, aes(color = mod), show.legend = T)  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + scale_color_manual(values=c("#006d2c","#ce1256","purple", "#9F84BD", "#66c2a4", "plum", "springgreen2", "#fa9fb5"), labels=c("rmse_gam_pres","rmse_gam_pres_notrans",  "rmse_me_pres","rmse_me_pres_notrans", "rmse_pres","rmse_pres_notrans",  "rmse_rf_pres", "rmse_rf_pres_notrans")) +  xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
 
-legend <- ggplot(rmse_plot_pres, aes(rmse, mod)) + geom_line(lwd = 1.5, aes(color = mod)) + scale_color_manual(values=c("#fecc5c","#e34a33", "#8856a7","#810f7c", "steelblue2", "#045a8d", "#31a354", "dark green"), labels=c("GAM pres","GAM pres notrans",  "MaxEnt pres","MaxEnt pres notrans", "GLM pres","GLM pres notrans",  "RF pres", "RF pres notrans")) 
+legend <- ggplot(rmse_plot_pres, aes(rmse, mod)) + geom_line(lwd = 1.5, aes(color = mod)) + scale_color_manual(values=c("#006d2c","#ce1256","purple", "#9F84BD", "#66c2a4", "plum", "springgreen2", "#df65b0"), labels=c("GAM pres","GAM pres notrans",  "MaxEnt pres","MaxEnt pres notrans", "GLM pres","GLM pres notrans",  "RF pres", "RF pres notrans")) 
+   
 
 library(cowplot)
 theme_set(theme_cowplot(font_size=20,font_family = "URWHelvetica"))
