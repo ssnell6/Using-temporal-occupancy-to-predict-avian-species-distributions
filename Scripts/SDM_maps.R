@@ -62,7 +62,7 @@ bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ)
 auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 
 #### change spp here #####
-sdm_input <- filter(bbs_final_occ_ll, Aou == 6280) %>% left_join(all_env, by = "stateroute") %>% na.omit(.)
+sdm_input <- filter(bbs_final_occ_ll, Aou == 6240) %>% left_join(all_env, by = "stateroute") %>% na.omit(.)
 sdm_notrans <- filter(sdm_input, occ > 0.33| occ == 0) %>% na.omit(.)
 
 # Determine geographic extent of our data using AOU = i

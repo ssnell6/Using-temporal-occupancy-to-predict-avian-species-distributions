@@ -22,6 +22,10 @@ bbs_w_aou = bbs_sub1 %>% filter(aou > 2880) %>%
   filter(aou < 3650 | aou > 3810) %>%
   filter(aou < 3900 | aou > 3910) %>%
   filter(aou < 4160 | aou > 4210) %>%
-  filter(aou != 7010)
+  filter(aou != 7010) %>%
+  filter(sporder != "Accipitriformes", 
+         sporder != "Falconiformes", 
+         sporder != "Anseriformes",
+         sporder != "Cathartiformes")
 
 write.csv(bbs_w_aou, "Data/bbs_2015_on.csv", row.names = FALSE)

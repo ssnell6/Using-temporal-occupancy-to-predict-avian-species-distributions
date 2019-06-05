@@ -83,9 +83,6 @@ Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_202') # for 64-bit version
 
 # test = cor(na.omit(sdm_input_global))
 # corrplot(test)
-bbs_final_occ_ll <- read.csv("Data/test_val_wide.csv", header = TRUE) %>%
-  gather( "Aou","presence", AOU1:AOU2) %>%
-  gather("cat","occ",  AOU1_occ:AOU2_occ)
 
 setwd("Data/sdm_dfs/")
 pdf('AUC_Curves.pdf', height = 8, width = 10)
