@@ -114,17 +114,7 @@ t.test(test_df$pres_2016, test_df$presence, paired = TRUE, alternative= "two.sid
 
 
 
-
-library(tidyverse)
-library(glm2)
-library(gam)
-library(randomForest)
-library(dismo)
-library(raster)
-library(maptools)
-library(pROC)
-library(hydroGOF)
-
+####### dummy data #####
 bbs_occ = read.csv("Data/bbs_sub1.csv", header=TRUE)
 bbs_occ_sub = bbs_occ %>% filter(Aou > 2880) %>%
   filter(Aou < 3650 | Aou > 3810) %>%
@@ -282,7 +272,7 @@ for(i in sp_list){
     }
   }
 }
-
+write.csv(sdm_output,"Data/space_cval.csv", row.names = FALSE)
 space_cval = left_join(bbs_final_occ_ll, sdm_output, by = "Aou")
 
 pres_diff <- space_cval %>%
