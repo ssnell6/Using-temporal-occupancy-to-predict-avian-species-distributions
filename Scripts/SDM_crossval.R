@@ -181,6 +181,8 @@ bbs_final_occ_ll$sp_success = 15 * bbs_final_occ_ll$occ
 bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ) 
 # write.csv(bbs_occ_code, "Data/final_focal_spp.csv", row.names = FALSE)
 
+
+
 # Thuiller 2014 source for choosing these vars
 # http://worldclim.org/bioclim
 # BIO4 = temperature seasonality (intra-annual standard deviation * 100)
@@ -247,4 +249,55 @@ for(i in sp_list){
 
 dev.off()
 
+
+
+
+##### spatial_crossval #######
+sdm_output <- data.frame(Aou = c(), pred_gam_train = c())
+                         
+for(i in sp_list){
+  space_sub <- filter(bbs_final_occ_ll, i == Aou)
+  #Randomly shuffle the data
+  space_sub<-space_sub[sample(nrow(space_sub)),]
+  #Create 10 equally size folds
+  folds <- cut(seq(1,nrow(space_sub)),breaks=2,labels=FALSE)
+  
+  temp <- filter(all_env, stateroute %in% space_sub$stateroute)
+  sdm_input <- left_join(space_sub, temp, by = "stateroute")
+  sdm_input = na.omit(sdm_input)
+  if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
+    if(nrow(filter(sdm_input, presence == 1)) > 49){
+  #Perform 10 fold cross validation
+  for(j in 1:2){
+    #Segement your data by fold using the which() function 
+    testIndexes <- which(folds==j,arr.ind=TRUE)
+    testData <- sdm_input[testIndexes, ]
+    trainData <- sdm_input[-testIndexes, ]
+  }
+  gam_train <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = trainData)
+  pred_gam_train <- predict(gam_train,type=c("response"))
+ # thresh <- max(pred_gam_train) * 0.7 # can test 0.5-0.9
+  
+  sdm_output = rbind(sdm_output, data.frame(Aou = i, pred_gam_train = pred_gam_train))
+    }
+  }
+}
+
+space_cval = left_join(bbs_final_occ_ll, sdm_output, by = "Aou")
+
+pres_diff <- space_cval %>%
+  group_by(Aou) %>%
+  summarise(pres_diff <- sum(space_cval$pred_gam_train) - sum(presence))
+
+
+newdf <- test_df %>%  group_by(Aou) %>%
+  nest() %>%
+  mutate(tables = purrr::map(data, ~{
+    data <- .
+    data.frame(table(data$pres_2016, data$presence))
+  })) 
+
+pplot = ggplot(test_df, aes(x = pres_2016, y = presence)) + geom_point() + theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)
+
+t.test(test_df$pres_2016, test_df$presence, paired = TRUE, alternative= "two.sided")
 
