@@ -289,7 +289,6 @@ newdf <- test_df %>%  group_by(Aou) %>%
     data <- .
     data.frame(table(data$pres_2016, data$presence))
   })) 
-  
 
 pplot = ggplot(test_df, aes(x = pres_2016, y = presence)) + geom_point() + theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)
 
