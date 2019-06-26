@@ -246,7 +246,7 @@ dev.off()
 sdm_output <- data.frame(Aou = c(), pred_gam_train = c())
                          
 for(i in sp_list){
-  space_sub <- filter(bbs_final_occ_ll, i == Aou)
+  space_sub <- filter(bbs_final_occ_ll,  Aou == i)
   #Randomly shuffle the data
   space_sub<-space_sub[sample(nrow(space_sub)),]
   #Create 10 equally size folds
@@ -268,16 +268,19 @@ for(i in sp_list){
   pred_gam_train <- predict(gam_train,type=c("response"))
  # thresh <- max(pred_gam_train) * 0.7 # can test 0.5-0.9
   
-  sdm_output = rbind(sdm_output, data.frame(Aou = i, pred_gam_train = pred_gam_train))
+  sdm_output = rbind(sdm_output, data.frame(Aou = i,  pred_gam_train = pred_gam_train))
     }
   }
 }
-write.csv(sdm_output,"Data/space_cval.csv", row.names = FALSE)
-space_cval = left_join(bbs_final_occ_ll, sdm_output, by = "Aou")
+# write.csv(sdm_output,"Data/space_cval.csv", row.names = FALSE)
+space_cval <- read.csv("Data/space_cval.csv", header = TRUE) %>%
+  group_by(Aou) %>%
+  summarise(mean_pred_gam_train = mean(pred_gam_train)) %>%
+  left_join(bbs_final_occ_ll, by = "Aou")
 
 pres_diff <- space_cval %>%
   group_by(Aou) %>%
-  summarise(pres_diff <- sum(space_cval$pred_gam_train) - sum(presence))
+  summarise(pres_diff = sum(mean_pred_gam_train) - sum(presence))
 
 
 newdf <- test_df %>%  group_by(Aou) %>%
