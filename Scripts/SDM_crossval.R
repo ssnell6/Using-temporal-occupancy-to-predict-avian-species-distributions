@@ -110,7 +110,7 @@ newdf <- test_df %>% group_by(Aou) %>%
     data <- .
     table(data$pres_2016, data$presence)[2,2]
   })) %>%
-  dplyr::select(Aou, data)
+  dplyr::select(Aou, tables)
 newdf <- data.frame(newdf)
 
 
