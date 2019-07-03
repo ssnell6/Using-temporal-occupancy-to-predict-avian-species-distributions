@@ -33,7 +33,7 @@ bbs_new <- read.csv("Data/bbs_2015_on.csv", header = TRUE) %>%
 bbs_new$presence = 1
 bbs_new_exp_pres <- read.csv("Data/expect_pres_2016.csv", header = TRUE)
 bbs_new_all <- left_join(bbs_new_exp_pres, bbs_new, by = c("spAOU"="aou", "stateroute" = "stateroute"))
-bbs_new_all$presence <- case_when(is.na(bbs_new_all$presence) == TRUE ~ 0, 
+bbs_new_all$pres_2016 <- case_when(is.na(bbs_new_all$presence) == TRUE ~ 0, 
                                   bbs_new_all$presence == 1 ~ 1)
 
 all_env = left_join(bi_means, env_bio_sub, by = "stateroute")
@@ -48,7 +48,10 @@ bbs_inc_absence = full_join(bbs_occ_sub, exp_pres, by = c("Aou" ="spAOU", "state
 bbs_inc_absence$occ[is.na(bbs_inc_absence$occ)] <- 0
 bbs_inc_absence$presence = 0
 bbs_inc_absence$presence[bbs_inc_absence$occ > 0] <- 1
-num_occ = bbs_inc_absence %>% group_by(Aou) %>% tally(presence) %>% left_join(bbs_inc_absence, ., by = "Aou")
+num_occ = bbs_inc_absence %>% 
+  group_by(Aou) %>% 
+  tally(presence) %>% 
+  left_join(bbs_inc_absence, ., by = "Aou")
 
 # 412 focal species
 bbs_final_occ = filter(num_occ,nn > 1)
@@ -70,7 +73,6 @@ for(i in sp_list){
   print(i)
   bbs_sub <- filter(bbs_final_occ_ll, Aou == i) # %>% filter(occ <= 0.33333333) RUN FOR EXCL TRANS
   bbs_new_sub <- filter(bbs_new_all, spAOU == i) 
-  bbs_new_sub$pres_2016 <- bbs_new_sub$presence
   temp <- filter(all_env, stateroute %in% bbs_sub$stateroute)
   sdm_input <- left_join(bbs_sub, temp, by = "stateroute")
   sdm_input = na.omit(sdm_input)
@@ -86,13 +88,15 @@ for(i in sp_list){
       sdm_output = cbind(sdm_input, pred_gam_occ) 
       pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute") %>%
         mutate(predicted_pres = ifelse(pred_gam_occ > thresh, 1, 0)) %>%
-        dplyr::select(Aou, stateroute,occ, presence, latitude, longitude, pred_gam_occ, pres_2016, predicted_pres)
+        dplyr::select(Aou, stateroute, occ, presence, latitude, longitude, pred_gam_occ, pres_2016, predicted_pres)
       test_df = rbind(test_df, pred_2016)
     }
   }
 }
 
 test_df <- data.frame(test_df)
+# to account for species not detected in 2015-2016 but are within the range
+test_df$pres_2016[is.na(test_df$pres_2016)] = 0 
 # write.csv(test_df, "temporal_crossval_df.csv", row.names = FALSE)
 test_df <- read.csv("Data/temporal_crossval_df.csv", header = TRUE)
 
@@ -101,7 +105,7 @@ pres_diff <- test_df %>%
   summarise(pres_diff <- sum(pres_2016) - sum(presence))
 
 
-newdf <- test_df %>%  group_by(Aou) %>%
+newdf <- test_df %>%  group_by(Aou) %>% filter(Aou == 3190) %>%
   nest() %>%
   mutate(tables = purrr::map(data, ~{
     data <- .
@@ -283,13 +287,30 @@ pres_diff <- space_cval %>%
   summarise(pres_diff = sum(mean_pred_gam_train) - sum(presence))
 
 
-newdf <- test_df %>%  group_by(Aou) %>%
+
+
+
+newdf <- test_df %>% group_by(Aou) %>%
   nest() %>%
   mutate(tables = purrr::map(data, ~{
     data <- .
-    data.frame(table(data$pres_2016, data$presence))
-  })) 
+    table(data$pres_2016, data$presence)
+  })) %>%
+  dplyr::select(Aou, tables) %>%
+  mutate(newdf$tables)
+  unnest()
 
+
+  
+newdf = c()
+for(i in unique(test_df$Aou)){
+  temp = filter(test_df, Aou == i)
+  print(table(temp$pres_2016, temp$presence))
+  tables = table(temp$pres_2016, temp$presence)[1,1]
+  newdf = rbind(c(i, tables))
+}
+  
+  
 pplot = ggplot(test_df, aes(x = pres_2016, y = presence)) + geom_point() + theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)
 
 t.test(test_df$pres_2016, test_df$presence, paired = TRUE, alternative= "two.sided")
