@@ -104,13 +104,15 @@ pres_diff <- test_df %>%
   group_by(Aou) %>%
   summarise(pres_diff <- sum(pres_2016) - sum(presence))
 
-
-newdf <- test_df %>%  group_by(Aou) %>% filter(Aou == 3190) %>%
+newdf <- test_df %>% group_by(Aou) %>%
   nest() %>%
   mutate(tables = purrr::map(data, ~{
     data <- .
-   data.frame(table(data$pres_2016, data$presence))
-  })) 
+    table(data$pres_2016, data$presence)[2,2]
+  })) %>%
+  dplyr::select(Aou, data)
+newdf <- data.frame(newdf)
+
 
 pplot = ggplot(test_df, aes(x = pres_2016, y = presence)) + geom_point() + theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)
 
@@ -294,7 +296,7 @@ newdf <- test_df %>% group_by(Aou) %>%
   nest() %>%
   mutate(tables = purrr::map(data, ~{
     data <- .
-    table(data$pres_2016, data$presence)
+    table(data$pres_2016, data$presence)[2,2]
   })) %>%
   dplyr::select(Aou, tables) %>%
   mutate(newdf$tables)
@@ -306,7 +308,7 @@ newdf = c()
 for(i in unique(test_df$Aou)){
   temp = filter(test_df, Aou == i)
   print(table(temp$pres_2016, temp$presence))
-  tables = table(temp$pres_2016, temp$presence)[1,1]
+  tables = table(temp$pres_2016, temp$presence)[2,2]
   newdf = rbind(c(i, tables))
 }
   
