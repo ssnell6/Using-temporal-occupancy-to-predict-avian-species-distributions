@@ -34,7 +34,7 @@ bbs_new$presence = 1
 bbs_new_exp_pres <- read.csv("Data/expect_pres_2016.csv", header = TRUE)
 bbs_new_all <- left_join(bbs_new_exp_pres, bbs_new, by = c("spAOU"="aou", "stateroute" = "stateroute"))
 bbs_new_all$pres_2016 <- case_when(is.na(bbs_new_all$presence) == TRUE ~ 0, 
-                                  bbs_new_all$presence == 1 ~ 1)
+                                   bbs_new_all$presence == 1 ~ 1)
 
 all_env = left_join(bi_means, env_bio_sub, by = "stateroute")
 
@@ -78,11 +78,11 @@ for(i in sp_list){
   sdm_input = na.omit(sdm_input)
   if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
     if(nrow(filter(sdm_input, presence == 1)) > 49){
-     
+      
       gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = sdm_input)
-   
+      
       pred_gam_occ <- predict(gam_occ,type=c("response"))
-     
+      
       thresh <- max(pred_gam_occ) * 0.7 # can test 0.5-0.9
       
       sdm_output = cbind(sdm_input, pred_gam_occ) 
@@ -115,9 +115,9 @@ pres_matrix <- test_df %>% group_by(Aou) %>%
     abs_pres = purrr::map(data, ~{
       newdat3 <- .
       table(newdat3$predicted_pres, newdat3$presence)[2,1]}), 
-  length = purrr::map(data, ~{
-    newdatlength <- .
-    length = length(newdatlength$pred_gam_occ)})) %>%
+    length = purrr::map(data, ~{
+      newdatlength <- .
+      length = length(newdatlength$pred_gam_occ)})) %>%
   dplyr::select(Aou, length, pres_pres, pres_abs, abs_abs, abs_pres) 
 pres_matrix <- data.frame(pres_matrix)
 pres_matrix$pres_pres <- unlist(pres_matrix$pres_pres)
@@ -229,34 +229,34 @@ sp_list = unique(bbs_final_occ_ll$Aou)
 
 for(i in sp_list){
   sdm_output = c()
- 
+  
   sdm_input <- filter(bbs_final_occ_ll, Aou == "AOU2"| Aou == "AOU2_occ") # %>% filter(occ <= 0.33333333) RUN FOR EXCL TRANS
-   occ = filter(sdm_input, Aou == "AOU2_occ")   
-   gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = occ)
-      presence = filter(sdm_input, Aou == "AOU2")
-      gam_pres <- mgcv::gam(p_o ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = presence)
-     
-      pred_gam_occ <- predict(gam_occ,type=c("response"))
-      pred_gam_pr <- predict(gam_pres,type=c("response"))
-     
-      
-     # sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
-      #pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute")
-      #thresh <- max(pred_2016$pred_gam_occ) * 0.7
-      #gam_rescale <- filter(pred_2016, pred_gam_occ > thresh)
-    
-      
-      rmse_gam <- rmse(as.vector(pred_gam_occ), occ$p_o)
-      
-      rmse_gam_pres <- rmse(as.vector(pred_gam_pr), occ$p_o)
-      
-      
-      auc_df = rbind(auc_df, c(i, rmse_occ, auc, rmse_pres, auc_pres, rmse_gam, auc_gam, rmse_gam_pres, auc_gam_pres,  rmse_rf, auc_rf, rmse_rf_pres, auc_rf_pres, rmse_me_pres, auc_me_pres, pred_2016))
-      j = unique(sdm_input$ALPHA.CODE)
-      plot = plot(auc, main = paste("AUC Curve for ", j, ".csv", sep=""))
-    }
-  }
-  write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
+  occ = filter(sdm_input, Aou == "AOU2_occ")   
+  gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = occ)
+  presence = filter(sdm_input, Aou == "AOU2")
+  gam_pres <- mgcv::gam(p_o ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = presence)
+  
+  pred_gam_occ <- predict(gam_occ,type=c("response"))
+  pred_gam_pr <- predict(gam_pres,type=c("response"))
+  
+  
+  # sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
+  #pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute")
+  #thresh <- max(pred_2016$pred_gam_occ) * 0.7
+  #gam_rescale <- filter(pred_2016, pred_gam_occ > thresh)
+  
+  
+  rmse_gam <- rmse(as.vector(pred_gam_occ), occ$p_o)
+  
+  rmse_gam_pres <- rmse(as.vector(pred_gam_pr), occ$p_o)
+  
+  
+  auc_df = rbind(auc_df, c(i, rmse_occ, auc, rmse_pres, auc_pres, rmse_gam, auc_gam, rmse_gam_pres, auc_gam_pres,  rmse_rf, auc_rf, rmse_rf_pres, auc_rf_pres, rmse_me_pres, auc_me_pres, pred_2016))
+  j = unique(sdm_input$ALPHA.CODE)
+  plot = plot(auc, main = paste("AUC Curve for ", j, ".csv", sep=""))
+}
+}
+write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
 }
 
 dev.off()
@@ -265,6 +265,7 @@ dev.off()
 # code from https://stats.stackexchange.com/questions/61090/how-to-split-a-data-set-to-do-10-fold-cross-validation
 sdm_space_cval = c()
 for(i in sp_list){
+  print(i)
   space_sub <- filter(bbs_final_occ_ll,  Aou == i)
   #Randomly shuffle the data
   space_sub<-space_sub[sample(nrow(space_sub)),]
@@ -276,60 +277,64 @@ for(i in sp_list){
   sdm_input = na.omit(sdm_input)
   if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
     if(nrow(filter(sdm_input, presence == 1)) > 49){
-  #Perform 10 fold cross validation
-  for(j in 1:10){
-    print(j)
-    #Segement your data by fold using the which() function 
-    testIndexes <- which(folds==j,arr.ind=TRUE)
-    testData <- sdm_input[testIndexes, ]
-    trainData <- sdm_input[-testIndexes, ]
-  gam_train <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = trainData)
-  pred_gam_test <- predict(gam_train, testData) 
-  
-  sdm_test <- sdm_input[testIndexes, ] %>% 
-    cbind(., pred_gam_test)
-  sdm_space_cval <- rbind(sdm_space_cval, sdm_test)
+      #Perform 10 fold cross validation
+      for(j in 1:10){
+        #Segement your data by fold using the which() function 
+        testIndexes <- which(folds==j,arr.ind=TRUE)
+        testData <- sdm_input[testIndexes, ]
+        trainData <- sdm_input[-testIndexes, ]
+        gam_train <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = trainData)
+        pred_gam_test <- predict(gam_train, testData) 
+        thresh <- max(pred_gam_test) * 0.7
+        sdm_test <- sdm_input[testIndexes, ] %>%  
+          mutate(predicted_pres = ifelse(pred_gam_test > thresh, 1, 0)) %>%
+          cbind(., pred_gam_test)
+        sdm_space_cval <- rbind(sdm_space_cval, sdm_test)
       }
     }
   }
 }
 
 # write.csv(sdm_space_cval,"Data/space_cval.csv", row.names = FALSE)
-space_cval <- read.csv("Data/space_cval.csv", header = TRUE) %>%
-  group_by(Aou) %>%
-  summarise(mean_pred_gam_train = mean(pred_gam_train)) %>%
-  left_join(bbs_final_occ_ll, by = "Aou")
+sdm_space_cval <- read.csv("Z:/hurlbertlab/Snell/space_cval.csv", header = TRUE) 
 
-pres_diff <- space_cval %>%
-  group_by(Aou) %>%
-  summarise(pres_diff = sum(mean_pred_gam_train) - sum(presence))
-
-
-
-
-
-newdf <- test_df %>% group_by(Aou) %>%
+pres_matrix <- sdm_space_cval %>% group_by(Aou) %>%
+  na.omit() %>%
   nest() %>%
-  mutate(tables = purrr::map(data, ~{
-    data <- .
-    table(data$pres_2016, data$presence)[2,2]
-  })) %>%
-  dplyr::select(Aou, tables) %>%
-  mutate(newdf$tables)
-  unnest()
+  mutate(pres_pres = purrr::map(data, ~{
+    data1 <- .
+    table(data1$predicted_pres, data1$presence)[2,2]}),
+    pres_abs = purrr::map(data, ~{
+      newdat <- .
+      table(newdat$predicted_pres, newdat$presence)[1,2]}), 
+    abs_abs = purrr::map(data, ~{
+      newdat2 <- .
+      table(newdat2$predicted_pres, newdat2$presence)[1,1]}), 
+    abs_pres = purrr::map(data, ~{
+      newdat3 <- .
+      table(newdat3$predicted_pres, newdat3$presence)[2,1]}), 
+    length = purrr::map(data, ~{
+      newdatlength <- .
+      length = length(newdatlength$pred_gam_test)})) %>%
+  dplyr::select(Aou, length, pres_pres, pres_abs, abs_abs, abs_pres) 
+pres_matrix <- data.frame(pres_matrix)
+pres_matrix$pres_pres <- unlist(pres_matrix$pres_pres)
+pres_matrix$abs_pres <- unlist(pres_matrix$abs_pres)
+pres_matrix$abs_abs <- unlist(pres_matrix$abs_abs)
+pres_matrix$pres_abs <- unlist(pres_matrix$pres_abs)
+pres_matrix$length <- unlist(pres_matrix$length)
+pres_matrix$true_pos <- pres_matrix$pres_pres/pres_matrix$length
+pres_matrix$false_pos <- pres_matrix$pres_abs/pres_matrix$length
+pres_matrix$accuracy <- ((pres_matrix$pres_pres + pres_matrix$abs_abs)/pres_matrix$length)*100
+pres_matrix$sensitivity <- (pres_matrix$pres_pres/(pres_matrix$pres_pres + pres_matrix$abs_abs))*100
+pres_matrix$specificity <- (pres_matrix$abs_abs/(pres_matrix$pres_pres + pres_matrix$abs_abs))*100
+
+kappa(test_df$presence, test_df$predicted_pres, cutoff = 0.7)
+t.test(test_df$predicted_pres, test_df$presence, paired = TRUE, alternative= "two.sided")
 
 
-  
-newdf = c()
-for(i in unique(test_df$Aou)){
-  temp = filter(test_df, Aou == i)
-  print(table(temp$pres_2016, temp$presence))
-  tables = table(temp$pres_2016, temp$presence)[2,2]
-  newdf = rbind(c(i, tables))
-}
-  
-  
 pplot = ggplot(test_df, aes(x = pres_2016, y = presence)) + geom_point() + theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)
 
 t.test(test_df$pres_2016, test_df$presence, paired = TRUE, alternative= "two.sided")
+
 
