@@ -297,13 +297,16 @@ for(i in sp_list){
 
 # write.csv(sdm_space_cval,"Data/space_cval.csv", row.names = FALSE)
 sdm_space_cval <- read.csv("Z:/hurlbertlab/Snell/space_cval.csv", header = TRUE) 
+sdm_test <- sdm_space_cval %>%
+  dplyr::select(stateroute, Aou, occ, presence, latitude, longitude, pred_gam_test, predicted_pres)
 
-pres_matrix <- sdm_space_cval %>% group_by(Aou) %>%
+pres_matrix <- sdm_test %>% group_by(Aou) %>%
   na.omit() %>%
   nest() %>%
+  # filter(sum(data$predicted_pres) > 0)
   mutate(pres_pres = purrr::map(data, ~{
-    data1 <- .
-    table(data1$predicted_pres, data1$presence)[2,2]}),
+    data <- .
+    table(data$predicted_pres, data$presence)[2,2]}),
     pres_abs = purrr::map(data, ~{
       newdat <- .
       table(newdat$predicted_pres, newdat$presence)[1,2]}), 
@@ -316,7 +319,7 @@ pres_matrix <- sdm_space_cval %>% group_by(Aou) %>%
     length = purrr::map(data, ~{
       newdatlength <- .
       length = length(newdatlength$pred_gam_test)})) %>%
-  dplyr::select(Aou, length, pres_pres, pres_abs, abs_abs, abs_pres) 
+  dplyr::select(Aou, length, pres_abs, pres_pres, abs_abs, abs_pres) 
 pres_matrix <- data.frame(pres_matrix)
 pres_matrix$pres_pres <- unlist(pres_matrix$pres_pres)
 pres_matrix$abs_pres <- unlist(pres_matrix$abs_pres)
@@ -337,4 +340,33 @@ pplot = ggplot(test_df, aes(x = pres_2016, y = presence)) + geom_point() + theme
 
 t.test(test_df$pres_2016, test_df$presence, paired = TRUE, alternative= "two.sided")
 
+
+test<- c()
+for(i in na.omit(unique(sdm_test$Aou))){
+  pres_matrix <- sdm_test %>% group_by(Aou) %>%
+    filter(Aou == i) %>%
+    na.omit() 
+  if(sum(pres_matrix$predicted_pres) > 0){
+    pres_pres = table(pres_matrix$predicted_pres, pres_matrix$presence)[2,2]
+      pres_abs = table(pres_matrix$predicted_pres, pres_matrix$presence)[1,2]
+      abs_abs = table(pres_matrix$predicted_pres, pres_matrix$presence)[1,1]
+      abs_pres = table(pres_matrix$predicted_pres, pres_matrix$presence)[2,1] 
+      length = length(pres_matrix$pred_gam_test)
+  test = rbind(test, c(i, length, pres_abs, pres_pres, abs_abs, abs_pres))
+  }
+}
+pres_matrix <- data.frame(test)
+names(pres_matrix) <- c("Aou", "length", "pres_abs", "pres_pres", "abs_abs", "abs_pres")
+pres_matrix$pres_pres <- unlist(pres_matrix$pres_pres)
+pres_matrix$abs_pres <- unlist(pres_matrix$abs_pres)
+pres_matrix$abs_abs <- unlist(pres_matrix$abs_abs)
+pres_matrix$pres_abs <- unlist(pres_matrix$pres_abs)
+pres_matrix$length <- unlist(pres_matrix$length)
+pres_matrix$true_pos <- pres_matrix$pres_pres/pres_matrix$length
+pres_matrix$false_pos <- pres_matrix$pres_abs/pres_matrix$length
+pres_matrix$accuracy <- ((pres_matrix$pres_pres + pres_matrix$abs_abs)/pres_matrix$length)*100
+pres_matrix$sensitivity <- (pres_matrix$pres_pres/(pres_matrix$pres_pres + pres_matrix$abs_abs))*100
+pres_matrix$specificity <- (pres_matrix$abs_abs/(pres_matrix$pres_pres + pres_matrix$abs_abs))*100
+# 23 species had 0 predicted presences
+  
 
