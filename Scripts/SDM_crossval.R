@@ -136,6 +136,8 @@ t.test(test_df$predicted_pres, test_df$presence, paired = TRUE, alternative= "tw
 
 pplot = ggplot(test_df, aes(x = pres_2016, y = presence)) + geom_point() + theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)
 
+table(test_df$pres_2016, test_df$presence)
+
 ####### dummy data #####
 bbs_occ = read.csv("Data/bbs_sub1.csv", header=TRUE)
 bbs_occ_sub = bbs_occ %>% filter(Aou > 2880) %>%
@@ -296,7 +298,7 @@ for(i in sp_list){
 }
 
 # write.csv(sdm_space_cval,"Data/space_cval.csv", row.names = FALSE)
-sdm_space_cval <- read.csv("Z:/hurlbertlab/Snell/space_cval.csv", header = TRUE) 
+sdm_space_cval <- read.csv("/Volumes/hurlbertlab/Snell/space_cval.csv", header = TRUE) 
 sdm_test <- sdm_space_cval %>%
   dplyr::select(stateroute, Aou, occ, presence, latitude, longitude, pred_gam_test, predicted_pres)
 
@@ -369,4 +371,6 @@ pres_matrix$sensitivity <- (pres_matrix$pres_pres/(pres_matrix$pres_pres + pres_
 pres_matrix$specificity <- (pres_matrix$abs_abs/(pres_matrix$pres_pres + pres_matrix$abs_abs))*100
 # 23 species had 0 predicted presences
   
-
+kappa(na.omit(sdm_test$presence), na.omit(sdm_test$predicted_pres), cutoff = 0.7)
+t.test(sdm_test$predicted_pres, sdm_test$presence, paired = TRUE, alternative= "two.sided")
+table(sdm_space_cval$presence, sdm_space_cval$predicted_pres)
