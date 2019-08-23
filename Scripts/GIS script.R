@@ -18,8 +18,7 @@ shapefile_path = 'Z:/GIS/birds/All/All/'
 # on mac shapefile_path = '/Volumes/hurlbertlab/GIS/birds/All/All'
 all_spp_list = list.files(shapefile_path)
 
-bbs_final_occ_ll = read.csv("Data/bbs_2015_on.csv", header = TRUE) %>%
-  filter(Year == 2016)
+bbs_final_occ_ll = read.csv("Data/bbs_final_occ_ll.csv", header = TRUE) # %>% filter(Year == 2016)
   # read.csv("Data/final_focal_spp.csv", header = TRUE)
 bbs_final_names.1 = left_join(bbs_final_occ_ll, AOU[,c("AOU_OUT", "CRC_SCI_NAME")], by = c("aou" = "AOU_OUT"))
 bbs_final_names.1$focalcat = gsub(" ", "_",bbs_final_names.1$CRC_SCI_NAME)
@@ -178,5 +177,5 @@ for (sp in sp_list){
 
 expect_pres = data.frame(expect_pres)
 expect_pres = dplyr::select(expect_pres, -optional)
-write.csv(expect_pres, "Data/expect_pres_2016.csv", row.names = FALSE)
+# write.csv(expect_pres, "Data/expect_pres_2016.csv", row.names = FALSE)
 # write.csv(expect_pres, "Data/expect_pres.csv", row.names = FALSE)
