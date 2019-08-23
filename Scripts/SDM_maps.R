@@ -11,12 +11,16 @@ library(hydroGOF)
 library(sf)
 library(tmap)
 
-bbs_occ = read.csv("Data/bbs_sub1.csv", header=TRUE)
-bbs_occ_sub = bbs_occ %>% filter(Aou > 2880) %>%
-  filter(Aou < 3650 | Aou > 3810) %>%
-  filter(Aou < 3900 | Aou > 3910) %>%
-  filter(Aou < 4160 | Aou > 4210) %>%
-  filter(Aou != 7010)
+bbs_occ = read.csv("Data/bbs_sub1_2019-23-8.csv", header=TRUE) %>% filter(aou > 2880) %>%
+  filter(aou < 3650 | aou > 3810) %>%
+  filter(aou < 3900 | aou > 3910) %>%
+  filter(aou < 4160 | aou > 4210) %>%
+  filter(aou != 7010)
+
+bbs_occ_sub = bbs_occ %>% 
+  dplyr::count(aou, stateroute) %>% 
+  filter(n < 16) %>% 
+  dplyr::mutate(occ = n/15) 
 
 exp_pres = read.csv("Data/expect_pres.csv", header = TRUE)
 exp_pres = exp_pres[,c("stateroute","spAOU")] 
@@ -61,8 +65,8 @@ bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ)
 # temp filter for vis purposes
 auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 
-#### change spp here #####
-sdm_input <- filter(bbs_final_occ_ll, Aou == 6240) %>% left_join(all_env, by = "stateroute") %>% na.omit(.)
+#### change spp here ##### 6240
+sdm_input <- filter(bbs_final_occ_ll, Aou == 6291) %>% left_join(all_env, by = "stateroute") %>% na.omit(.)
 sdm_notrans <- filter(sdm_input, occ > 0.33| occ == 0) %>% na.omit(.)
 
 # Determine geographic extent of our data using AOU = i
@@ -132,7 +136,18 @@ sdm_pr <- tm_shape(plot.r) + tm_raster("pred_glm_pr", palette = "PRGn", style = 
 sdm_core <- tm_shape(plot.core) + tm_raster("pred_glm_pr_notrans", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
 #sdm_core
 
-### can legend be fixeD? need to get them all to start at 0.05 right?
+### 
 fig_1 <- tmap_arrange(point_map, sdm_occ, sdm_pr, sdm_core)
 tmap_save(fig_1, "Figures/Fig1.pdf", height = 6, width = 12)
+
+
+
+
+
+
+
+
+routes_sf <- st_as_sf(bbs_final_occ_ll, , coords = c("longitude", "latitude"))
+tm_shape(routes_sf) + tm_symbols(size = 0.75, alpha = 0.5, col = 'occ') + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
+#point_map
 
