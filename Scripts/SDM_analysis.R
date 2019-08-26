@@ -8,7 +8,7 @@ library(maptools)
 library(pROC)
 library(hydroGOF)
 
-bbs_occ = read.csv("Data/bbs_sub1_2019-23-8.csv", header=TRUE) %>% filter(aou > 2880) %>%
+bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE) %>% filter(aou > 2880) %>%
   filter(aou < 3650 | aou > 3810) %>%
   filter(aou < 3900 | aou > 3910) %>%
   filter(aou < 4160 | aou > 4210) %>%
@@ -21,7 +21,6 @@ bbs_occ_sub = bbs_occ %>%
 
 
 exp_pres = read.csv("Data/expect_pres.csv", header = TRUE)
-exp_pres = exp_pres[,c("stateroute","spAOU")] 
 traits = read.csv("Data/Master_RO_Correlates.csv", header = TRUE)
 bsize = read.csv("data/DunningBodySize_old_2008.11.12.csv", header = TRUE)
 lat_long = read.csv("Data/latlongs.csv", header = TRUE)
@@ -32,7 +31,7 @@ env_bio = read.csv("Data/env_bio.csv", header = TRUE)
 env_bio = na.omit(env_bio)
 env_bio_sub = env_bio[,c(1, 21:39)]
 
-### test ###
+#### test ####
 vireos <- full_join(bbs_occ_sub, lat_long, by = "stateroute") %>%
   filter(aou %in% c(6291, 6292)) 
 
@@ -41,9 +40,9 @@ plum <- v_sf[v_sf$aou ==6291,]
 pluml <- bbs_final_occ_ll[bbs_final_occ_ll$Aou ==6291,]
 plumll <- st_as_sf(pluml, coords = c("longitude", "latitude"))
 cas <- v_sf[v_sf$aou ==6292,]
-tm_shape(plum) + tm_symbols(size = 0.75, alpha = 0.5, col = 'occ') + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
+tm_shape(cas) + tm_symbols(size = 0.75, alpha = 0.5, col = 'occ') + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
 
-# read in raw bbs data for 2016
+##### read in raw bbs data for 2016 ####
 bbs_new <- read.csv("Data/bbs_2015_on.csv", header = TRUE) %>%
   filter(Year == 2016)
 bbs_new$presence = 1
@@ -60,25 +59,23 @@ tax_code$AOU_OUT[tax_code$AOU_OUT == 4810] <- 4812
 tax_code$AOU_OUT[tax_code$AOU_OUT == 4123] <- 4120
 
 # BBS cleaning
-bbs_inc_absence = full_join(bbs_occ_sub, exp_pres, by = c("Aou" ="spAOU", "stateroute" = "stateroute"))
+bbs_inc_absence = full_join(bbs_occ_sub, exp_pres, by = c("aou" ="spAOU", "stateroute" = "stateroute"))
 bbs_inc_absence$occ[is.na(bbs_inc_absence$occ)] <- 0
 bbs_inc_absence$presence = 0
 bbs_inc_absence$presence[bbs_inc_absence$occ > 0] <- 1
-num_occ = bbs_inc_absence %>% group_by(Aou) %>% tally(presence) %>% left_join(bbs_inc_absence, ., by = "Aou")
+num_occ = bbs_inc_absence %>% group_by(aou) %>% tally(presence) %>% left_join(bbs_inc_absence, ., by = "aou")
 
 # 412 focal species
 bbs_final_occ = filter(num_occ,n.y > 1)
-bbs_occ_code = left_join(bbs_final_occ, tax_code, by = c("Aou" = "AOU_OUT"))
+bbs_occ_code = left_join(bbs_final_occ, tax_code, by = c("aou" = "AOU_OUT"))
 
 # 319 focal species
-bbs_focal_spp = filter(bbs_occ_code, Aou %in% tax_code$AOU_OUT)
-  
-bbs_final_occ_ll = left_join(bbs_focal_spp, lat_long, by = "stateroute")
-bbs_final_occ_ll = bbs_final_occ_ll[,c("Aou", "stateroute", "occ", "presence", "ALPHA.CODE",
-                                       "latitude", "longitude")]
+bbs_final_occ_ll = filter(bbs_occ_code, aou %in% tax_code$AOU_OUT) %>%
+  dplyr::select(aou, stateroute, occ, presence, ALPHA.CODE, latitude, longitude)
 bbs_final_occ_ll$sp_success = 15 * bbs_final_occ_ll$occ
 bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ) 
-# write.csv(bbs_occ_code, "Data/final_focal_spp.csv", row.names = FALSE)
+bbs_final_occ_ll$presence <- as.numeric(bbs_final_occ_ll$presence)
+# write.csv(bbs_final_occ_ll, "Data/bbs_final_occ_ll.csv", row.names = FALSE)
 
 # Thuiller 2014 source for choosing these vars
 # http://worldclim.org/bioclim
@@ -94,7 +91,7 @@ bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ)
 
 # you need to do cor.test and not excede 5 vars for power. Need  >= 50 presences
 sdm_input_global <- left_join(bbs_final_occ_ll, all_env, by = "stateroute")
-Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_202') # for 64-bit version
+Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_211') # for 64-bit version
 
 
 # test = cor(na.omit(sdm_input_global))
@@ -105,17 +102,18 @@ pdf('AUC_Curves.pdf', height = 8, width = 10)
 par(mfrow = c(2, 3))
 auc_df = c()
 
-sp_list = unique(bbs_final_occ_ll$Aou)
+  sp_list = unique(bbs_final_occ_ll$aou)
 
 for(i in sp_list){
   sdm_output = c()
   print(i)
-  bbs_sub <- filter(bbs_final_occ_ll, Aou == i) # %>% filter(occ <= 0.33333333) RUN FOR EXCL TRANS
+  bbs_sub <- filter(bbs_final_occ_ll, aou == i) # %>% filter(occ <= 0.33333333) RUN FOR EXCL TRANS
   bbs_new_sub <- filter(bbs_new, aou == i) 
   bbs_new_sub$pres_2016 <- bbs_new_sub$presence
-  temp <- filter(all_env, stateroute %in% bbs_sub$stateroute)
-  sdm_input <- left_join(bbs_sub, temp, by = "stateroute")
-  sdm_input = na.omit(sdm_input)
+  sdm_input <- filter(all_env, stateroute %in% bbs_sub$stateroute) %>%
+    full_join(bbs_sub, by = "stateroute") %>%
+    na.omit(.)
+  sdm_input <- data.frame(sdm_input)
   if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
   if(nrow(filter(sdm_input, presence == 1)) > 49){
     glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
@@ -153,7 +151,7 @@ for(i in sp_list){
  rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
  rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$presence)
  rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$presence)
- auc_df = rbind(auc_df, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres, pred_2016))
+ auc_df = rbind(auc_df, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres))
  j = unique(sdm_input$ALPHA.CODE)
   }
   }
