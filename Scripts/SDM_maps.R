@@ -66,7 +66,7 @@ auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 sdm_input <- filter(bbs_final_occ_ll, aou == 6280) %>% 
   left_join(all_env, by = "stateroute") %>% 
   na.omit(.)
-sdm_notrans <- filter(sdm_input, occ > 0.33| occ == 0) %>% na.omit(.)
+sdm_notrans <- filter(sdm_input, occ >= 0.33| occ == 0) %>% na.omit(.)
 
 # Determine geographic extent of our data using AOU = i
 max.lat <- ceiling(max(sdm_input$latitude))
@@ -135,67 +135,79 @@ sdm_output$core <- 0
 sdm_output$core[sdm_output$stateroute %in% sdm_output_notrans$stateroute] <- 1
 routes_sf <- st_as_sf(sdm_output,  coords = c("longitude", "latitude"))
 # CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km")
-routes_notrans <- st_as_sf(sdm_output[sdm_output$occ > 0.34,], coords = c("longitude", "latitude"))
+routes_notrans <- st_as_sf(sdm_output[sdm_output$occ >= 0.33,], coords = c("longitude", "latitude"))
 
 us <- tm_shape(us_sf) + tm_borders() + tm_fill(col = "white")
 
 #### need to add in core spp ####
-point_map <- tm_shape(routes_sf) + 
-  tm_symbols(size = 0.75, shape="presence", shapes = c(16,4), alpha = 0.5, col = 'presence',palette = c("#5E5E5E", "#3E3E3E")) + 
-  tm_shape(us_sf) + tm_borders( "black", lwd = 3) + 
-   tm_shape(routes_notrans)  + 
-  tm_symbols(col = "presence", palette = "-PRGn", size = 0.75, shapes = c(16,4)) + tm_legend(outside = TRUE)+ 
-  tm_layout("", legend.title.size = 2, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") 
-#point_map
-sdm_maxent_pr <- tm_shape(plot.r) + tm_raster("max_pred_pres", palette = "PRGn", style = "cont", title = "MaxEnt Pres") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("", legend.title.size = 2, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
+routes_sf$presence_cat <- case_when(routes_sf$occ >= 0.33 ~ "core",
+                                    routes_sf$occ < 0.33 & routes_sf$occ > 0 ~ "trans",
+                                    routes_sf$occ == 0 ~ "absent")
+routes_sf$presence_cat <- factor(routes_sf$presence_cat, levels = c("core", "trans", "absent"), ordered = TRUE)
+# point_map <- tm_shape(routes_sf, legend.show = FALSE) + 
+#  tm_symbols(size = 0.75, shape="presence_cat", shapes = c(16,16,4), col = 'presence_cat', palette = c(
+#    "#008837","#7fbf7b","#7b3294")) + 
+#  tm_shape(us_sf) + tm_borders( "black", lwd = 3) +
+#  tm_layout("Occurrence", title.size = 2, title.position = c("right","bottom")) 
 
-sdm_maxent_core <- tm_shape(plot.core) + tm_raster("max_pred_pres_notrans", palette = "PRGn", style = "cont", title = "MaxEnt No Trans") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("", legend.title.size = 2, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
+point_map <- tm_shape(routes_sf) + 
+  tm_symbols(size = 0.75, shape="presence", shapes = c(16,4), alpha = 0.5, col = "#5E5E5E") + 
+  tm_legend(show=FALSE) +
+  tm_shape(us_sf) + tm_borders( "black", lwd = 3) + 
+  tm_shape(routes_notrans)  + 
+  tm_symbols(col = "presence", palette = "-PRGn", size = 0.75, shapes = c(16,4)) + tm_legend(outside = TRUE)+ 
+  tm_layout("  Observed \nOccurences", title.size = 2, title.position = c("right","bottom")) +
+  tm_layout(main.title = "A") 
+
+sdm_maxent_pr <- tm_shape(plot.r) + tm_raster("max_pred_pres", palette = "PRGn", style = "cont", title = "MaxEnt Pres", legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("MaxEnt Pres", title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+  tm_layout(main.title = "B") 
+
+sdm_maxent_core <- tm_shape(plot.core) + tm_raster("max_pred_pres_notrans", palette = "PRGn", style = "cont", title = "MaxEnt Core", legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("MaxEnt Core", title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+  tm_layout(main.title = "C") 
+
+sdm_glm_occ <- tm_shape(plot.r) + tm_raster("pred_glm_occ", palette = "PRGn", style = "cont", title = "GLM Occ", legend.show = FALSE) + 
+  tm_shape(us_sf) + tm_borders( "black", lwd = 3) + 
+  tm_layout("GLM Occ", title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+  tm_layout(main.title = "D") 
+#sdm_occ
+
+sdm_glm_pr <- tm_shape(plot.r) + tm_raster("pred_glm_pr", palette = "PRGn", style = "cont", title = "GLM Pres", breaks=c(0.05,0.1,0.15 ,0.2,0.25), legend.show = FALSE) + tm_shape(us_sf) + 
+  tm_borders(col = "black", lwd = 3) + 
+  tm_layout("GLM Pres", title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+  tm_layout(main.title = "E") 
+#sdm_pr
+
+sdm_glm_core <- tm_shape(plot.core) + tm_raster("pred_glm_pr_notrans", palette = "PRGn", style = "cont", legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + 
+  tm_layout("GLM Core", title.size = 2, title.position = c("right","bottom")) +
+  tm_layout(main.title = "F") 
+
+sdm_gam_occ <- tm_shape(plot.r) + tm_raster("pred_gam_occ", palette = "PRGn", style = "cont", title = "GAM Occ", legend.show = FALSE) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("GAM Occ", title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+  tm_layout(main.title = "G") 
+#sdm_occ
+
+sdm_gam_pr <- tm_shape(plot.r) + tm_raster("pred_gam_pr", palette = "PRGn", style = "cont", breaks=c(0.05,0.1,0.15 ,0.2,0.25), legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + 
+  tm_layout("GAM Pres", title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+  tm_layout(main.title = "H") 
+#sdm_pr
+
+sdm_gam_core <- tm_shape(plot.core) + tm_raster("pred_gam_pr_notrans", palette = "PRGn", style = "cont", legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("GAM Core", title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+  tm_layout(main.title = "I") 
+
+sdm_rf_occ <- tm_shape(plot.r) + tm_raster("pred_rf_occ", palette = "PRGn", style = "cont", title = "RF Occ", legend.show = FALSE) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("RF Occ", title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+  tm_layout(main.title = "J") 
+#sdm_occ
+
+sdm_rf_pr <- tm_shape(plot.r) + tm_raster("pred_rf_pr", palette = "PRGn", style = "cont", title = "RF Pres", breaks=c(0.05,0.1,0.15 ,0.2,0.25), legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("RF Pres", title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+  tm_layout(main.title = "K") 
+#sdm_pr
+
+sdm_rf_core <- tm_shape(plot.core) + tm_raster("pred_rf_pr_notrans", palette = "PRGn", style = "cont", title = "RF Core", legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("RF Core", title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+  tm_layout(main.title = "L") 
 
 MaxEnt_plot <- tmap_arrange(point_map, sdm_maxent_pr, sdm_maxent_core, ncol = 1)
-
-sdm_glm_occ <- tm_shape(plot.r) + tm_raster("pred_glm_occ", palette = "PRGn", style = "cont", title = "GLM Occ") + 
-  tm_shape(us_sf) + tm_borders( "black", lwd = 3) + 
-  tm_layout(legend.title.size = 2,legend.text.size = 1) +
-  tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
-#sdm_occ
-
-sdm_glm_pr <- tm_shape(plot.r) + tm_raster("pred_glm_pr", palette = "PRGn", style = "cont", title = "GLM Pres", breaks=c(0.05,0.1,0.15 ,0.2,0.25), title = "GLM Pres") + tm_shape(us_sf) + 
-  tm_borders(col = "black", lwd = 3) + 
-  tm_layout(legend.title.size = 2,legend.text.size = 1) +
-  tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
-#sdm_pr
-
-sdm_glm_core <- tm_shape(plot.core) + tm_raster("pred_glm_pr_notrans", palette = "PRGn", style = "cont", title = "GLM No Trans") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + 
-  tm_layout(legend.title.size = 2,legend.text.size = 1) +
-  tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
-
-### 
 fig_glm <- tmap_arrange(sdm_glm_occ, sdm_glm_pr, sdm_glm_core, ncol = 1)
-
-sdm_gam_occ <- tm_shape(plot.r) + tm_raster("pred_gam_occ", palette = "PRGn", style = "cont", title = "GAM Occ") + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") +
-  tm_layout(legend.title.size = 2,legend.text.size = 1) +
-  tm_legend(outside = TRUE)
-#sdm_occ
-
-sdm_gam_pr <- tm_shape(plot.r) + tm_raster("pred_gam_pr", palette = "PRGn", style = "cont", breaks=c(0.05,0.1,0.15 ,0.2,0.25)) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + 
-  tm_layout("", legend.title.size = 2, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
-#sdm_pr
-
-sdm_gam_core <- tm_shape(plot.core) + tm_raster("pred_gam_pr_notrans", palette = "PRGn", style = "cont") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("", legend.title.size = 2, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
-
 fig_gam <- tmap_arrange(sdm_gam_occ, sdm_gam_pr, sdm_gam_core, ncol = 1)
-
-sdm_rf_occ <- tm_shape(plot.r) + tm_raster("pred_rf_occ", palette = "PRGn", style = "cont", title = "RF Occ") + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 2, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") +
-  tm_layout(legend.title.size = 2,legend.text.size = 1) +
-  tm_legend(outside = TRUE)
-#sdm_occ
-
-sdm_rf_pr <- tm_shape(plot.r) + tm_raster("pred_rf_pr", palette = "PRGn", style = "cont", title = "RF Pres", breaks=c(0.05,0.1,0.15 ,0.2,0.25)) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("", legend.title.size = 2, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
-#sdm_pr
-
-sdm_rf_core <- tm_shape(plot.core) + tm_raster("pred_rf_pr_notrans", palette = "PRGn", style = "cont", title = "RF No Trans") + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout("", legend.title.size = 2, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
-
 fig_rf <- tmap_arrange(sdm_rf_occ, sdm_rf_pr, sdm_rf_core, ncol = 1)
 
-final_fig1 <- tmap_arrange(MaxEnt_plot, fig_glm, fig_gam, fig_rf)
-# tmap_save(final_fig1, "Figures/Fig1.pdf", height = 16, width = 24)
+final_fig1 <- tmap_arrange(point_map, sdm_maxent_pr, sdm_maxent_core, sdm_glm_occ, sdm_glm_pr, sdm_glm_core, sdm_gam_occ, sdm_gam_pr, sdm_gam_core, sdm_rf_occ, sdm_rf_pr, sdm_rf_core, nrow = 4, ncol = 3) 
+tmap_save(final_fig1, "Figures/Fig1.pdf", height = 16, width = 20)

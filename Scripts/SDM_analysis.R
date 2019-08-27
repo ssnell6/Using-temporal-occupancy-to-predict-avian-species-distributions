@@ -66,12 +66,13 @@ bbs_inc_absence$presence[bbs_inc_absence$occ > 0] <- 1
 num_occ = bbs_inc_absence %>% group_by(aou) %>% tally(presence) %>% left_join(bbs_inc_absence, ., by = "aou")
 
 # 412 focal species
-bbs_final_occ = filter(num_occ,n.y > 1)
+bbs_final_occ = filter(num_occ,n.y > 49)
 bbs_occ_code = left_join(bbs_final_occ, tax_code, by = c("aou" = "AOU_OUT"))
 
 # 319 focal species
 bbs_final_occ_ll = filter(bbs_occ_code, aou %in% tax_code$AOU_OUT) %>%
-  dplyr::select(aou, stateroute, occ, presence, ALPHA.CODE, latitude, longitude)
+  dplyr::select(aou, stateroute, occ, presence, ALPHA.CODE) %>%
+  full_join(lat_long, by = "stateroute")
 bbs_final_occ_ll$sp_success = 15 * bbs_final_occ_ll$occ
 bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ) 
 bbs_final_occ_ll$presence <- as.numeric(bbs_final_occ_ll$presence)
@@ -98,16 +99,14 @@ Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_211') # for 64-bit version
 # corrplot(test)
 
 setwd("Data/sdm_dfs/")
-pdf('AUC_Curves.pdf', height = 8, width = 10)
-par(mfrow = c(2, 3))
-auc_df = c()
+auc_df_notrans = c()
 
   sp_list = unique(bbs_final_occ_ll$aou)
 
 for(i in sp_list){
   sdm_output = c()
   print(i)
-  bbs_sub <- filter(bbs_final_occ_ll, aou == i) # %>% filter(occ <= 0.33333333) RUN FOR EXCL TRANS
+  bbs_sub <- filter(bbs_final_occ_ll, aou == i) %>% filter(occ >= 0.33333333| occ == 0) #RUN FOR EXCL TRANS
   bbs_new_sub <- filter(bbs_new, aou == i) 
   bbs_new_sub$pres_2016 <- bbs_new_sub$presence
   sdm_input <- filter(all_env, stateroute %in% bbs_sub$stateroute) %>%
@@ -151,19 +150,19 @@ for(i in sp_list){
  rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
  rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$presence)
  rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$presence)
- auc_df = rbind(auc_df, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres))
+ auc_df_notrans = rbind(auc_df_notrans, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres))
  j = unique(sdm_input$ALPHA.CODE)
   }
   }
- write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
+# write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
 }
 
 dev.off()
 
 setwd("C:/Git/SDMs")
-auc_df = data.frame(auc_df)
-names(auc_df) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres","rmse_me_pres", "pred_2016")
-# write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
+auc_df_notrans = data.frame(auc_df_notrans)
+names(auc_df_notrans) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres","rmse_me_pres")
+# write.csv(auc_df_notrans, "Data/auc_df_notrans.csv", row.names = FALSE)
 
 
 bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'), ordered = TRUE)
@@ -378,63 +377,59 @@ auc_df <- read.csv("Data/auc_df.csv", header = TRUE)
 auc_df_notrans <- read.csv("Data/auc_df_notrans.csv", header = TRUE)
 
 num_pres = bbs_final_occ_ll %>%
-  group_by(Aou) %>% 
+  group_by(aou) %>% 
   dplyr::filter(., presence == "1") %>%
   dplyr::summarise(n = n_distinct(stateroute))  
 
-num_routes = bbs_final_occ_ll %>% group_by(Aou) %>% 
+num_routes = bbs_final_occ_ll %>% group_by(aou) %>% 
   dplyr::summarise(n = n_distinct(stateroute))  %>%
   dplyr::filter(., n >= 40)
 
-auc_df_merge = left_join(auc_df, num_pres, by = c("AOU" = "Aou"))
+auc_df_merge = left_join(auc_df, num_pres, by = c("AOU" = "aou"))
 auc_df_traits = left_join(auc_df_merge, traits, by = "AOU") %>%
   left_join(., tax_code, by = c("AOU" = "AOU_OUT"))
 
-
-auc_df_traits$diff = auc_df_traits$AUC - auc_df_traits$AUC_pres
-occ_sub = subset(auc_df_traits,diff >= 0)
-pres_sub = subset(auc_df_traits,diff < 0)
-
 # plot GLM occ v pres 
 #  + geom_label(data = auc_df_traits, aes(x = AUC, y = AUC_pres, label = ALPHA.CODE))
-r1 = ggplot(auc_df_traits, aes(x = rmse_occ, y = rmse_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = -4),axis.title.y=element_text(size=36, angle=90, vjust = 4)) + xlab(bquote("GLM RMSE")) + ylab(bquote("Pres GLM RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
+r1 = ggplot(auc_df_traits, aes(x = rmse_occ, y = rmse_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("GLM RMSE")) + ylab(bquote("Pres GLM RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
   geom_point(shape=16, aes(size = auc_df_traits$n)) + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
-  theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
+  theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
 # ggsave("Figures/Occ_Pres_labelled.pdf", height = 8, width = 12)
   
-  
-r2 = ggplot(auc_df_traits, aes(x = rmse_gam, y = rmse_gam_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = -4),axis.title.y=element_text(size=36, angle=90, vjust = 4)) + xlab(bquote("GAM RMSE")) + ylab(bquote("Pres GAM RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(shape=16, aes(size = auc_df_traits$n))+  scale_y_continuous(limit = c(0, .5)) + scale_x_continuous(limit = c(0, .5))  + 
-    theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
+r2 = ggplot(auc_df_traits, aes(x = rmse_gam, y = rmse_gam_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("GAM RMSE")) + ylab(bquote("Pres GAM RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(shape=16, aes(size = auc_df_traits$n))+  scale_y_continuous(limit = c(0, .5)) + scale_x_continuous(limit = c(0, .5))  + 
+    theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
     guides(colour = guide_legend(override.aes = list(shape = 15))) +
     theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
 #  ggsave("Figures/Occ_numPres_RF.pdf", height = 8, width = 12)
 
-r3 = ggplot(auc_df_traits, aes(x = rmse_rf, y = rmse_rf_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = -4),axis.title.y=element_text(size=36, angle=90, vjust = 4)) + xlab(bquote("RF RMSE")) + ylab(bquote("Pres RF RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + scale_y_continuous(limit = c(0, .5)) + scale_x_continuous(limit = c(0, .5)) + geom_point(shape=16, aes(size = auc_df_traits$n)) + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + guides(colour = guide_legend(override.aes = list(shape = 15))) + theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
+r3 = ggplot(auc_df_traits, aes(x = rmse_rf, y = rmse_rf_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("RF RMSE")) + ylab(bquote("Pres RF RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + scale_y_continuous(limit = c(0, .5)) + scale_x_continuous(limit = c(0, .5)) + geom_point(shape=16, aes(size = auc_df_traits$n)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + guides(colour = guide_legend(override.aes = list(shape = 15))) + theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
 #  ggsave("Figures/Occ_numPres_gam.pdf", height = 8, width = 12)
-
 
 # density plot
 rmse_plot = gather(auc_df, occ_mod, occ_rmse, c("rmse_occ", "rmse_gam",  "rmse_rf")) %>%
   gather(pres_mod, pres_rmse, "rmse_pres","rmse_gam_pres","rmse_rf_pres",  "rmse_me_pres")
 
-r4 = ggplot(rmse_plot) + geom_density(lwd = 1.5, aes(occ_rmse, color = occ_mod))  + geom_density(lwd = 1.5,lty = 2, aes(pres_rmse, color = pres_mod)) + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = -4),axis.title.y=element_text(size=36, angle=90, vjust = 4)) + scale_color_manual(values=c("blue","blue", "purple","#006d2c", "#006d2c", "steelblue2", "steelblue2"), labels=c("rmse_gam", "rmse_gam_pres",  "rmse_me_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) + xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) +theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm"))  
+r4 = ggplot(rmse_plot) + geom_density(lwd = 1.5, aes(occ_rmse, color = occ_mod))  + geom_density(lwd = 1.5,lty = 2, aes(pres_rmse, color = pres_mod)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","#034e7b", "purple", "steelblue2", "steelblue2","#238b45", "#238b45"), labels=c("rmse_gam", "rmse_gam_pres",  "rmse_me_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) + xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) +theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm"))  
 
 
-legend <- ggplot(rmse_plot, aes(rmse, mod)) + geom_line(lwd = 1.5, aes(color = mod)) + scale_color_manual(values=c("blue","#006d2c", "purple","navy",  "#66c2a4", "steelblue2", "springgreen2"), labels=c("GAM", "GAM pres",  "MaxEnt pres", "GLM", "GLM pres", "RF", "RF pres"))
+legend <- ggplot(rmse_plot, aes(pres_rmse, pres_mod)) + geom_line(lwd = 1.5, aes(color = pres_mod)) + scale_color_manual(values=c("#034e7b", "purple", "steelblue2", "#238b45"), labels=c("GAM",  "MaxEnt", "GLM",  "RF")) +theme(legend.spacing.x = unit(0.5, 'cm'), legend.key.size = unit(1, "cm"), legend.title = element_blank())
 
 
 library(cowplot)
 theme_set(theme_cowplot(font_size=20,font_family = "URWHelvetica"))
-plot_grid(r1 + theme(legend.position="none"),
+grid <- plot_grid(r1 + theme(legend.position="none"),
           r2 + theme(legend.position="none"),
           r3 + theme(legend.position="none"),
           r4 + theme(legend.position="none"),
           align = 'hv',
-          # labels = c("a","b", "c", "d"),
-          label_size = 20,
+          labels = c("A","B", "C", "D"),
+          label_x = 0.22, 
+          label_size = 30,
           nrow = 2) 
+
+
 ggsave("Figures/rmse_plot.pdf", height = 10, width = 14)
 
 # pres:pres
@@ -443,40 +438,41 @@ colnames(auc_df_notrans) <- c("AOU","rmse_pres_notrans","rmse_gam_pres_notrans",
 
 pres_pres <- left_join(auc_df_notrans, auc_df[,c("AOU","rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres")], by = "AOU")
 
-pres_pres1 = left_join(pres_pres, num_pres, by = c("AOU" = "Aou"))
+pres_pres1 = left_join(pres_pres, num_pres, by = c("AOU" = "aou"))
 # plot GLM occ v pres 
-r1 = ggplot(pres_pres1, aes(x = rmse_pres_notrans, y = rmse_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + ylab(bquote("Pres GLM RMSE")) + xlab(bquote("GLM No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-  geom_point(shape=16, aes(size = pres_pres1$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
-  theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
+r1 = ggplot(pres_pres1, aes(x = rmse_pres_notrans, y = rmse_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Pres GLM RMSE")) + xlab(bquote("GLM No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
+  geom_point(shape=16, aes(size = pres_pres1$n))  + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
+  theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
 # ggsave("Figures/Occ_Pres_labelled.pdf", height = 8, width = 12)
 
 
-r2 =  ggplot(pres_pres1, aes(x = rmse_gam_pres_notrans, y = rmse_gam_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + ylab(bquote("Pres GAM RMSE")) + xlab(bquote("GAM No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-  geom_point(shape=16, aes(size = pres_pres1$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
-  theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
+r2 =  ggplot(pres_pres1, aes(x = rmse_gam_pres_notrans, y = rmse_gam_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Pres GAM RMSE")) + xlab(bquote("GAM No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
+  geom_point(shape=16, aes(size = pres_pres1$n))  + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
+  theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
 #  ggsave("Figures/Occ_numPres_RF.pdf", height = 8, width = 12)
 
-r3 =  ggplot(pres_pres1, aes(x = rmse_rf_pres_notrans, y = rmse_rf_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + ylab(bquote("Pres RF RMSE")) + xlab(bquote("RF No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-  geom_point(shape=16, aes(size = pres_pres1$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
-  theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
+r3 =  ggplot(pres_pres1, aes(x = rmse_rf_pres_notrans, y = rmse_rf_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Pres RF RMSE")) + xlab(bquote("RF No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
+  geom_point(shape=16, aes(size = pres_pres1$n))  + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
+  theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
 #  ggsave("Figures/Occ_numPres_gam.pdf", height = 8, width = 12)
 
-
-r4 =  ggplot(pres_pres1, aes(x = rmse_me_pres_notrans, y = rmse_me_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + ylab(bquote("Pres ME RMSE")) + xlab(bquote("ME No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-  geom_point(shape=16, aes(size = pres_pres1$n))  + geom_smooth(method='lm', se=FALSE, col="blue",linetype="longdash", lwd =2.5) + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) +
+r4 =  ggplot(pres_pres1, aes(x = rmse_me_pres_notrans, y = rmse_me_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Pres ME RMSE")) + xlab(bquote("ME No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
+  geom_point(shape=16, aes(size = pres_pres1$n)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
 
-# density plot
-rmse_plot_pres = gather(pres_pres1, mod, rmse, c("rmse_pres_notrans","rmse_gam_pres_notrans", "rmse_rf_pres_notrans", "rmse_me_pres_notrans", "rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres"))
 
-r5 = ggplot(rmse_plot_pres, aes(rmse)) + geom_density(lwd = 2, aes(color = mod), show.legend = T)  + theme_classic() + theme(axis.text.x=element_text(size = 32),axis.ticks=element_blank(), axis.text.y=element_text(size=32)) + theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + scale_color_manual(values=c("#006d2c","#ce1256","purple", "#9F84BD", "#66c2a4", "plum", "springgreen2", "#fa9fb5"), labels=c("rmse_gam_pres","rmse_gam_pres_notrans",  "rmse_me_pres","rmse_me_pres_notrans", "rmse_pres","rmse_pres_notrans",  "rmse_rf_pres", "rmse_rf_pres_notrans")) +  xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
+# density plot
+rmse_plot_pres = gather(pres_pres1, pres_mod, pres_rmse, c("rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres")) %>%
+  gather(notrans_mod, notrans_rmse, c("rmse_pres_notrans","rmse_gam_pres_notrans", "rmse_rf_pres_notrans", "rmse_me_pres_notrans"))
+
+r5 = ggplot(rmse_plot_pres) + geom_density(lwd = 1.5, lty = 2,aes(pres_rmse, color = pres_mod)) + geom_density(lwd = 1.5, aes(notrans_rmse, color = notrans_mod)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","#034e7b", "purple","purple", "steelblue2", "steelblue2","#238b45", "#238b45"), labels=c("rmse_gam_pres","rmse_gam_pres_notrans",   "rmse_me_pres","rmse_me_pres_notrans", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) +  xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
 
 legend <- ggplot(rmse_plot_pres, aes(rmse, mod)) + geom_line(lwd = 1.5, aes(color = mod)) + scale_color_manual(values=c("#006d2c","#ce1256","purple", "#9F84BD", "#66c2a4", "plum", "springgreen2", "#df65b0"), labels=c("GAM pres","GAM pres notrans",  "MaxEnt pres","MaxEnt pres notrans", "GLM pres","GLM pres notrans",  "RF pres", "RF pres notrans")) 
    
@@ -487,8 +483,11 @@ plot_grid(r1 + theme(legend.position="none"),
           r2 + theme(legend.position="none"),
           r3 + theme(legend.position="none"),
           r4 + theme(legend.position="none"),
+          r5 + theme(legend.position="none"),
           align = 'hv',
-          # labels = c("a","b", "c", "d"),
-          label_size = 20,
-          nrow = 2) 
-ggsave("Figures/rmse_pres_pres.pdf", height = 12, width = 14)
+          labels = c("A","B", "C", "D", "E"),
+          label_x = 0.22, 
+          label_size = 30,
+          nrow = 2, 
+          scale = 0.9) 
+ggsave("Figures/rmse_pres_pres.pdf", height = 14, width = 24)
