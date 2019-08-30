@@ -8,12 +8,16 @@ library(maptools)
 library(pROC)
 library(purrr)
 
-bbs_occ = read.csv("Data/bbs_sub1.csv", header=TRUE)
-bbs_occ_sub = bbs_occ %>% filter(Aou > 2880) %>%
-  filter(Aou < 3650 | Aou > 3810) %>%
-  filter(Aou < 3900 | Aou > 3910) %>%
-  filter(Aou < 4160 | Aou > 4210) %>%
-  filter(Aou != 7010)
+bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE) %>% filter(aou > 2880) %>%
+  filter(aou < 3650 | aou > 3810) %>%
+  filter(aou < 3900 | aou > 3910) %>%
+  filter(aou < 4160 | aou > 4210) %>%
+  filter(aou != 7010)
+
+bbs_occ_sub = bbs_occ %>% 
+  dplyr::count(aou, stateroute) %>% 
+  filter(n < 16) %>% 
+  dplyr::mutate(occ = n/15) 
 
 exp_pres = read.csv("Data/expect_pres.csv", header = TRUE)
 exp_pres = exp_pres[,c("stateroute","spAOU")] 
@@ -44,34 +48,39 @@ tax_code$AOU_OUT[tax_code$AOU_OUT == 4810] = 4812
 tax_code$AOU_OUT[tax_code$AOU_OUT == 4123] = 4120
 
 # BBS cleaning
-bbs_inc_absence = full_join(bbs_occ_sub, exp_pres, by = c("Aou" ="spAOU", "stateroute" = "stateroute"))
+bbs_inc_absence = full_join(bbs_occ_sub, exp_pres, by = c("aou" ="spAOU", "stateroute" = "stateroute"))
 bbs_inc_absence$occ[is.na(bbs_inc_absence$occ)] <- 0
 bbs_inc_absence$presence = 0
 bbs_inc_absence$presence[bbs_inc_absence$occ > 0] <- 1
 num_occ = bbs_inc_absence %>% 
-  group_by(Aou) %>% 
+  group_by(aou) %>% 
   tally(presence) %>% 
-  left_join(bbs_inc_absence, ., by = "Aou")
+  left_join(bbs_inc_absence, ., by = "aou")
 
 # 412 focal species
-bbs_final_occ = filter(num_occ,nn > 1)
-bbs_occ_code = left_join(bbs_final_occ, tax_code, by = c("Aou" = "AOU_OUT"))
+bbs_final_occ = filter(num_occ,n.y > 1)
+bbs_occ_code = left_join(bbs_final_occ, tax_code, by = c("aou" = "AOU_OUT"))
 
 # 319 focal species
-bbs_focal_spp = filter(bbs_occ_code, Aou %in% tax_code$AOU_OUT)
+bbs_focal_spp = filter(bbs_occ_code, aou %in% tax_code$AOU_OUT)
 
 bbs_final_occ_ll = left_join(bbs_focal_spp, lat_long, by = "stateroute")
-bbs_final_occ_ll = bbs_final_occ_ll[,c("Aou", "stateroute", "occ", "presence", "ALPHA.CODE",
+bbs_final_occ_ll = bbs_final_occ_ll[,c("aou", "stateroute", "occ", "presence", "ALPHA.CODE",
                                        "latitude", "longitude")]
 bbs_final_occ_ll$sp_success = 15 * bbs_final_occ_ll$occ
 bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ) 
 
-sp_list = unique(bbs_final_occ_ll$Aou)
+
+threshfun <- function(pred_vals){ 
+ thresh <-  max(pred_vals) * 0.7
+}
+
+sp_list = unique(bbs_final_occ_ll$aou)
 test_df = c()
 for(i in sp_list){
   sdm_output = c()
   print(i)
-  bbs_sub <- filter(bbs_final_occ_ll, Aou == i) # %>% filter(occ <= 0.33333333) RUN FOR EXCL TRANS
+  bbs_sub <- filter(bbs_final_occ_ll, aou == i) # %>% filter(occ <= 0.33333333) RUN FOR EXCL TRANS
   bbs_new_sub <- filter(bbs_new_all, spAOU == i) 
   temp <- filter(all_env, stateroute %in% bbs_sub$stateroute)
   sdm_input <- left_join(bbs_sub, temp, by = "stateroute")
@@ -79,16 +88,40 @@ for(i in sp_list){
   if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
     if(nrow(filter(sdm_input, presence == 1)) > 49){
       
+      glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+      glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
       gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = sdm_input)
+      gam_pres <- mgcv::gam(presence ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = sdm_input)
+      rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+      rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+      max_ind_pres = maxent(sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_input$presence)
       
+      pred_glm_occ <- predict(glm_occ,type=c("response"))
+      pred_glm_pr <- predict(glm_pres,type=c("response"))
       pred_gam_occ <- predict(gam_occ,type=c("response"))
+      pred_gam_pr <- predict(gam_pres,type=c("response"))
+      pred_rf_occ <- predict(rf_occ,type=c("response"))
+      pred_rf_pr <- predict(rf_pres,type=c("response"))
+      max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
       
-      thresh <- max(pred_gam_occ) * 0.7 # can test 0.5-0.9
-      
-      sdm_output = cbind(sdm_input, pred_gam_occ) 
+      threshglm_occ <-threshfun(pred_glm_occ)
+      threshglm_pr <-threshfun(pred_glm_pr)
+      threshgam_occ <-threshfun(pred_gam_occ)
+      threshgam_pr <-threshfun(pred_gam_pr)
+      threshrf_occ <-threshfun(pred_rf_occ)
+      threshrf_pr <-threshfun(pred_rf_pr)
+      threshmax_pres <-threshfun(max_pred_pres)
+    
+      sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
       pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute") %>%
-        mutate(predicted_pres = ifelse(pred_gam_occ > thresh, 1, 0)) %>%
-        dplyr::select(Aou, stateroute, occ, presence, latitude, longitude, pred_gam_occ, pres_2016, predicted_pres)
+        mutate(predicted_glm_occ = ifelse(pred_glm_occ > threshglm_occ, 1, 0),
+               predicted_glm_pr = ifelse(pred_glm_pr > threshglm_pr, 1, 0),
+               predicted_gam_occ = ifelse(pred_gam_occ > threshgam_occ, 1, 0),
+               predicted_gam_pr = ifelse(pred_gam_pr > threshgam_pr, 1, 0),
+               predicted_rf_occ = ifelse(pred_rf_occ > threshrf_occ, 1, 0),
+               predicted_rf_pr = ifelse(pred_rf_pr > threshrf_pr, 1, 0),
+               predicted_max_pres = ifelse(max_pred_pres > threshmax_pres, 1, 0)) %>%
+        dplyr::select(aou, stateroute, occ, presence, latitude, longitude, pred_gam_occ, pres_2016, predicted_glm_occ, predicted_glm_pr,predicted_gam_occ, predicted_gam_pr, predicted_rf_occ, predicted_rf_pr, predicted_max_pres)
       test_df = rbind(test_df, pred_2016)
     }
   }

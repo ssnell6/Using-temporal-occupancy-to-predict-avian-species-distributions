@@ -99,14 +99,14 @@ Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_211') # for 64-bit version
 # corrplot(test)
 
 setwd("Data/sdm_dfs/")
-auc_df_notrans = c()
+auc_df = c()
 
   sp_list = unique(bbs_final_occ_ll$aou)
 
 for(i in sp_list){
   sdm_output = c()
   print(i)
-  bbs_sub <- filter(bbs_final_occ_ll, aou == i) %>% filter(occ >= 0.33333333| occ == 0) #RUN FOR EXCL TRANS
+  bbs_sub <- filter(bbs_final_occ_ll, aou == i) 
   bbs_new_sub <- filter(bbs_new, aou == i) 
   bbs_new_sub$pres_2016 <- bbs_new_sub$presence
   sdm_input <- filter(all_env, stateroute %in% bbs_sub$stateroute) %>%
@@ -150,7 +150,7 @@ for(i in sp_list){
  rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
  rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$presence)
  rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$presence)
- auc_df_notrans = rbind(auc_df_notrans, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres))
+ auc_df = rbind(auc_df, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres))
  j = unique(sdm_input$ALPHA.CODE)
   }
   }
@@ -160,9 +160,72 @@ for(i in sp_list){
 dev.off()
 
 setwd("C:/Git/SDMs")
+auc_df = data.frame(auc_df)
+names(auc_df) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres","rmse_me_pres")
+# write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
+
+
+##### no trans #####
+auc_df_notrans = c()
+sp_list = unique(bbs_final_occ_ll$aou)
+
+for(i in sp_list){
+  sdm_output = c()
+  print(i)
+  bbs_sub <- filter(bbs_final_occ_ll, aou == i) %>% 
+    mutate(excl_pres = ifelse(occ <= 0.33, 0, 1))
+  bbs_new_sub <- filter(bbs_new, aou == i) 
+  bbs_new_sub$pres_2016 <- bbs_new_sub$presence
+  sdm_input <- filter(all_env, stateroute %in% bbs_sub$stateroute) %>%
+    full_join(bbs_sub, by = "stateroute") %>%
+    na.omit(.)
+  sdm_input <- data.frame(sdm_input)
+  if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
+    if(nrow(filter(sdm_input, presence == 1)) > 49){
+      glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+      glm_pres <- glm(excl_pres ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+      gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = sdm_input)
+      gam_pres <- mgcv::gam(excl_pres ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = sdm_input)
+      rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+      rf_pres <- randomForest(excl_pres ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+      
+      max_ind_pres = maxent(sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_input$excl_pres)
+      
+      # predict
+      pred_glm_occ <- predict(glm_occ,type=c("response"))
+      pred_glm_pr <- predict(glm_pres,type=c("response"))
+      pred_gam_occ <- predict(gam_occ,type=c("response"))
+      pred_gam_pr <- predict(gam_pres,type=c("response"))
+      pred_rf_occ <- predict(rf_occ,type=c("response"))
+      pred_rf_pr <- predict(rf_pres,type=c("response"))
+      max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
+      
+      sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
+      pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute")
+      thresh <- max(pred_2016$pred_gam_occ) * 0.7
+      gam_rescale <- filter(pred_2016, pred_gam_occ > thresh)
+      
+      rmse_occ <- rmse(sdm_output$pred_glm_occ, sdm_output$occ)
+      rmse_pres <- rmse(sdm_output$pred_glm_pr, sdm_output$excl_pres)
+      rmse_gam <- rmse(as.vector(sdm_output$pred_gam_occ), sdm_output$occ)
+      rmse_gam_pres <- rmse(as.vector(sdm_output$pred_gam_pr), sdm_output$excl_pres)
+      rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
+      rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$excl_pres)
+      rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$excl_pres)
+      auc_df_notrans = rbind(auc_df_notrans, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres))
+      j = unique(sdm_input$ALPHA.CODE)
+    }
+  }
+  # write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
+}
+
+dev.off()
+
+setwd("C:/Git/SDMs")
 auc_df_notrans = data.frame(auc_df_notrans)
 names(auc_df_notrans) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres","rmse_me_pres")
 # write.csv(auc_df_notrans, "Data/auc_df_notrans.csv", row.names = FALSE)
+
 
 
 bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'), ordered = TRUE)
@@ -411,7 +474,7 @@ r3 = ggplot(auc_df_traits, aes(x = rmse_rf, y = rmse_rf_pres)) +theme_classic()+
 rmse_plot = gather(auc_df, occ_mod, occ_rmse, c("rmse_occ", "rmse_gam",  "rmse_rf")) %>%
   gather(pres_mod, pres_rmse, "rmse_pres","rmse_gam_pres","rmse_rf_pres",  "rmse_me_pres")
 
-r4 = ggplot(rmse_plot) + geom_density(lwd = 1.5, aes(occ_rmse, color = occ_mod))  + geom_density(lwd = 1.5,lty = 2, aes(pres_rmse, color = pres_mod)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","#034e7b", "purple", "steelblue2", "steelblue2","#238b45", "#238b45"), labels=c("rmse_gam", "rmse_gam_pres",  "rmse_me_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) + xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) +theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm"))  
+r4 = ggplot(rmse_plot) + geom_density(lwd = 1.5, lty = 2, aes(occ_rmse, color = occ_mod))  + geom_density(lwd = 1.5, aes(pres_rmse, color = pres_mod)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","#034e7b", "purple", "steelblue2", "steelblue2","#238b45", "#238b45"), labels=c("rmse_gam", "rmse_gam_pres",  "rmse_me_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) + xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) +theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm"))  
 
 
 legend <- ggplot(rmse_plot, aes(pres_rmse, pres_mod)) + geom_line(lwd = 1.5, aes(color = pres_mod)) + scale_color_manual(values=c("#034e7b", "purple", "steelblue2", "#238b45"), labels=c("GAM",  "MaxEnt", "GLM",  "RF")) +theme(legend.spacing.x = unit(0.5, 'cm'), legend.key.size = unit(1, "cm"), legend.title = element_blank())
@@ -472,7 +535,9 @@ r4 =  ggplot(pres_pres1, aes(x = rmse_me_pres_notrans, y = rmse_me_pres)) +theme
 rmse_plot_pres = gather(pres_pres1, pres_mod, pres_rmse, c("rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres")) %>%
   gather(notrans_mod, notrans_rmse, c("rmse_pres_notrans","rmse_gam_pres_notrans", "rmse_rf_pres_notrans", "rmse_me_pres_notrans"))
 
-r5 = ggplot(rmse_plot_pres) + geom_density(lwd = 1.5, lty = 2,aes(pres_rmse, color = pres_mod)) + geom_density(lwd = 1.5, aes(notrans_rmse, color = notrans_mod)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","#034e7b", "purple","purple", "steelblue2", "steelblue2","#238b45", "#238b45"), labels=c("rmse_gam_pres","rmse_gam_pres_notrans",   "rmse_me_pres","rmse_me_pres_notrans", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) +  xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
+r5 = ggplot(rmse_plot_pres) + geom_density(lwd = 1.5, aes(pres_rmse, color = pres_mod)) + geom_density(lwd = 1.5, lty = 4,aes(notrans_rmse, color = notrans_mod)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","#034e7b", "purple","purple", "steelblue2", "steelblue2","#238b45", "#238b45"), labels=c("rmse_gam_pres","rmse_gam_pres_notrans",   "rmse_me_pres","rmse_me_pres_notrans", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) +  xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
+
+# scale_color_manual(values=c("#034e7b","#034e7b", "purple", "steelblue2", "steelblue2","#238b45", "#238b45"), labels=c("rmse_gam", "rmse_gam_pres",  "rmse_me_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres"))
 
 legend <- ggplot(rmse_plot_pres, aes(rmse, mod)) + geom_line(lwd = 1.5, aes(color = mod)) + scale_color_manual(values=c("#006d2c","#ce1256","purple", "#9F84BD", "#66c2a4", "plum", "springgreen2", "#df65b0"), labels=c("GAM pres","GAM pres notrans",  "MaxEnt pres","MaxEnt pres notrans", "GLM pres","GLM pres notrans",  "RF pres", "RF pres notrans")) 
    
