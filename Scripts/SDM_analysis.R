@@ -223,10 +223,11 @@ dev.off()
 
 setwd("C:/Git/SDMs")
 auc_df_notrans = data.frame(auc_df_notrans)
-names(auc_df_notrans) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres","rmse_me_pres")
+names(auc_df_notrans) = c("AOU", "rmse_occ_notrans", "rmse_pres_notrans","rmse_gam_notrans", "rmse_gam_pres_notrans", "rmse_rf_notrans", "rmse_rf_pres_notrans","rmse_me_pres_notrans")
 # write.csv(auc_df_notrans, "Data/auc_df_notrans.csv", row.names = FALSE)
+auc_df_notrans <- read.csv("Data/auc_df_notrans.csv", header =  TRUE)
 
-
+# auc_df_notrans$diff <- auc_df_notrans$rmse_me_pres_notrans - auc_df_notrans$rmse_me_pres
 
 bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'), ordered = TRUE)
 

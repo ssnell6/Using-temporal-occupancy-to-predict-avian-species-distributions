@@ -76,6 +76,8 @@ threshfun <- function(pred_vals){
 }
 
 sp_list = unique(bbs_final_occ_ll$aou)
+
+#### temporal crossval ######
 test_df = c()
 for(i in sp_list){
   sdm_output = c()
@@ -129,47 +131,179 @@ for(i in sp_list){
 
 test_df <- data.frame(test_df)
 
-# write.csv(test_df, "temporal_crossval_df.csv", row.names = FALSE)
+# write.csv(test_df, "Data/temporal_crossval_df.csv", row.names = FALSE)
 test_df <- read.csv("Data/temporal_crossval_df.csv", header = TRUE)
 # to account for species not detected in 2015-2016 but are within the range
 test_df$pres_2016[is.na(test_df$pres_2016)] = 0 
 
-pres_matrix <- test_df %>% group_by(Aou) %>%
+pres_matrix <- test_df %>% group_by(aou) %>%
   nest() %>%
-  mutate(pres_pres = purrr::map(data, ~{
-    data <- .
-    table(data$predicted_pres, data$presence)[2,2]}),
-    pres_abs = purrr::map(data, ~{
+  mutate(pres_pres_glmocc = purrr::map(data, ~{
+    dat <- .
+    table(dat$predicted_glm_occ, dat$presence)[2,2]}),
+    pres_abs_glmocc = purrr::map(data, ~{
       newdat <- .
-      table(newdat$predicted_pres, newdat$presence)[1,2]}), 
-    abs_abs = purrr::map(data, ~{
+      table(newdat$predicted_glm_occ, newdat$presence)[1,2]}), 
+    abs_abs_glmocc = purrr::map(data, ~{
       newdat2 <- .
-      table(newdat2$predicted_pres, newdat2$presence)[1,1]}), 
-    abs_pres = purrr::map(data, ~{
+      table(newdat2$predicted_glm_occ, newdat2$presence)[1,1]}), 
+    abs_pres_glmocc = purrr::map(data, ~{
       newdat3 <- .
-      table(newdat3$predicted_pres, newdat3$presence)[2,1]}), 
+      table(newdat3$predicted_glm_occ, newdat3$presence)[2,1]}), 
+    
+    pres_pres_glmpr = purrr::map(data, ~{
+      newdat4 <- .
+      table(newdat4$predicted_glm_pr, newdat4$presence)[2,2]}),
+    pres_abs_glmpr = purrr::map(data, ~{
+      newdat5 <- .
+      table(newdat5$predicted_glm_pr, newdat5$presence)[1,2]}), 
+    abs_abs_glmpr = purrr::map(data, ~{
+      newdat6 <- .
+      table(newdat6$predicted_glm_pr, newdat6$presence)[1,1]}), 
+    abs_pres_glmpr = purrr::map(data, ~{
+      newdat7 <- .
+      table(newdat7$predicted_glm_pr, newdat7$presence)[2,1]}), 
+    
+    pres_pres_gamocc = purrr::map(data, ~{
+      newdat8 <- .
+      table(newdat8$predicted_gam_occ, newdat8$presence)[2,2]}),
+    pres_abs_gamocc = purrr::map(data, ~{
+      newdat9 <- .
+      table(newdat9$predicted_gam_occ, newdat9$presence)[1,2]}), 
+    abs_abs_gamocc = purrr::map(data, ~{
+      newdat10 <- .
+      table(newdat10$predicted_gam_occ, newdat10$presence)[1,1]}), 
+    abs_pres_gamocc = purrr::map(data, ~{
+      newdat11 <- .
+      table(newdat11$predicted_gam_occ, newdat11$presence)[2,1]}),
+    
+    pres_pres_gampr = purrr::map(data, ~{
+      newdat12 <- .
+      table(newdat12$predicted_gam_pr, newdat12$presence)[2,2]}),
+    pres_abs_gampr = purrr::map(data, ~{
+      newdat13 <- .
+      table(newdat13$predicted_gam_pr, newdat13$presence)[1,2]}), 
+    abs_abs_gampr = purrr::map(data, ~{
+      newdat14 <- .
+      table(newdat14$predicted_gam_pr, newdat14$presence)[1,1]}), 
+    abs_pres_gampr = purrr::map(data, ~{
+      newdat15 <- .
+      table(newdat15$predicted_gam_pr, newdat15$presence)[2,1]}),
+    
+    pres_pres_rfocc = purrr::map(data, ~{
+      newdat16 <- .
+      table(newdat16$predicted_rf_occ, newdat16$presence)[2,2]}),
+    pres_abs_rfocc = purrr::map(data, ~{
+      newdat17 <- .
+      table(newdat17$predicted_rf_occ, newdat17$presence)[1,2]}), 
+    abs_abs_rfocc = purrr::map(data, ~{
+      newdat18 <- .
+      table(newdat18$predicted_rf_occ, newdat18$presence)[1,1]}), 
+    abs_pres_rfocc = purrr::map(data, ~{
+      newdat19 <- .
+      table(newdat19$predicted_rf_occ, newdat19$presence)[2,1]}),
+    
+    pres_pres_rfpres = purrr::map(data, ~{
+      newdat20 <- .
+      table(newdat20$predicted_rf_pr, newdat20$presence)[2,2]}),
+    pres_abs_rfpres = purrr::map(data, ~{
+      newdat21 <- .
+      table(newdat21$predicted_rf_pr, newdat21$presence)[1,2]}), 
+    abs_abs_rfpres = purrr::map(data, ~{
+      newdat22 <- .
+      table(newdat22$predicted_rf_pr, newdat22$presence)[1,1]}), 
+    abs_pres_rfpres = purrr::map(data, ~{
+      newdat23 <- .
+      table(newdat23$predicted_rf_pr, newdat23$presence)[2,1]}),
+    
+    pres_pres_max = purrr::map(data, ~{
+      newdat24 <- .
+      table(newdat24$predicted_max_pres, newdat24$presence)[2,2]}),
+    pres_abs_max = purrr::map(data, ~{
+      newdat25 <- .
+      table(newdat25$predicted_max_pres, newdat25$presence)[1,2]}), 
+    abs_abs_max = purrr::map(data, ~{
+      newdat26 <- .
+      table(newdat26$predicted_max_pres, newdat26$presence)[1,1]}), 
+    abs_pres_max = purrr::map(data, ~{
+      newdat27 <- .
+      table(newdat27$predicted_max_pres, newdat27$presence)[2,1]}),
     length = purrr::map(data, ~{
       newdatlength <- .
-      length = length(newdatlength$pred_gam_occ)})) %>%
-  dplyr::select(Aou, length, pres_pres, pres_abs, abs_abs, abs_pres) 
+      length = length(newdatlength$stateroute)})) %>%
+  dplyr::select(-data) %>%
+  unnest()
+
 pres_matrix <- data.frame(pres_matrix)
-pres_matrix$pres_pres <- unlist(pres_matrix$pres_pres)
-pres_matrix$abs_pres <- unlist(pres_matrix$abs_pres)
-pres_matrix$abs_abs <- unlist(pres_matrix$abs_abs)
-pres_matrix$pres_abs <- unlist(pres_matrix$pres_abs)
-pres_matrix$length <- unlist(pres_matrix$length)
-pres_matrix$true_pos <- pres_matrix$pres_pres/pres_matrix$length
-pres_matrix$false_pos <- pres_matrix$pres_abs/pres_matrix$length
-pres_matrix$accuracy <- ((pres_matrix$pres_pres + pres_matrix$abs_abs)/pres_matrix$length)*100
-pres_matrix$sensitivity <- (pres_matrix$pres_pres/(pres_matrix$pres_pres + pres_matrix$abs_abs))*100
-pres_matrix$specificity <- (pres_matrix$abs_abs/(pres_matrix$pres_pres + pres_matrix$abs_abs))*100
+pres_matrix$truepos_gamocc <- pres_matrix$pres_pres_gamocc/pres_matrix$length*100
+pres_matrix$falsepos_gamocc <- pres_matrix$pres_abs_gamocc/pres_matrix$length*100
+pres_matrix$accuracy_gamocc <- ((pres_matrix$pres_pres_gamocc + pres_matrix$abs_abs_gamocc)/pres_matrix$length)*100
+pres_matrix$sensitivity_gamocc <- (pres_matrix$pres_pres_gamocc/(pres_matrix$pres_pres_gamocc + pres_matrix$pres_abs_gamocc))*100
+pres_matrix$specificity_gamocc <- (pres_matrix$abs_abs_gamocc/(pres_matrix$abs_pres_gamocc + pres_matrix$abs_abs_gamocc))*100
+pres_matrix$pp_gamocc <- (pres_matrix$pres_pres_gamocc/(pres_matrix$pres_pres_gamocc + pres_matrix$abs_pres_gamocc))*100
+pres_matrix$np_gamocc <- (pres_matrix$abs_abs_gamocc/(pres_matrix$abs_abs_gamocc + pres_matrix$pres_abs_gamocc))*100
 
-kappa(test_df$presence, test_df$predicted_pres, cutoff = 0.7)
-t.test(test_df$predicted_pres, test_df$presence, paired = TRUE, alternative= "two.sided")
+pres_matrix$truepos_gampr <- pres_matrix$pres_pres_gampr/pres_matrix$length*100
+pres_matrix$falsepos_gampr <- pres_matrix$pres_abs_gampr/pres_matrix$length*100
+pres_matrix$accuracy_gampr <- ((pres_matrix$pres_pres_gampr + pres_matrix$abs_abs_gampr)/pres_matrix$length)*100
+pres_matrix$sensitivity_gampr <- (pres_matrix$pres_pres_gampr/(pres_matrix$pres_pres_gampr + pres_matrix$pres_abs_gampr))*100
+pres_matrix$specificity_gampr <- (pres_matrix$abs_abs_gampr/(pres_matrix$abs_pres_gampr + pres_matrix$abs_abs_gampr))*100
+pres_matrix$pp_gampr <- (pres_matrix$pres_pres_gampr/(pres_matrix$pres_pres_gampr + pres_matrix$abs_pres_gampr))*100
+pres_matrix$np_gampr <- (pres_matrix$abs_abs_gampr/(pres_matrix$abs_abs_gampr + pres_matrix$pres_abs_gampr))*100
 
-pplot = ggplot(test_df, aes(x = pres_2016, y = presence)) + geom_point() + theme_classic()+ theme(axis.title.x=element_text(size=36, vjust = 2),axis.title.y=element_text(size=36, angle=90, vjust = 2)) + geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)
+pres_matrix$truepos_glmocc <- pres_matrix$pres_pres_glmocc/pres_matrix$length*100
+pres_matrix$falsepos_glmocc <- pres_matrix$pres_abs_glmocc/pres_matrix$length*100
+pres_matrix$accuracy_glmocc <- ((pres_matrix$pres_pres_glmocc + pres_matrix$abs_abs_glmocc)/pres_matrix$length)*100
+pres_matrix$sensitivity_glmocc <- (pres_matrix$pres_pres_glmocc/(pres_matrix$pres_pres_glmocc + pres_matrix$pres_abs_glmocc))*100
+pres_matrix$specificity_glmocc <- (pres_matrix$abs_abs_glmocc/(pres_matrix$abs_pres_glmocc + pres_matrix$abs_abs_glmocc))*100
+pres_matrix$pp_glmocc <- (pres_matrix$pres_pres_glmocc/(pres_matrix$pres_pres_glmocc + pres_matrix$abs_pres_glmocc))*100
+pres_matrix$np_glmocc <- (pres_matrix$abs_abs_glmocc/(pres_matrix$abs_abs_glmocc + pres_matrix$pres_abs_glmocc))*100
 
-table(test_df$pres_2016, test_df$presence)
+pres_matrix$truepos_glmpr <- pres_matrix$pres_pres_glmpr/pres_matrix$length*100
+pres_matrix$falsepos_glmpr <- pres_matrix$pres_abs_glmpr/pres_matrix$length*100
+pres_matrix$accuracy_glmpr <- ((pres_matrix$pres_pres_glmpr + pres_matrix$abs_abs_glmpr)/pres_matrix$length)*100
+pres_matrix$sensitivity_glmpr <- (pres_matrix$pres_pres_glmpr/(pres_matrix$pres_pres_glmpr + pres_matrix$pres_abs_glmpr))*100
+pres_matrix$specificity_glmpr <- (pres_matrix$abs_abs_glmpr/(pres_matrix$abs_pres_glmpr + pres_matrix$abs_abs_glmpr))*100
+pres_matrix$pp_glmpr <- (pres_matrix$pres_pres_glmpr/(pres_matrix$pres_pres_glmpr + pres_matrix$abs_pres_glmpr))*100
+pres_matrix$np_glmpr <- (pres_matrix$abs_abs_glmpr/(pres_matrix$abs_abs_glmpr + pres_matrix$pres_abs_glmpr))*100
+
+pres_matrix$truepos_rfocc <- pres_matrix$pres_pres_rfocc/pres_matrix$length*100
+pres_matrix$falsepos_rfocc <- pres_matrix$pres_abs_rfocc/pres_matrix$length*100
+pres_matrix$accuracy_rfocc <- ((pres_matrix$pres_pres_rfocc + pres_matrix$abs_abs_rfocc)/pres_matrix$length)*100
+pres_matrix$sensitivity_rfocc <- (pres_matrix$pres_pres_rfocc/(pres_matrix$pres_pres_rfocc + pres_matrix$pres_abs_rfocc))*100
+pres_matrix$specificity_rfocc <- (pres_matrix$abs_abs_rfocc/(pres_matrix$abs_pres_rfocc + pres_matrix$abs_abs_rfocc))*100
+pres_matrix$pp_rfocc <- (pres_matrix$pres_pres_rfocc/(pres_matrix$pres_pres_rfocc + pres_matrix$abs_pres_rfocc))*100
+pres_matrix$np_rfocc <- (pres_matrix$abs_abs_rfocc/(pres_matrix$abs_abs_rfocc + pres_matrix$pres_abs_rfocc))*100
+
+pres_matrix$truepos_rfpr <- pres_matrix$pres_pres_rfpr/pres_matrix$length*100
+pres_matrix$falsepos_rfpr <- pres_matrix$pres_abs_rfpr/pres_matrix$length*100
+pres_matrix$accuracy_rfpr <- ((pres_matrix$pres_pres_rfpr + pres_matrix$abs_abs_rfpr)/pres_matrix$length)*100
+pres_matrix$sensitivity_rfpr <- (pres_matrix$pres_pres_rfpr/(pres_matrix$pres_pres_rfpr + pres_matrix$pres_abs_rfpr))*100
+pres_matrix$specificity_rfpr <- (pres_matrix$abs_abs_rfpr/(pres_matrix$abs_pres_rfpr + pres_matrix$abs_abs_rfpr))*100
+pres_matrix$pp_rfpr <- (pres_matrix$pres_pres_rfpr/(pres_matrix$pres_pres_rfpr + pres_matrix$abs_pres_rfpr))*100
+pres_matrix$np_rfpr <- (pres_matrix$abs_abs_rfpr/(pres_matrix$abs_abs_rfpr + pres_matrix$pres_abs_rfpr))*100
+
+pres_matrix$truepos_max <- pres_matrix$pres_pres_max/pres_matrix$length*100
+pres_matrix$falsepos_max <- pres_matrix$pres_abs_max/pres_matrix$length*100
+pres_matrix$accuracy_max <- ((pres_matrix$pres_pres_max + pres_matrix$abs_abs_max)/pres_matrix$length)*100
+pres_matrix$sensitivity_max <- (pres_matrix$pres_pres_max/(pres_matrix$pres_pres_max + pres_matrix$pres_abs_max))*100
+pres_matrix$specificity_max <- (pres_matrix$abs_abs_max/(pres_matrix$abs_pres_max + pres_matrix$abs_abs_max))*100
+pres_matrix$pp_max <- (pres_matrix$pres_pres_max/(pres_matrix$pres_pres_max + pres_matrix$abs_pres_max))*100
+pres_matrix$np_max <- (pres_matrix$abs_abs_max/(pres_matrix$abs_abs_max + pres_matrix$pres_abs_max))*100
+
+# kappa(test_df$presence, test_df$predicted_pres, cutoff = 0.7)
+# t.test(test_df$predicted_pres, test_df$presence, paired = TRUE, alternative= "two.sided")
+pres_matrix_plot <- gather(pres_matrix, "Mod", "value", truepos_gamocc:np_max)
+pres_matrix_plot2 <-  separate(data = pres_matrix_plot, col = Mod, into = c("Measure", "Modtype"), sep = "_") 
+pres_matrix_plot2$Measure <- factor(pres_matrix_plot2$Measure, levels = c( "truepos", "falsepos", "accuracy","sensitivity", "specificity", "pp", "np", ordered = TRUE))
+  
+pplot = ggplot(pres_matrix_plot2, aes(x = Modtype, y = value)) +   
+  geom_bar(aes(fill = Measure), position = "dodge", stat="identity") +
+  theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("Model Type")) + ylab(bquote("Percent")) +
+  theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=30), legend.key.width=unit(2, "lines"))
+ggsave("Figures/temp_crossval.pdf", width = 46, height = 20)
 
 ####### dummy data #####
 bbs_occ = read.csv("Data/bbs_sub1.csv", header=TRUE)
@@ -290,10 +424,6 @@ for(i in sp_list){
   j = unique(sdm_input$ALPHA.CODE)
   plot = plot(auc, main = paste("AUC Curve for ", j, ".csv", sep=""))
 }
-}
-write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
-}
-
 dev.off()
 
 ##### spatial_crossval #######
@@ -301,7 +431,7 @@ dev.off()
 sdm_space_cval = c()
 for(i in sp_list){
   print(i)
-  space_sub <- filter(bbs_final_occ_ll,  Aou == i)
+  space_sub <- filter(bbs_final_occ_ll,  aou == i)
   #Randomly shuffle the data
   space_sub<-space_sub[sample(nrow(space_sub)),]
   #Create 10 equally size folds
@@ -318,12 +448,39 @@ for(i in sp_list){
         testIndexes <- which(folds==j,arr.ind=TRUE)
         testData <- sdm_input[testIndexes, ]
         trainData <- sdm_input[-testIndexes, ]
-        gam_train <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = trainData)
-        pred_gam_test <- predict(gam_train, testData) 
-        thresh <- max(pred_gam_test) * 0.7
+        gam_occ_train <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = trainData)
+        glm_occ_train <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = trainData)
+        glm_pres_train <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = trainData)
+        gam_occ_train <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = trainData)
+        gam_pres_train <- mgcv::gam(presence ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = trainData)
+        rf_occ_train <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = trainData)
+        rf_pres_train <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = trainData)
+        max_train = dismo::maxent(trainData[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], trainData$presence)
+        
+        pred_gam_occ <- predict(gam_occ_train, testData) 
+        pred_gam_pr <- predict(gam_pres_train, testData)
+        pred_glm_occ <- predict(glm_occ_train, testData)
+        pred_glm_pr <- predict(glm_pres_train, testData)
+        pred_rf_occ <- predict(rf_occ_train, testData)
+        pred_rf_pr <- predict(rf_pres_train, testData)
+        max_pred_pres <- predict(max_train, as.matrix(testData[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")]))
+        
+        threshglm_occ <-threshfun(pred_glm_occ)
+        threshglm_pr <-threshfun(pred_glm_pr)
+        threshgam_occ <-threshfun(pred_gam_occ)
+        threshgam_pr <-threshfun(pred_gam_pr)
+        threshrf_occ <-threshfun(pred_rf_occ)
+        threshrf_pr <-threshfun(pred_rf_pr)
+        threshmax_pres <-threshfun(max_pred_pres)
+      
         sdm_test <- sdm_input[testIndexes, ] %>%  
-          mutate(predicted_pres = ifelse(pred_gam_test > thresh, 1, 0)) %>%
-          cbind(., pred_gam_test)
+          mutate(predicted_glm_occ = ifelse(pred_glm_occ > threshglm_occ, 1, 0),
+                 predicted_glm_pr = ifelse(pred_glm_pr > threshglm_pr, 1, 0),
+                 predicted_gam_occ = ifelse(pred_gam_occ > threshgam_occ, 1, 0),
+                 predicted_gam_pr = ifelse(pred_gam_pr > threshgam_pr, 1, 0),
+                 predicted_rf_occ = ifelse(pred_rf_occ > threshrf_occ, 1, 0),
+                 predicted_rf_pr = ifelse(pred_rf_pr > threshrf_pr, 1, 0),
+                 predicted_max_pres = ifelse(max_pred_pres > threshmax_pres, 1, 0)) 
         sdm_space_cval <- rbind(sdm_space_cval, sdm_test)
       }
     }
@@ -361,8 +518,8 @@ pres_matrix$abs_pres <- unlist(pres_matrix$abs_pres)
 pres_matrix$abs_abs <- unlist(pres_matrix$abs_abs)
 pres_matrix$pres_abs <- unlist(pres_matrix$pres_abs)
 pres_matrix$length <- unlist(pres_matrix$length)
-pres_matrix$true_pos <- pres_matrix$pres_pres/pres_matrix$length
-pres_matrix$false_pos <- pres_matrix$pres_abs/pres_matrix$length
+pres_matrix$truepos <- pres_matrix$pres_pres/pres_matrix$length
+pres_matrix$falsepos <- pres_matrix$pres_abs/pres_matrix$length
 pres_matrix$accuracy <- ((pres_matrix$pres_pres + pres_matrix$abs_abs)/pres_matrix$length)*100
 pres_matrix$sensitivity <- (pres_matrix$pres_pres/(pres_matrix$pres_pres + pres_matrix$abs_abs))*100
 pres_matrix$specificity <- (pres_matrix$abs_abs/(pres_matrix$pres_pres + pres_matrix$abs_abs))*100
@@ -397,8 +554,8 @@ pres_matrix$abs_pres <- unlist(pres_matrix$abs_pres)
 pres_matrix$abs_abs <- unlist(pres_matrix$abs_abs)
 pres_matrix$pres_abs <- unlist(pres_matrix$pres_abs)
 pres_matrix$length <- unlist(pres_matrix$length)
-pres_matrix$true_pos <- pres_matrix$pres_pres/pres_matrix$length
-pres_matrix$false_pos <- pres_matrix$pres_abs/pres_matrix$length
+pres_matrix$truepos <- pres_matrix$pres_pres/pres_matrix$length
+pres_matrix$falsepos <- pres_matrix$pres_abs/pres_matrix$length
 pres_matrix$accuracy <- ((pres_matrix$pres_pres + pres_matrix$abs_abs)/pres_matrix$length)*100
 pres_matrix$sensitivity <- (pres_matrix$pres_pres/(pres_matrix$pres_pres + pres_matrix$abs_abs))*100
 pres_matrix$specificity <- (pres_matrix$abs_abs/(pres_matrix$pres_pres + pres_matrix$abs_abs))*100
