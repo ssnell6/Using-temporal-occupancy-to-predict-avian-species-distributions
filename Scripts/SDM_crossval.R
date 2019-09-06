@@ -235,8 +235,10 @@ pres_matrix <- test_df %>% group_by(aou) %>%
   unnest()
 
 pres_matrix <- data.frame(pres_matrix)
+
 # pres_matrix$truepos_gamocc <- pres_matrix$pres_pres_gamocc/pres_matrix$length*100
 # pres_matrix$falsepos_gamocc <- pres_matrix$pres_abs_gamocc/pres_matrix$length*100
+
 pres_matrix$accuracy_gamocc <- ((pres_matrix$pres_pres_gamocc + pres_matrix$abs_abs_gamocc)/pres_matrix$length)*100
 pres_matrix$sensitivity_gamocc <- (pres_matrix$pres_pres_gamocc/(pres_matrix$pres_pres_gamocc + pres_matrix$pres_abs_gamocc))*100
 pres_matrix$specificity_gamocc <- (pres_matrix$abs_abs_gamocc/(pres_matrix$abs_pres_gamocc + pres_matrix$abs_abs_gamocc))*100
@@ -296,7 +298,68 @@ pres_matrix$np_max <- (pres_matrix$abs_abs_max/(pres_matrix$abs_abs_max + pres_m
 pres_matrix_plot <- gather(pres_matrix, "Mod", "value", accuracy_gamocc:np_max)
 pres_matrix_plot2 <-  separate(data = pres_matrix_plot, col = Mod, into = c("Measure", "Modtype"), sep = "_") 
 pres_matrix_plot2$Modtype <- factor(pres_matrix_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max", ordered = TRUE))
-  
+
+
+
+pdf('Temporal_XVal.pdf', height = 8, width = 14)
+  for(sp in unique(pres_matrix_plot2$aou)){ 
+  plotsub = filter(pres_matrix_plot2, aou == sp) %>%
+    distinct()
+   plot <- ggplot(plotsub, aes(x = Measure, y = value)) +   
+      geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity") +
+      theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(sp) + ylab(bquote("Percent")) +
+      scale_fill_manual(values = c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462","#b3de69"),
+                        breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
+                        labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GAM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
+      theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+      guides(colour = guide_legend(override.aes = list(shape = 15))) +
+      theme(legend.title=element_blank(), legend.text=element_text(size=30), legend.key.width=unit(2, "lines"))
+    print(plot)
+}
+dev.off()
+ 
+pres_matrix_means <- pres_matrix %>%
+  summarise(
+  mean_accuracy_gamocc = mean(accuracy_gamocc),
+  mean_sensitivity_gamocc = mean(sensitivity_gamocc),
+  mean_specificity_gamocc = mean(specificity_gamocc),
+  mean_pp_gamocc = mean(pp_gamocc),          
+  mean_np_gamocc = mean(np_gamocc),       
+  mean_accuracy_gampr = mean(accuracy_gampr),  
+  mean_sensitivity_gampr = mean(sensitivity_gampr),
+  mean_specificity_gampr = mean(specificity_gampr),
+  mean_pp_gampr = mean(pp_gampr),         
+  mean_np_gampr = mean(np_gampr),         
+  mean_accuracy_glmocc = mean(accuracy_glmocc),   
+ mean_sensitivity_glmocc = mean(sensitivity_glmocc),
+ mean_specificity_glmocc = mean(specificity_glmocc),
+ mean_pp_glmocc = mean(pp_glmocc),    
+ mean_np_glmocc = mean(np_glmocc),     
+ mean_accuracy_glmpr = mean(accuracy_glmpr),   
+ mean_sensitivity_glmpr = mean(sensitivity_glmpr),
+ mean_specificity_glmpr = mean(specificity_glmpr),
+ mean_pp_glmpr = mean(pp_glmpr),      
+ mean_np_glmpr = mean(np_glmpr),         
+ mean_accuracy_rfocc = mean(accuracy_rfocc),  
+ mean_sensitivity_rfocc = mean(sensitivity_rfocc),
+ mean_specificity_rfocc = mean(specificity_rfocc),
+ mean_pp_rfocc  = mean(pp_rfocc),        
+ mean_np_rfocc = mean(np_rfocc),        
+ mean_accuracy_rfpr = mean(accuracy_rfpr),   
+ mean_sensitivity_rfpr = mean(sensitivity_rfpr),
+ mean_specificity_rfpr = mean(specificity_rfpr), 
+ mean_pp_rfpr = mean(pp_rfpr),        
+ mean_np_rfpr = mean(np_rfpr),           
+ mean_accuracy_max  = mean(accuracy_max),    
+ mean_sensitivity_max  = mean(sensitivity_max), 
+ mean_specificity_max  = mean(specificity_max), 
+ mean_pp_max = mean(pp_max),           
+ mean_np_max = mean(np_max))       
+ 
+pres_matrix_plot <- gather(pres_matrix_means, "Mod", "value", mean_accuracy_gamocc:mean_np_max)
+pres_matrix_plot2 <-  separate(data = pres_matrix_plot, col = Mod, into = c("Mean","Measure", "Modtype"), sep = "_") 
+pres_matrix_plot2$Modtype <- factor(pres_matrix_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max", ordered = TRUE))
+
 pplot = ggplot(pres_matrix_plot2, aes(x = Measure, y = value)) +   
   geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity") +
   theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("Measure")) + ylab(bquote("Percent")) +
