@@ -132,7 +132,7 @@ for(i in sp_list){
 test_df <- data.frame(test_df)
 
 # write.csv(test_df, "Data/temporal_crossval_df.csv", row.names = FALSE)
-test_df <- read.csv("Data/temporal_crossval_df.csv", header = TRUE)
+test_df <- read.csv("Data/temporal_crossval_df.csv", header = TRUE) 
 # to account for species not detected in 2015-2016 but are within the range
 test_df$pres_2016[is.na(test_df$pres_2016)] = 0 
 
@@ -235,56 +235,56 @@ pres_matrix <- test_df %>% group_by(aou) %>%
   unnest()
 
 pres_matrix <- data.frame(pres_matrix)
-pres_matrix$truepos_gamocc <- pres_matrix$pres_pres_gamocc/pres_matrix$length*100
-pres_matrix$falsepos_gamocc <- pres_matrix$pres_abs_gamocc/pres_matrix$length*100
+# pres_matrix$truepos_gamocc <- pres_matrix$pres_pres_gamocc/pres_matrix$length*100
+# pres_matrix$falsepos_gamocc <- pres_matrix$pres_abs_gamocc/pres_matrix$length*100
 pres_matrix$accuracy_gamocc <- ((pres_matrix$pres_pres_gamocc + pres_matrix$abs_abs_gamocc)/pres_matrix$length)*100
 pres_matrix$sensitivity_gamocc <- (pres_matrix$pres_pres_gamocc/(pres_matrix$pres_pres_gamocc + pres_matrix$pres_abs_gamocc))*100
 pres_matrix$specificity_gamocc <- (pres_matrix$abs_abs_gamocc/(pres_matrix$abs_pres_gamocc + pres_matrix$abs_abs_gamocc))*100
 pres_matrix$pp_gamocc <- (pres_matrix$pres_pres_gamocc/(pres_matrix$pres_pres_gamocc + pres_matrix$abs_pres_gamocc))*100
 pres_matrix$np_gamocc <- (pres_matrix$abs_abs_gamocc/(pres_matrix$abs_abs_gamocc + pres_matrix$pres_abs_gamocc))*100
 
-pres_matrix$truepos_gampr <- pres_matrix$pres_pres_gampr/pres_matrix$length*100
-pres_matrix$falsepos_gampr <- pres_matrix$pres_abs_gampr/pres_matrix$length*100
+# pres_matrix$truepos_gampr <- pres_matrix$pres_pres_gampr/pres_matrix$length*100
+# pres_matrix$falsepos_gampr <- pres_matrix$pres_abs_gampr/pres_matrix$length*100
 pres_matrix$accuracy_gampr <- ((pres_matrix$pres_pres_gampr + pres_matrix$abs_abs_gampr)/pres_matrix$length)*100
 pres_matrix$sensitivity_gampr <- (pres_matrix$pres_pres_gampr/(pres_matrix$pres_pres_gampr + pres_matrix$pres_abs_gampr))*100
 pres_matrix$specificity_gampr <- (pres_matrix$abs_abs_gampr/(pres_matrix$abs_pres_gampr + pres_matrix$abs_abs_gampr))*100
 pres_matrix$pp_gampr <- (pres_matrix$pres_pres_gampr/(pres_matrix$pres_pres_gampr + pres_matrix$abs_pres_gampr))*100
 pres_matrix$np_gampr <- (pres_matrix$abs_abs_gampr/(pres_matrix$abs_abs_gampr + pres_matrix$pres_abs_gampr))*100
 
-pres_matrix$truepos_glmocc <- pres_matrix$pres_pres_glmocc/pres_matrix$length*100
-pres_matrix$falsepos_glmocc <- pres_matrix$pres_abs_glmocc/pres_matrix$length*100
+# pres_matrix$truepos_glmocc <- pres_matrix$pres_pres_glmocc/pres_matrix$length*100
+# pres_matrix$falsepos_glmocc <- pres_matrix$pres_abs_glmocc/pres_matrix$length*100
 pres_matrix$accuracy_glmocc <- ((pres_matrix$pres_pres_glmocc + pres_matrix$abs_abs_glmocc)/pres_matrix$length)*100
 pres_matrix$sensitivity_glmocc <- (pres_matrix$pres_pres_glmocc/(pres_matrix$pres_pres_glmocc + pres_matrix$pres_abs_glmocc))*100
 pres_matrix$specificity_glmocc <- (pres_matrix$abs_abs_glmocc/(pres_matrix$abs_pres_glmocc + pres_matrix$abs_abs_glmocc))*100
 pres_matrix$pp_glmocc <- (pres_matrix$pres_pres_glmocc/(pres_matrix$pres_pres_glmocc + pres_matrix$abs_pres_glmocc))*100
 pres_matrix$np_glmocc <- (pres_matrix$abs_abs_glmocc/(pres_matrix$abs_abs_glmocc + pres_matrix$pres_abs_glmocc))*100
 
-pres_matrix$truepos_glmpr <- pres_matrix$pres_pres_glmpr/pres_matrix$length*100
-pres_matrix$falsepos_glmpr <- pres_matrix$pres_abs_glmpr/pres_matrix$length*100
+# pres_matrix$truepos_glmpr <- pres_matrix$pres_pres_glmpr/pres_matrix$length*100
+# pres_matrix$falsepos_glmpr <- pres_matrix$pres_abs_glmpr/pres_matrix$length*100
 pres_matrix$accuracy_glmpr <- ((pres_matrix$pres_pres_glmpr + pres_matrix$abs_abs_glmpr)/pres_matrix$length)*100
 pres_matrix$sensitivity_glmpr <- (pres_matrix$pres_pres_glmpr/(pres_matrix$pres_pres_glmpr + pres_matrix$pres_abs_glmpr))*100
 pres_matrix$specificity_glmpr <- (pres_matrix$abs_abs_glmpr/(pres_matrix$abs_pres_glmpr + pres_matrix$abs_abs_glmpr))*100
 pres_matrix$pp_glmpr <- (pres_matrix$pres_pres_glmpr/(pres_matrix$pres_pres_glmpr + pres_matrix$abs_pres_glmpr))*100
 pres_matrix$np_glmpr <- (pres_matrix$abs_abs_glmpr/(pres_matrix$abs_abs_glmpr + pres_matrix$pres_abs_glmpr))*100
 
-pres_matrix$truepos_rfocc <- pres_matrix$pres_pres_rfocc/pres_matrix$length*100
-pres_matrix$falsepos_rfocc <- pres_matrix$pres_abs_rfocc/pres_matrix$length*100
+# pres_matrix$truepos_rfocc <- pres_matrix$pres_pres_rfocc/pres_matrix$length*100
+# pres_matrix$falsepos_rfocc <- pres_matrix$pres_abs_rfocc/pres_matrix$length*100
 pres_matrix$accuracy_rfocc <- ((pres_matrix$pres_pres_rfocc + pres_matrix$abs_abs_rfocc)/pres_matrix$length)*100
 pres_matrix$sensitivity_rfocc <- (pres_matrix$pres_pres_rfocc/(pres_matrix$pres_pres_rfocc + pres_matrix$pres_abs_rfocc))*100
 pres_matrix$specificity_rfocc <- (pres_matrix$abs_abs_rfocc/(pres_matrix$abs_pres_rfocc + pres_matrix$abs_abs_rfocc))*100
 pres_matrix$pp_rfocc <- (pres_matrix$pres_pres_rfocc/(pres_matrix$pres_pres_rfocc + pres_matrix$abs_pres_rfocc))*100
 pres_matrix$np_rfocc <- (pres_matrix$abs_abs_rfocc/(pres_matrix$abs_abs_rfocc + pres_matrix$pres_abs_rfocc))*100
 
-pres_matrix$truepos_rfpr <- pres_matrix$pres_pres_rfpr/pres_matrix$length*100
-pres_matrix$falsepos_rfpr <- pres_matrix$pres_abs_rfpr/pres_matrix$length*100
+# pres_matrix$truepos_rfpr <- pres_matrix$pres_pres_rfpr/pres_matrix$length*100
+# pres_matrix$falsepos_rfpr <- pres_matrix$pres_abs_rfpr/pres_matrix$length*100
 pres_matrix$accuracy_rfpr <- ((pres_matrix$pres_pres_rfpr + pres_matrix$abs_abs_rfpr)/pres_matrix$length)*100
 pres_matrix$sensitivity_rfpr <- (pres_matrix$pres_pres_rfpr/(pres_matrix$pres_pres_rfpr + pres_matrix$pres_abs_rfpr))*100
 pres_matrix$specificity_rfpr <- (pres_matrix$abs_abs_rfpr/(pres_matrix$abs_pres_rfpr + pres_matrix$abs_abs_rfpr))*100
 pres_matrix$pp_rfpr <- (pres_matrix$pres_pres_rfpr/(pres_matrix$pres_pres_rfpr + pres_matrix$abs_pres_rfpr))*100
 pres_matrix$np_rfpr <- (pres_matrix$abs_abs_rfpr/(pres_matrix$abs_abs_rfpr + pres_matrix$pres_abs_rfpr))*100
 
-pres_matrix$truepos_max <- pres_matrix$pres_pres_max/pres_matrix$length*100
-pres_matrix$falsepos_max <- pres_matrix$pres_abs_max/pres_matrix$length*100
+# pres_matrix$truepos_max <- pres_matrix$pres_pres_max/pres_matrix$length*100
+# pres_matrix$falsepos_max <- pres_matrix$pres_abs_max/pres_matrix$length*100
 pres_matrix$accuracy_max <- ((pres_matrix$pres_pres_max + pres_matrix$abs_abs_max)/pres_matrix$length)*100
 pres_matrix$sensitivity_max <- (pres_matrix$pres_pres_max/(pres_matrix$pres_pres_max + pres_matrix$pres_abs_max))*100
 pres_matrix$specificity_max <- (pres_matrix$abs_abs_max/(pres_matrix$abs_pres_max + pres_matrix$abs_abs_max))*100
@@ -293,13 +293,16 @@ pres_matrix$np_max <- (pres_matrix$abs_abs_max/(pres_matrix$abs_abs_max + pres_m
 
 # kappa(test_df$presence, test_df$predicted_pres, cutoff = 0.7)
 # t.test(test_df$predicted_pres, test_df$presence, paired = TRUE, alternative= "two.sided")
-pres_matrix_plot <- gather(pres_matrix, "Mod", "value", truepos_gamocc:np_max)
+pres_matrix_plot <- gather(pres_matrix, "Mod", "value", accuracy_gamocc:np_max)
 pres_matrix_plot2 <-  separate(data = pres_matrix_plot, col = Mod, into = c("Measure", "Modtype"), sep = "_") 
-pres_matrix_plot2$Measure <- factor(pres_matrix_plot2$Measure, levels = c( "truepos", "falsepos", "accuracy","sensitivity", "specificity", "pp", "np", ordered = TRUE))
+pres_matrix_plot2$Modtype <- factor(pres_matrix_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max", ordered = TRUE))
   
-pplot = ggplot(pres_matrix_plot2, aes(x = Modtype, y = value)) +   
-  geom_bar(aes(fill = Measure), position = "dodge", stat="identity") +
-  theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("Model Type")) + ylab(bquote("Percent")) +
+pplot = ggplot(pres_matrix_plot2, aes(x = Measure, y = value)) +   
+  geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity") +
+  theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("Measure")) + ylab(bquote("Percent")) +
+  scale_fill_manual(values = c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462","#b3de69"),
+                    breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
+                    labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GAM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
   theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=30), legend.key.width=unit(2, "lines"))
@@ -427,9 +430,19 @@ for(i in sp_list){
 dev.off()
 
 ##### spatial_crossval #######
+#detect the number of cores on your computer & subtract 1 (don't want to use up all cores when running analysis)
+no_cores <- parallel::detectCores() - 1
+
+#set up cluster
+cl <- parallel::makeCluster(no_cores)
+
+#export any data frames/libraries that you are using in your dredge call.  
+parallel::clusterExport(cl,"rf")  
+registerDoParallel(cl)
+
 # code from https://stats.stackexchange.com/questions/61090/how-to-split-a-data-set-to-do-10-fold-cross-validation
 sdm_space_cval = c()
-for(i in sp_list){
+for(i in unique(test_df$aou)){
   print(i)
   space_sub <- filter(bbs_final_occ_ll,  aou == i)
   #Randomly shuffle the data

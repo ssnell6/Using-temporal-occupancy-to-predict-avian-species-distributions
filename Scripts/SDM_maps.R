@@ -172,6 +172,18 @@ routes_sf$presence_cat <- factor(routes_sf$presence_cat, levels = c("core", "tra
 #    "#008837","#7fbf7b","#7b3294")) + 
 #  tm_shape(us_sf) + tm_borders( "black", lwd = 3) +
 #  tm_layout("Occurrence", title.size = 2, title.position = c("right","bottom")) 
+palette = brewer.pal(6, "PRGn")
+
+scale_fun <- function(r){ 
+  min <- min(na.omit(r))
+  max <- max(na.omit(r))
+  mean <- mean(na.omit(r))
+  break1 <- min+((max-min)/5)
+  break2 <- break1+((max-min)/5)
+  break3 <- break2+((max-min)/5)
+  break4 <- break3+((max-min)/5)
+  pal <- c(min, break1, break2, break3, break4, max)
+}
 
 point_map <- tm_shape(routes_sf) + 
   tm_symbols(size = 0.75, shape="presence", shapes = c(16,4), alpha = 0.5, col = "#5E5E5E") + 
@@ -182,49 +194,53 @@ point_map <- tm_shape(routes_sf) +
   tm_layout("  Observed \nOccurences", title.size = 2, title.position = c("right","bottom")) +
   tm_layout(main.title = "A") 
 
-sdm_maxent_pr <- tm_shape(plot.r) + tm_raster("max_pred_pres", palette = "PRGn", style = "cont", breaks=quantile(plot.r$max_pred_pres), legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_me_pres, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+sdm_maxent_pr <- tm_shape(plot.r) + tm_raster("max_pred_pres", palette = palette, style = "cont", breaks=scale_fun(as.vector(plot.r$max_pred_pres)) , legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_me_pres, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "B") 
 
-sdm_maxent_core <- tm_shape(plot.core) + tm_raster("max_pred_pres_notrans", palette = "PRGn", style = "cont", title = "MaxEnt Core", breaks=quantile(plot.core$max_pred_pres_notrans),legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_me_pres_notrans, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+sdm_maxent_core <- tm_shape(plot.core) + tm_raster("max_pred_pres_notrans", palette = palette, style = "cont", title = "MaxEnt Core", breaks=scale_fun(as.vector(plot.core$max_pred_pres_notrans)),legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_me_pres_notrans, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "C") 
 
-sdm_glm_occ <- tm_shape(plot.r) + tm_raster("pred_glm_occ", palette = "PRGn", style = "cont", title = "GLM Occ",breaks=quantile(plot.r$pred_glm_occ), legend.show = FALSE) + 
+sdm_glm_occ <- tm_shape(plot.r) + tm_raster("pred_glm_occ", palette = palette, style = "cont", title = "GLM Occ",breaks=scale_fun(as.vector(plot.r$pred_glm_occ)), legend.show = FALSE) + 
   tm_shape(us_sf) + tm_borders( "black", lwd = 3) + 
   tm_layout(paste("RMSE =",signif(rmse_occ, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "D") 
 #sdm_occ
 
-sdm_glm_pr <- tm_shape(plot.r) + tm_raster("pred_glm_pr", palette = "PRGn", style = "cont", title = "GLM Pres", breaks=quantile(plot.r$pred_glm_pr), legend.show = FALSE) + tm_shape(us_sf) + 
+sdm_glm_pr <- tm_shape(plot.r) + tm_raster("pred_glm_pr", palette = palette, style = "cont", title = "GLM Pres", breaks=scale_fun(as.vector(plot.r$pred_glm_pr)), legend.show = FALSE) + tm_shape(us_sf) + 
   tm_borders(col = "black", lwd = 3) + 
   tm_layout(paste("RMSE =",signif(rmse_pres, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "E") 
 #sdm_pr
 
-sdm_glm_core <- tm_shape(plot.core) + tm_raster("pred_glm_pr_notrans", palette = "PRGn", style = "cont", breaks=quantile(plot.core$pred_glm_pr_notrans),legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + 
+sdm_glm_core <- tm_shape(plot.core) + tm_raster("pred_glm_pr_notrans", palette = palette, style = "cont", breaks=scale_fun(as.vector(plot.core$pred_glm_pr_notrans)),legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + 
   tm_layout(paste("RMSE =",signif(rmse_notrans, 2)), title.size = 2, title.position = c("right","bottom")) +
   tm_layout(main.title = "F") 
 
-sdm_gam_occ <- tm_shape(plot.r) + tm_raster("pred_gam_occ", palette = "PRGn", style = "cont", title = "GAM Occ", breaks=quantile(plot.r$pred_gam_occ), legend.show = FALSE) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_gam, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+sdm_gam_occ <- tm_shape(plot.r) + tm_raster("pred_gam_occ", palette = palette, style = "cont", title = "GAM Occ", breaks=scale_fun(as.vector(plot.r$pred_gam_occ)), legend.show = FALSE) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_gam, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "G") 
 #sdm_occ
 
-sdm_gam_pr <- tm_shape(plot.r) + tm_raster("pred_gam_pr", palette = "PRGn", style = "cont",breaks=quantile(plot.r$pred_gam_pr), legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + 
+sdm_gam_pr <- tm_shape(plot.r) + tm_raster("pred_gam_pr", palette = palette, style = "cont",breaks=scale_fun(as.vector(plot.r$pred_gam_pr)), legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + 
   tm_layout(paste("RMSE =",signif(rmse_gam_pres, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "H") 
 #sdm_pr
 
-sdm_gam_core <- tm_shape(plot.core) + tm_raster("pred_gam_pr_notrans", palette = "PRGn", style = "cont", breaks=quantile(plot.core$pred_gam_pr_notrans), legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_gam_notrans, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+sdm_gam_core <- tm_shape(plot.core) + tm_raster("pred_gam_pr_notrans", palette = palette, style = "cont", breaks=scale_fun(as.vector(plot.core$pred_gam_pr_notrans)), legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_gam_notrans, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "I") 
 
-sdm_rf_occ <- tm_shape(plot.r) + tm_raster("pred_rf_occ", palette = "PRGn", style = "cont", title = "RF Occ", breaks=quantile(plot.r$pred_rf_occ), legend.show = FALSE) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_rf, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+# had to do manual bc mean was less than first break.
+plot.r$pred_rf_occ <- abs(plot.r$pred_rf_occ)
+sdm_rf_occ <- tm_shape(plot.r) + tm_raster("pred_rf_occ", palette = palette, style = "cont", title = "RF Occ", breaks=scale_fun(as.vector(plot.r$pred_rf_occ)), legend.show = FALSE) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_rf, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "J") 
 #sdm_occ
 
-sdm_rf_pr <- tm_shape(plot.r) + tm_raster("pred_rf_pr", palette = "PRGn", style = "cont", title = "RF Pres", breaks=quantile(plot.r$pred_rf_pr), legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_rf_pres, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+sdm_rf_pr <- tm_shape(plot.r) + tm_raster("pred_rf_pr", palette = palette, style = "cont", title = "RF Pres", breaks=scale_fun(as.vector(plot.r$pred_rf_pr)), legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_rf_pres, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "K") 
 #sdm_pr
 
-sdm_rf_core <- tm_shape(plot.core) + tm_raster("pred_rf_pr_notrans", palette = "PRGn", style = "cont", title = "RF Core", breaks=quantile(plot.core$pred_rf_pr_notrans), legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_rf_notrans, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+# had to do manual bc mean was less than first break.
+plot.core$pred_rf_pr_notrans <- abs(plot.core$pred_rf_pr_notrans)
+sdm_rf_core <- tm_shape(plot.core) + tm_raster("pred_rf_pr_notrans", palette = palette, style = "cont", title = "RF Core", breaks=scale_fun(as.vector(plot.core$pred_rf_pr_notrans)), legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_rf_notrans, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "L") 
 
 MaxEnt_plot <- tmap_arrange(point_map, sdm_maxent_pr, sdm_maxent_core, ncol = 1)
