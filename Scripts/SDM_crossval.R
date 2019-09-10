@@ -502,9 +502,9 @@ mime() %>%
   text_body("For loop complete") -> text_msg
 
 bbs_env <- left_join(bbs_final_occ_ll, all_env, by = "stateroute")
-
+rmse = c()
 sdm_space_cval = c()
-for(i in sp_list){
+for(i in sp_list[1:50]){
   print(i)
   space_sub <- dplyr::filter(bbs_env,  aou == i)
   #Randomly shuffle the data
@@ -556,6 +556,15 @@ for(i in sp_list){
                  predicted_rf_pr = ifelse(pred_rf_pr > threshrf_pr, 1, 0),
                  predicted_max_pres = ifelse(max_pred_pres > threshmax_pres, 1, 0),
                  j = j) 
+        rmse_occ <- rmse(pred_glm_occ, sdm_test$occ)
+        rmse_pres <- rmse(pred_glm_pr, sdm_test$presence)
+        rmse_gam <- rmse(as.vector(pred_gam_occ), sdm_test$occ)
+        rmse_gam_pres <- rmse(as.vector(pred_gam_pr), sdm_test$presence)
+        rmse_rf <- rmse(pred_rf_occ, sdm_test$occ)
+        rmse_rf_pres <- rmse(as.vector(as.numeric(pred_rf_pr)), sdm_test$presence)
+        rmse_me_pres <- rmse(max_pred_pres, sdm_test$presence)
+        rmse = rbind(rmse, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres))
+        
         sdm_space_cval <- rbind(sdm_space_cval, sdm_test)
       }
     }
@@ -565,7 +574,8 @@ gm_send_message(text_msg)
 sdm_space_cval <- data.frame(sdm_space_cval)
 # write.csv(sdm_space_cval,"Data/space_cval.csv", row.names = FALSE)
 sdm_space_cval <- read.csv("/Volumes/hurlbertlab/Snell/sdm_space_cval.csv", header = TRUE) 
-  
+rmse <- data.frame(rmse)
+names(rmse) <- c("aou","rmse_occ", "rmse_pres", "rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres", "rmse_me_pres")
 
 pres_spatial <- sdm_space_cval %>% group_by(aou) %>%
   na.omit() %>%

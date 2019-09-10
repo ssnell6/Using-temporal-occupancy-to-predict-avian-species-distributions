@@ -18,7 +18,7 @@ bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE) %>%
 
 bbs_occ_sub = bbs_occ %>% 
   dplyr::count(aou, stateroute) %>% 
-  filter(n < 5) %>% 
+  filter(n < 6) %>% 
   dplyr::mutate(occ = n/5) 
 
 
@@ -117,13 +117,13 @@ for(i in sp_list){
 
 
 setwd("C:/Git/SDMs")
-auc_df = data.frame(auc_df)
-names(auc_df) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres","rmse_me_pres")
+auc_df_5 = data.frame(auc_df_5)
+names(auc_df_5) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres","rmse_me_pres")
 # write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
 
 
 ##### no trans #####
-auc_df_notrans = c()
+auc_df_notrans_5 = c()
 sp_list = unique(bbs_final_occ_ll$aou)
 
 for(i in sp_list){
@@ -169,7 +169,7 @@ for(i in sp_list){
       rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
       rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$excl_pres)
       rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$excl_pres)
-      auc_df_notrans = rbind(auc_df_notrans, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres))
+      auc_df_notrans_5 = rbind(auc_df_notrans_5, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres))
       j = unique(sdm_input$ALPHA.CODE)
     }
   }

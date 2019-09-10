@@ -94,11 +94,10 @@ bbs_final_occ_ll$presence <- as.numeric(bbs_final_occ_ll$presence)
 sdm_input_global <- left_join(bbs_final_occ_ll, all_env, by = "stateroute")
 Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_211') # for 64-bit version
 
-###### ######
+###### main analysis ######
 # test = cor(na.omit(sdm_input_global))
 # corrplot(test)
 
-setwd("Data/sdm_dfs/")
 auc_df = c()
 
   sp_list = unique(bbs_final_occ_ll$aou)
@@ -157,12 +156,164 @@ for(i in sp_list){
 # write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
 }
 
-dev.off()
 
-setwd("C:/Git/SDMs")
 auc_df = data.frame(auc_df)
 names(auc_df) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres","rmse_me_pres")
 # write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
+pres_3000 <- auc_df %>% group_by(AOU) %>%
+  na.omit() %>%
+  nest() %>%
+  # filter(sum(data$predicted_pres) > 0)
+  mutate(pres_pres_glmocc = purrr::map(data, ~{
+    dat <- .
+    table(dat$rmse_occ, dat$presence)[2,2]}),
+    pres_abs_glmocc = purrr::map(data, ~{
+      newdat <- .
+      table(newdat$rmse_occ, newdat$presence)[1,2]}), 
+    abs_abs_glmocc = purrr::map(data, ~{
+      newdat2 <- .
+      table(newdat2$rmse_occ, newdat2$presence)[1,1]}), 
+    abs_pres_glmocc = purrr::map(data, ~{
+      newdat3 <- .
+      table(newdat3$rmse_occ, newdat3$presence)[2,1]}), 
+    
+    pres_pres_glmpr = purrr::map(data, ~{
+      newdat4 <- .
+      table(newdat4$rmse_pres, newdat4$presence)[2,2]}),
+    pres_abs_glmpr = purrr::map(data, ~{
+      newdat5 <- .
+      table(newdat5$rmse_pres, newdat5$presence)[1,2]}), 
+    abs_abs_glmpr = purrr::map(data, ~{
+      newdat6 <- .
+      table(newdat6$rmse_pres, newdat6$presence)[1,1]}), 
+    abs_pres_glmpr = purrr::map(data, ~{
+      newdat7 <- .
+      table(newdat7$rmse_pres, newdat7$presence)[2,1]}), 
+    
+    pres_pres_gamocc = purrr::map(data, ~{
+      newdat8 <- .
+      table(newdat8$rmse_gam, newdat8$presence)[2,2]}),
+    pres_abs_gamocc = purrr::map(data, ~{
+      newdat9 <- .
+      table(newdat9$rmse_gam, newdat9$presence)[1,2]}), 
+    abs_abs_gamocc = purrr::map(data, ~{
+      newdat10 <- .
+      table(newdat10$rmse_gam, newdat10$presence)[1,1]}), 
+    abs_pres_gamocc = purrr::map(data, ~{
+      newdat11 <- .
+      table(newdat11$rmse_gam, newdat11$presence)[2,1]}),
+    
+    pres_pres_gampr = purrr::map(data, ~{
+      newdat12 <- .
+      table(newdat12$rmse_gam_pres, newdat12$presence)[2,2]}),
+    pres_abs_gampr = purrr::map(data, ~{
+      newdat13 <- .
+      table(newdat13$rmse_gam_pres, newdat13$presence)[1,2]}), 
+    abs_abs_gampr = purrr::map(data, ~{
+      newdat14 <- .
+      table(newdat14$rmse_gam_pres, newdat14$presence)[1,1]}), 
+    abs_pres_gampr = purrr::map(data, ~{
+      newdat15 <- .
+      table(newdat15$rmse_gam_pres, newdat15$presence)[2,1]}),
+    
+    pres_pres_rfocc = purrr::map(data, ~{
+      newdat16 <- .
+      table(newdat16$rmse_rf, newdat16$presence)[2,2]}),
+    pres_abs_rfocc = purrr::map(data, ~{
+      newdat17 <- .
+      table(newdat17$rmse_rf, newdat17$presence)[1,2]}), 
+    abs_abs_rfocc = purrr::map(data, ~{
+      newdat18 <- .
+      table(newdat18$rmse_rf, newdat18$presence)[1,1]}), 
+    abs_pres_rfocc = purrr::map(data, ~{
+      newdat19 <- .
+      table(newdat19$rmse_rf, newdat19$presence)[2,1]}),
+    
+    pres_pres_rfpres = purrr::map(data, ~{
+      newdat20 <- .
+      table(newdat20$rmse_rf_pres, newdat20$presence)[2,2]}),
+    pres_abs_rfpres = purrr::map(data, ~{
+      newdat21 <- .
+      table(newdat21$rmse_rf_pres, newdat21$presence)[1,2]}), 
+    abs_abs_rfpres = purrr::map(data, ~{
+      newdat22 <- .
+      table(newdat22$rmse_rf_pres, newdat22$presence)[1,1]}), 
+    abs_pres_rfpres = purrr::map(data, ~{
+      newdat23 <- .
+      table(newdat23$rmse_rf_pres, newdat23$presence)[2,1]}),
+    
+    pres_pres_max = purrr::map(data, ~{
+      newdat24 <- .
+      table(newdat24$rmse_me_pres, newdat24$presence)[2,2]}),
+    pres_abs_max = purrr::map(data, ~{
+      newdat25 <- .
+      table(newdat25$rmse_me_pres, newdat25$presence)[1,2]}), 
+    abs_abs_max = purrr::map(data, ~{
+      newdat26 <- .
+      table(newdat26$rmse_me_pres, newdat26$presence)[1,1]}), 
+    abs_pres_max = purrr::map(data, ~{
+      newdat27 <- .
+      table(newdat27$rmse_me_pres, newdat27$presence)[2,1]}),
+    length = purrr::map(data, ~{
+      newdatlength <- .
+      length = length(newdatlength$stateroute)})) %>%
+  dplyr::select(-data) %>%
+  unnest()
+
+
+pres_spatial$accuracy_gamocc <- ((pres_spatial$pres_pres_gamocc + pres_spatial$abs_abs_gamocc)/pres_spatial$length)*100
+pres_spatial$sensitivity_gamocc <- (pres_spatial$pres_pres_gamocc/(pres_spatial$pres_pres_gamocc + pres_spatial$pres_abs_gamocc))*100
+pres_spatial$specificity_gamocc <- (pres_spatial$abs_abs_gamocc/(pres_spatial$abs_pres_gamocc + pres_spatial$abs_abs_gamocc))*100
+pres_spatial$pp_gamocc <- (pres_spatial$pres_pres_gamocc/(pres_spatial$pres_pres_gamocc + pres_spatial$abs_pres_gamocc))*100
+pres_spatial$np_gamocc <- (pres_spatial$abs_abs_gamocc/(pres_spatial$abs_abs_gamocc + pres_spatial$pres_abs_gamocc))*100
+
+# pres_spatial$truepos_gampr <- pres_spatial$pres_pres_gampr/pres_spatial$length*100
+# pres_spatial$falsepos_gampr <- pres_spatial$pres_abs_gampr/pres_spatial$length*100
+pres_spatial$accuracy_gampr <- ((pres_spatial$pres_pres_gampr + pres_spatial$abs_abs_gampr)/pres_spatial$length)*100
+pres_spatial$sensitivity_gampr <- (pres_spatial$pres_pres_gampr/(pres_spatial$pres_pres_gampr + pres_spatial$pres_abs_gampr))*100
+pres_spatial$specificity_gampr <- (pres_spatial$abs_abs_gampr/(pres_spatial$abs_pres_gampr + pres_spatial$abs_abs_gampr))*100
+pres_spatial$pp_gampr <- (pres_spatial$pres_pres_gampr/(pres_spatial$pres_pres_gampr + pres_spatial$abs_pres_gampr))*100
+pres_spatial$np_gampr <- (pres_spatial$abs_abs_gampr/(pres_spatial$abs_abs_gampr + pres_spatial$pres_abs_gampr))*100
+
+# pres_spatial$truepos_glmocc <- pres_spatial$pres_pres_glmocc/pres_spatial$length*100
+# pres_spatial$falsepos_glmocc <- pres_spatial$pres_abs_glmocc/pres_spatial$length*100
+pres_spatial$accuracy_glmocc <- ((pres_spatial$pres_pres_glmocc + pres_spatial$abs_abs_glmocc)/pres_spatial$length)*100
+pres_spatial$sensitivity_glmocc <- (pres_spatial$pres_pres_glmocc/(pres_spatial$pres_pres_glmocc + pres_spatial$pres_abs_glmocc))*100
+pres_spatial$specificity_glmocc <- (pres_spatial$abs_abs_glmocc/(pres_spatial$abs_pres_glmocc + pres_spatial$abs_abs_glmocc))*100
+pres_spatial$pp_glmocc <- (pres_spatial$pres_pres_glmocc/(pres_spatial$pres_pres_glmocc + pres_spatial$abs_pres_glmocc))*100
+pres_spatial$np_glmocc <- (pres_spatial$abs_abs_glmocc/(pres_spatial$abs_abs_glmocc + pres_spatial$pres_abs_glmocc))*100
+
+# pres_spatial$truepos_glmpr <- pres_spatial$pres_pres_glmpr/pres_spatial$length*100
+# pres_spatial$falsepos_glmpr <- pres_spatial$pres_abs_glmpr/pres_spatial$length*100
+pres_spatial$accuracy_glmpr <- ((pres_spatial$pres_pres_glmpr + pres_spatial$abs_abs_glmpr)/pres_spatial$length)*100
+pres_spatial$sensitivity_glmpr <- (pres_spatial$pres_pres_glmpr/(pres_spatial$pres_pres_glmpr + pres_spatial$pres_abs_glmpr))*100
+pres_spatial$specificity_glmpr <- (pres_spatial$abs_abs_glmpr/(pres_spatial$abs_pres_glmpr + pres_spatial$abs_abs_glmpr))*100
+pres_spatial$pp_glmpr <- (pres_spatial$pres_pres_glmpr/(pres_spatial$pres_pres_glmpr + pres_spatial$abs_pres_glmpr))*100
+pres_spatial$np_glmpr <- (pres_spatial$abs_abs_glmpr/(pres_spatial$abs_abs_glmpr + pres_spatial$pres_abs_glmpr))*100
+
+# pres_spatial$truepos_rfocc <- pres_spatial$pres_pres_rfocc/pres_spatial$length*100
+# pres_spatial$falsepos_rfocc <- pres_spatial$pres_abs_rfocc/pres_spatial$length*100
+pres_spatial$accuracy_rfocc <- ((pres_spatial$pres_pres_rfocc + pres_spatial$abs_abs_rfocc)/pres_spatial$length)*100
+pres_spatial$sensitivity_rfocc <- (pres_spatial$pres_pres_rfocc/(pres_spatial$pres_pres_rfocc + pres_spatial$pres_abs_rfocc))*100
+pres_spatial$specificity_rfocc <- (pres_spatial$abs_abs_rfocc/(pres_spatial$abs_pres_rfocc + pres_spatial$abs_abs_rfocc))*100
+pres_spatial$pp_rfocc <- (pres_spatial$pres_pres_rfocc/(pres_spatial$pres_pres_rfocc + pres_spatial$abs_pres_rfocc))*100
+pres_spatial$np_rfocc <- (pres_spatial$abs_abs_rfocc/(pres_spatial$abs_abs_rfocc + pres_spatial$pres_abs_rfocc))*100
+
+# pres_spatial$truepos_rfpr <- pres_spatial$pres_pres_rfpr/pres_spatial$length*100
+# pres_spatial$falsepos_rfpr <- pres_spatial$pres_abs_rfpr/pres_spatial$length*100
+pres_spatial$accuracy_rfpr <- ((pres_spatial$pres_pres_rfpres + pres_spatial$abs_abs_rfpres)/pres_spatial$length)*100
+pres_spatial$sensitivity_rfpr <- (pres_spatial$pres_pres_rfpres/(pres_spatial$pres_pres_rfpres + pres_spatial$pres_abs_rfpres))*100
+pres_spatial$specificity_rfpr <- (pres_spatial$abs_abs_rfpres/(pres_spatial$abs_pres_rfpres + pres_spatial$abs_abs_rfpres))*100
+pres_spatial$pp_rfpr <- (pres_spatial$pres_pres_rfpres/(pres_spatial$pres_pres_rfpres + pres_spatial$abs_pres_rfpres))*100
+pres_spatial$np_rfpr <- (pres_spatial$abs_abs_rfpres/(pres_spatial$abs_abs_rfpres + pres_spatial$pres_abs_rfpres))*100
+
+# pres_spatial$truepos_max <- pres_spatial$pres_pres_max/pres_spatial$length*100
+# pres_spatial$falsepos_max <- pres_spatial$pres_abs_max/pres_spatial$length*100
+pres_spatial$accuracy_max <- ((pres_spatial$pres_pres_max + pres_spatial$abs_abs_max)/pres_spatial$length)*100
+pres_spatial$sensitivity_max <- (pres_spatial$pres_pres_max/(pres_spatial$pres_pres_max + pres_spatial$pres_abs_max))*100
+pres_spatial$specificity_max <- (pres_spatial$abs_abs_max/(pres_spatial$abs_pres_max + pres_spatial$abs_abs_max))*100
+pres_spatial$pp_max <- (pres_spatial$pres_pres_max/(pres_spatial$pres_pres_max + pres_spatial$abs_pres_max))*100
+pres_spatial$np_max <- (pres_spatial$abs_abs_max/(pres_spatial$abs_abs_max + pres_spatial$pres_abs_max))*100
 
 
 ##### no trans #####
