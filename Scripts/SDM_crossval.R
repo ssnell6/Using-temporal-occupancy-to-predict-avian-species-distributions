@@ -564,7 +564,7 @@ for(i in sp_list){
 gm_send_message(text_msg)
 sdm_space_cval <- data.frame(sdm_space_cval)
 # write.csv(sdm_space_cval,"Data/space_cval.csv", row.names = FALSE)
-sdm_space_cval <- read.csv("/Volumes/hurlbertlab/Snell/space_cval.csv", header = TRUE) 
+sdm_space_cval <- read.csv("/Volumes/hurlbertlab/Snell/sdm_space_cval.csv", header = TRUE) 
   
 
 pres_spatial <- sdm_space_cval %>% group_by(aou) %>%
@@ -709,11 +709,11 @@ pres_spatial$np_rfocc <- (pres_spatial$abs_abs_rfocc/(pres_spatial$abs_abs_rfocc
 
 # pres_spatial$truepos_rfpr <- pres_spatial$pres_pres_rfpr/pres_spatial$length*100
 # pres_spatial$falsepos_rfpr <- pres_spatial$pres_abs_rfpr/pres_spatial$length*100
-pres_spatial$accuracy_rfpr <- ((pres_spatial$pres_pres_rfpr + pres_spatial$abs_abs_rfpr)/pres_spatial$length)*100
-pres_spatial$sensitivity_rfpr <- (pres_spatial$pres_pres_rfpr/(pres_spatial$pres_pres_rfpr + pres_spatial$pres_abs_rfpr))*100
-pres_spatial$specificity_rfpr <- (pres_spatial$abs_abs_rfpr/(pres_spatial$abs_pres_rfpr + pres_spatial$abs_abs_rfpr))*100
-pres_spatial$pp_rfpr <- (pres_spatial$pres_pres_rfpr/(pres_spatial$pres_pres_rfpr + pres_spatial$abs_pres_rfpr))*100
-pres_spatial$np_rfpr <- (pres_spatial$abs_abs_rfpr/(pres_spatial$abs_abs_rfpr + pres_spatial$pres_abs_rfpr))*100
+pres_spatial$accuracy_rfpr <- ((pres_spatial$pres_pres_rfpres + pres_spatial$abs_abs_rfpres)/pres_spatial$length)*100
+pres_spatial$sensitivity_rfpr <- (pres_spatial$pres_pres_rfpres/(pres_spatial$pres_pres_rfpres + pres_spatial$pres_abs_rfpres))*100
+pres_spatial$specificity_rfpr <- (pres_spatial$abs_abs_rfpres/(pres_spatial$abs_pres_rfpres + pres_spatial$abs_abs_rfpres))*100
+pres_spatial$pp_rfpr <- (pres_spatial$pres_pres_rfpres/(pres_spatial$pres_pres_rfpres + pres_spatial$abs_pres_rfpres))*100
+pres_spatial$np_rfpr <- (pres_spatial$abs_abs_rfpres/(pres_spatial$abs_abs_rfpres + pres_spatial$pres_abs_rfpres))*100
 
 # pres_spatial$truepos_max <- pres_spatial$pres_pres_max/pres_spatial$length*100
 # pres_spatial$falsepos_max <- pres_spatial$pres_abs_max/pres_spatial$length*100
@@ -787,16 +787,17 @@ pres_spatial_plot <- gather(pres_spatial_means, "Mod", "value", mean_accuracy_ga
 pres_spatial_plot2 <-  separate(data = pres_spatial_plot, col = Mod, into = c("Mean","Measure", "Modtype"), sep = "_") 
 pres_spatial_plot2$Modtype <- factor(pres_spatial_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max", ordered = TRUE))
 
-pplot = ggplot(pres_spatial_plot2, aes(x = Measure, y = value)) +   
+splot = ggplot(pres_spatial_plot2, aes(x = Measure, y = value)) +   
   geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity") +
-  theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("Measure")) + ylab(bquote("Percent")) +
+  theme_classic()+ theme(axis.title.x=element_text(size=54, vjust = -4),axis.title.y=element_text(size=54, angle=90, vjust = 5)) + xlab(bquote("Measure")) + ylab(bquote("Percent")) +
   scale_fill_manual(values = c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462","#b3de69"),
                     breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
                     labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GAM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
-  theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  scale_x_discrete(labels=c("Accuracy","Negative \nPredictive","Positive \nPredictive", "Sensitivity", "Specificity")) +
+  theme(axis.text.x=element_text(size = 50),axis.ticks=element_blank(), axis.text.y=element_text(size=50)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
-  theme(legend.title=element_blank(), legend.text=element_text(size=30), legend.key.width=unit(2, "lines"))
-ggsave("Figures/spatial_crossval.pdf", width = 46, height = 20)
+  theme(legend.title=element_blank(), legend.text=element_text(size=50), legend.key.width=unit(2, "lines"), legend.key.size = unit(2, "cm")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
+ggsave("Figures/spatial_crossval.pdf", width = 30, height = 20)
 
 
 test<- c()

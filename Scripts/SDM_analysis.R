@@ -94,7 +94,7 @@ bbs_final_occ_ll$presence <- as.numeric(bbs_final_occ_ll$presence)
 sdm_input_global <- left_join(bbs_final_occ_ll, all_env, by = "stateroute")
 Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_211') # for 64-bit version
 
-
+###### ######
 # test = cor(na.omit(sdm_input_global))
 # corrplot(test)
 
@@ -219,7 +219,6 @@ for(i in sp_list){
   # write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
 }
 
-dev.off()
 
 setwd("C:/Git/SDMs")
 auc_df_notrans = data.frame(auc_df_notrans)
@@ -497,9 +496,7 @@ grid <- plot_grid(r1 + theme(legend.position="none"),
 ggsave("Figures/rmse_plot.pdf", height = 10, width = 14)
 
 # pres:pres
-auc_df_notrans <- auc_df_notrans[,c("AOU","rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres")]
-colnames(auc_df_notrans) <- c("AOU","rmse_pres_notrans","rmse_gam_pres_notrans", "rmse_rf_pres_notrans", "rmse_me_pres_notrans")
-
+auc_df_notrans <- auc_df_notrans[,c("AOU","rmse_pres_notrans","rmse_gam_pres_notrans", "rmse_rf_pres_notrans", "rmse_me_pres_notrans")]
 pres_pres <- left_join(auc_df_notrans, auc_df[,c("AOU","rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres")], by = "AOU")
 
 pres_pres1 = left_join(pres_pres, num_pres, by = c("AOU" = "aou"))
