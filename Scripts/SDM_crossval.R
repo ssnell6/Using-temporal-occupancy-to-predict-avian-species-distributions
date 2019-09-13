@@ -575,7 +575,7 @@ for(i in sp_list[1:50]){
 gm_send_message(text_msg)
 sdm_space_cval <- data.frame(sdm_space_cval)
 # write.csv(sdm_space_cval,"Data/space_cval.csv", row.names = FALSE)
-sdm_space_cval <- read.csv("/Volumes/hurlbertlab/Snell/sdm_space_cval.csv", header = TRUE) 
+sdm_space_cval <- read.csv("Z:/Snell/sdm_space_cval.csv", header = TRUE) 
 rmse <- data.frame(rmse)
 names(rmse) <- c("aou","rmse_occ", "rmse_pres", "rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres", "rmse_me_pres")
 
@@ -811,6 +811,81 @@ splot = ggplot(pres_spatial_plot2, aes(x = Measure, y = value)) +
   theme(legend.title=element_blank(), legend.text=element_text(size=50), legend.key.width=unit(2, "lines"), legend.key.size = unit(2, "cm")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
 ggsave("Figures/spatial_crossval.pdf", width = 30, height = 20)
 
+glm_acc <- ggplot(pres_spatial, aes(x = accuracy_glmocc/100, y = accuracy_glmpr/100)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("GLM Occ Accuracy")) + ylab(bquote("GLM Pres Accuracy"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(shape=16, aes(size = pres_spatial$length)) + 
+  scale_y_continuous(limit = c(0, 1)) +
+  theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) +
+    theme(legend.title=element_blank(), legend.text=element_text(size=15)) 
+
+gam_acc <- ggplot(pres_spatial, aes(x = accuracy_gamocc/100, y = accuracy_gampr/100)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("GAM Occ Accuracy")) + ylab(bquote("GAM Pres Accuracy"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(shape=16, aes(size = pres_spatial$length)) + 
+  scale_y_continuous(limit = c(0, 1)) +
+  theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=15)) 
+
+rf_acc <- ggplot(pres_spatial, aes(x = accuracy_rfocc/100, y = accuracy_rfpr/100)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("RF Occ Accuracy")) + ylab(bquote("RF Pres Accuracy"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(shape=16, aes(size = pres_spatial$length)) + 
+  scale_y_continuous(limit = c(0, 1)) +
+  theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=15)) 
+ggsave("Figures/acc_occ_rf.pdf", height = 10, width = 24)
+
+library(cowplot)
+theme_set(theme_cowplot(font_size=20,font_family = "URWHelvetica"))
+plot_grid(glm_acc + theme(legend.position="none"),
+          gam_acc + theme(legend.position="none"),
+          rf_acc + theme(legend.position="none"),
+          align = 'hv',
+          labels = c("A","B", "C"),
+          label_x = 0.22, 
+          label_size = 30,
+          nrow = 1, 
+          scale = 0.9) 
+ggsave("Figures/acc_occ_pres.pdf", height = 10, width = 24)
+
+
+
+
+
+glm_acc <- ggplot(pres_matrix, aes(x = accuracy_glmocc/100, y = accuracy_glmpr/100)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("GLM Occ Accuracy")) + ylab(bquote("GLM Pres Accuracy"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(shape=16, aes(size = pres_spatial$length)) + 
+  scale_y_continuous(limit = c(0, 1)) +
+  theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=15)) 
+
+gam_acc <- ggplot(pres_matrix, aes(x = accuracy_gamocc/100, y = accuracy_gampr/100)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("GAM Occ Accuracy")) + ylab(bquote("GAM Pres Accuracy"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(shape=16, aes(size = pres_spatial$length)) + 
+  scale_y_continuous(limit = c(0, 1)) +
+  theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=15)) 
+
+rf_acc <- ggplot(pres_matrix, aes(x = accuracy_rfocc/100, y = accuracy_rfpr/100)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("RF Occ Accuracy")) + ylab(bquote("RF Pres Accuracy"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(shape=16, aes(size = pres_spatial$length)) + 
+  scale_y_continuous(limit = c(0, 1)) +
+  theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=15)) 
+ggsave("Figures/acc_occ_rf.pdf", height = 10, width = 24)
+
+library(cowplot)
+theme_set(theme_cowplot(font_size=20,font_family = "URWHelvetica"))
+plot_grid(glm_acc + theme(legend.position="none"),
+          gam_acc + theme(legend.position="none"),
+          rf_acc + theme(legend.position="none"),
+          align = 'hv',
+          labels = c("A","B", "C"),
+          label_x = 0.22, 
+          label_size = 30,
+          nrow = 1, 
+          scale = 0.9) 
+ggsave("Figures/acc_occ_pres_temp.pdf", height = 10, width = 24)
+
+
 
 test<- c()
 for(i in na.omit(unique(sdm_test$Aou))){
@@ -843,3 +918,5 @@ pres_matrix$specificity <- (pres_matrix$abs_abs/(pres_matrix$pres_pres + pres_ma
 kappa(na.omit(sdm_test$presence), na.omit(sdm_test$predicted_pres), cutoff = 0.7)
 t.test(sdm_test$predicted_pres, sdm_test$presence, paired = TRUE, alternative= "two.sided")
 table(sdm_space_cval$presence, sdm_space_cval$predicted_pres)
+
+

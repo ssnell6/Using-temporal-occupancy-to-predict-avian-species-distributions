@@ -174,9 +174,9 @@ for(i in sp_list){
 dev.off()
 
 setwd("C:/Git/SDMs")
-auc_df_notrans = data.frame(auc_df_notrans)
-names(auc_df_notrans) = c("AOU", "rmse_occ_notrans", "rmse_pres_notrans","rmse_gam_notrans", "rmse_gam_pres_notrans", "rmse_rf_notrans", "rmse_rf_pres_notrans","rmse_me_pres_notrans")
-# write.csv(auc_df_notrans, "Data/auc_df_notrans.csv", row.names = FALSE)
+auc_df_notrans_5 = data.frame(auc_df_notrans_5)
+names(auc_df_notrans_5) = c("AOU", "rmse_occ_notrans", "rmse_pres_notrans","rmse_gam_notrans", "rmse_gam_pres_notrans", "rmse_rf_notrans", "rmse_rf_pres_notrans","rmse_me_pres_notrans")
+# write.csv(auc_df_notrans_5, "Data/auc_df_notrans_5.csv", row.names = FALSE)
 auc_df_notrans <- read.csv("Data/auc_df_notrans.csv", header =  TRUE)
 
 # auc_df_notrans$diff <- auc_df_notrans$rmse_me_pres_notrans - auc_df_notrans$rmse_me_pres
