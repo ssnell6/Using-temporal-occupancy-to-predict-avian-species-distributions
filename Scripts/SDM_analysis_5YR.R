@@ -157,13 +157,13 @@ for(i in sp_list){
       
       sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
 
-      rmse_occ <- rmse(sdm_output$pred_glm_occ, sdm_output$occ)
-      rmse_pres <- rmse(sdm_output$pred_glm_pr, sdm_output$excl_pres)
-      rmse_gam <- rmse(as.vector(sdm_output$pred_gam_occ), sdm_output$occ)
-      rmse_gam_pres <- rmse(as.vector(sdm_output$pred_gam_pr), sdm_output$excl_pres)
-      rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
-      rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$excl_pres)
-      rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$excl_pres)
+      rmse_occ_notrans <- rmse(sdm_output$pred_glm_occ, sdm_output$occ)
+      rmse_pres_notrans <- rmse(sdm_output$pred_glm_pr, sdm_output$excl_pres)
+      rmse_gam_notrans <- rmse(as.vector(sdm_output$pred_gam_occ), sdm_output$occ)
+      rmse_gam_pres_notrans <- rmse(as.vector(sdm_output$pred_gam_pr), sdm_output$excl_pres)
+      rmse_rf_notrans <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
+      rmse_rf_pres_notrans <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$excl_pres)
+      rmse_me_pres_notrans <- rmse(sdm_output$max_pred_pres, sdm_output$excl_pres)
       auc_df_notrans_5 = rbind(auc_df_notrans_5, c(i, rmse_occ_notrans, rmse_pres_notrans, rmse_gam_notrans, rmse_gam_pres_notrans, rmse_rf_notrans, rmse_rf_pres_notrans, rmse_me_pres_notrans))
       j = unique(sdm_input$ALPHA.CODE)
     }
