@@ -7,6 +7,9 @@ library(raster)
 library(maptools)
 library(pROC)
 library(purrr)
+library(hydroGOF)
+
+Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_211') # for 64-bit version
 
 bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE) %>% filter(aou > 2880) %>%
   filter(aou < 3650 | aou > 3810) %>%
@@ -509,10 +512,9 @@ for(i in sp_list[1:50]){
   space_sub <- dplyr::filter(bbs_env,  aou == i)
   #Randomly shuffle the data
   sdm_input<-space_sub[sample(nrow(space_sub)),]
-  #Create 10 equally size folds
-  folds <- cut(seq(1,nrow(space_sub)),breaks=10,labels=FALSE)
-
   sdm_input = na.omit(sdm_input)
+  #Create 10 equally size folds
+  folds <- cut(seq(1,nrow(sdm_input)),breaks=10,labels=FALSE)
   if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
     if(nrow(filter(sdm_input, presence == 1)) > 49){
       #Perform 10 fold cross validation

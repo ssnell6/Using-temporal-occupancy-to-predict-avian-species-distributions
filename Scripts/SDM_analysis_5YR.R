@@ -62,7 +62,7 @@ bbs_final_occ_ll$presence <- as.numeric(bbs_final_occ_ll$presence)
 # write.csv(bbs_final_occ_ll, "Data/bbs_final_occ_ll.csv", row.names = FALSE)
 
 
-###### ######
+###### SDM analysis ######
 auc_df_5 = c()
 sp_list = unique(bbs_final_occ_ll$aou)
 
@@ -131,8 +131,6 @@ for(i in sp_list){
   print(i)
   bbs_sub <- filter(bbs_final_occ_ll, aou == i) %>% 
     mutate(excl_pres = ifelse(occ <= 0.33, 0, 1))
-  bbs_new_sub <- filter(bbs_new, aou == i) 
-  bbs_new_sub$pres_2016 <- bbs_new_sub$presence
   sdm_input <- filter(all_env, stateroute %in% bbs_sub$stateroute) %>%
     full_join(bbs_sub, by = "stateroute") %>%
     na.omit(.)
@@ -158,10 +156,7 @@ for(i in sp_list){
       max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
       
       sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
-      pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute")
-      thresh <- max(pred_2016$pred_gam_occ) * 0.7
-      gam_rescale <- filter(pred_2016, pred_gam_occ > thresh)
-      
+
       rmse_occ <- rmse(sdm_output$pred_glm_occ, sdm_output$occ)
       rmse_pres <- rmse(sdm_output$pred_glm_pr, sdm_output$excl_pres)
       rmse_gam <- rmse(as.vector(sdm_output$pred_gam_occ), sdm_output$occ)
@@ -169,7 +164,7 @@ for(i in sp_list){
       rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
       rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$excl_pres)
       rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$excl_pres)
-      auc_df_notrans_5 = rbind(auc_df_notrans_5, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres))
+      auc_df_notrans_5 = rbind(auc_df_notrans_5, c(i, rmse_occ_notrans, rmse_pres_notrans, rmse_gam_notrans, rmse_gam_pres_notrans, rmse_rf_notrans, rmse_rf_pres_notrans, rmse_me_pres_notrans))
       j = unique(sdm_input$ALPHA.CODE)
     }
   }
