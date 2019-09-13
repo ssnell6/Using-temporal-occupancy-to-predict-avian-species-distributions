@@ -885,8 +885,14 @@ plot_grid(glm_acc + theme(legend.position="none"),
           scale = 0.9) 
 ggsave("Figures/acc_occ_pres_temp.pdf", height = 10, width = 24)
 
+pres_matrix$diff <- pres_matrix$accuracy_glmocc - pres_matrix$accuracy_glmpr
+sub2 <- filter(pres_matrix, diff < 0) %>%
+  left_join(bbs_final_occ_ll, by = c("aou"))
+hist <- filter(sub2, aou == 6270)
+hist(hist$occ)
 
 
+#### test  ######
 test<- c()
 for(i in na.omit(unique(sdm_test$Aou))){
   pres_matrix <- sdm_test %>% group_by(Aou) %>%
