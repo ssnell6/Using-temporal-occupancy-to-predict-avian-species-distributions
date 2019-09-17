@@ -444,7 +444,7 @@ auc_df_traits = left_join(auc_df_merge, traits, by = "AOU") %>%
 auc_df_merge$glm_diff <- auc_df_merge$rmse_occ - auc_df$rmse_pres
 auc_df_merge$gam_diff <- auc_df_merge$rmse_gam - auc_df$rmse_gam_pres
 auc_df_merge$rf_diff <- auc_df_merge$rmse_rf - auc_df$rmse_rf_pres
-
+auc_df_merge$RO <- auc_df_merge$n_pres/auc_df_merge$n
 
 # plot GLM occ v pres 
 #  + geom_label(data = auc_df_traits, aes(x = AUC, y = AUC_pres, label = ALPHA.CODE))
@@ -559,13 +559,41 @@ plot_grid(r1 + theme(legend.position="none"),
 ggsave("Figures/rmse_pres_pres.pdf", height = 14, width = 24)
 
 # experimental figure 3
+##### stacked bar chart
 auc_df_plot <- gather(auc_df_merge, "glm_mod", "val", c(rmse_occ, rmse_pres, glm_diff))
 ggplot(data=auc_df_plot, aes(factor(AOU), y=val, fill=factor(glm_mod))) + 
   geom_bar(stat = "identity") + theme_classic() 
 
-
+#### diff vs RO
+auc_df_merge$sign <- ifelse(auc_df_merge$glm_diff > 0, "pos", "neg")
+glm <- ggplot(auc_df_merge, aes(x = RO, y = glm_diff)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("RO")) + ylab(bquote("Difference")) + 
+  geom_point(shape=16, size = 3, aes(color = sign)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
+auc_df_merge$sign <- ifelse(auc_df_merge$gam_diff > 0, "pos", "neg")
+gam <- ggplot(auc_df_merge, aes(x = RO, y = gam_diff)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("RO")) + ylab(bquote("Difference")) + 
+  geom_point(shape=16,size = 3, aes(color = sign)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
+auc_df_merge$sign <- ifelse(auc_df_merge$rf_diff > 0, "pos", "neg")
+rf <- ggplot(auc_df_merge, aes(x = RO, y = rf_diff)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("RO")) + ylab(bquote("Difference")) + 
+  geom_point(shape=16, size = 3,aes(color = sign)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
+theme_set(theme_cowplot(font_size=20,font_family = "URWHelvetica"))
+plot_grid(glm + theme(legend.position="none"),
+          gam + theme(legend.position="none"),
+          rf + theme(legend.position="none"),
+          align = 'hv',
+          labels = c("A","B", "C"),
+          label_x = 0.22, 
+          label_size = 30,
+          nrow = 1, 
+          scale = 0.9) 
+ggsave("Figures/RO_v_diff.pdf", height = 6, width = 16)
+#### diff vs. number of presence 
 ggplot(auc_df_merge, aes(x = glm_diff, y = n_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Pres ME RMSE")) + xlab(bquote("ME No Transients")) + 
-  geom_point(shape=16) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  geom_point(shape=16, aes(color = sign)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
 
@@ -574,6 +602,7 @@ ggplot(auc_df_merge, aes(x = glm_diff, y = n)) +theme_classic()+ theme(axis.titl
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
 
+#### desnity plots for each sign
 auc_df_merge$sign <- ifelse(auc_df_merge$glm_diff > 0, "pos", "neg")
 ggplot(auc_df_merge) + geom_density(lwd = 1.5, aes(glm_diff, col = sign)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","purple"), labels=c("neg","pos")) +  xlab("Difference") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
 
