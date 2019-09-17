@@ -103,7 +103,7 @@ sdm_output = data.frame(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_
 ##### plots ######
 mod.r <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
                data = sdm_output[,c("latitude", "longitude", "pred_glm_pr", "pred_glm_occ", "pred_gam_pr", "pred_gam_occ", "pred_rf_occ", "pred_rf_pr", "max_pred_pres")], proj4string = CRS("+proj=longlat +datum=WGS84"))
-r = raster(mod.r, res = 0.6) # 40x40 km/111 (degrees) * 2 tp eliminate holes
+r = raster(mod.r, res = 1) # 40x40 km/111 (degrees) * 2 tp eliminate holes
 # bioclim is 4 km
 plot.r = rasterize(mod.r, r)
 
@@ -142,7 +142,7 @@ rmse_me_pres_notrans <- rmse(sdm_output_notrans$max_pred_pres_notrans, as.numeri
 
 mod.core <- SpatialPointsDataFrame(coords = sdm_output_notrans[,c("longitude", "latitude")],
             data = sdm_output_notrans[,c("latitude", "longitude", "pred_glm_pr_notrans", "pred_glm_occ_notrans", "pred_gam_pr_notrans", "pred_gam_occ_notrans", "pred_rf_occ_notrans", "pred_rf_pr_notrans", "max_pred_pres_notrans")], proj4string = CRS("+proj=longlat +datum=WGS84"))
-r.core = raster(mod.core, res = 0.6) # 40x40 km/111 (degrees) * 2 tp eliminate holes
+r.core = raster(mod.core, res = 1) # 40x40 km/111 (degrees) * 2 tp eliminate holes
 # bioclim is 4 km
 plot.core = rasterize(mod.core, r.core)
 
