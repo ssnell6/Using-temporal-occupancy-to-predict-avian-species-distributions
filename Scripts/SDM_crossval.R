@@ -66,7 +66,7 @@ bbs_final_occ = filter(num_occ,n.y > 1)
 bbs_occ_code = left_join(bbs_final_occ, tax_code, by = c("aou" = "AOU_OUT"))
 
 # 319 focal species
-bbs_focal_spp = filter(bbs_occ_code, aou %in% tax_code$AOU_OUT)
+bbs_focal_spp = filter(bbs_occ_code, aou %in% tax_code$AOU_OUT & stateroute %in% bbs_occ_sub$stateroute)
 
 bbs_final_occ_ll = left_join(bbs_focal_spp, lat_long, by = "stateroute")
 bbs_final_occ_ll = bbs_final_occ_ll[,c("aou", "stateroute", "occ", "presence", "ALPHA.CODE",
@@ -885,9 +885,12 @@ plot_grid(glm_acc + theme(legend.position="none"),
           scale = 0.9) 
 ggsave("Figures/acc_occ_pres_temp.pdf", height = 10, width = 24)
 
-pres_matrix$diff <- pres_matrix$accuracy_glmocc - pres_matrix$accuracy_glmpr
-sub2 <- filter(pres_matrix, diff < 0) %>%
-  left_join(bbs_final_occ_ll, by = c("aou"))
+pres_spatial$diff <- pres_spatial$accuracy_glmocc - pres_spatial$accuracy_glmpr
+sub2 <- filter(pres_spatial, diff < 0) %>%
+  left_join(bbs_final_occ_ll, by = c("aou")) %>%
+  select(aou, stateroute) %>%
+  group_by(aou) %>%
+  summarise(n = n_distinct(stateroute))
 hist <- filter(sub2, aou == 6270)
 hist(hist$occ)
 

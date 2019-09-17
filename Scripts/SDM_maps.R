@@ -1,4 +1,3 @@
-
 library(tidyverse)
 library(glm2)
 library(gam)
@@ -8,54 +7,61 @@ library(raster)
 library(maptools)
 library(pROC)
 library(hydroGOF)
-library(sf)
 library(tmap)
+library(RColorBrewer)
 
-bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE) %>% filter(aou > 2880) %>%
-  filter(aou < 3650 | aou > 3810) %>%
-  filter(aou < 3900 | aou > 3910) %>%
-  filter(aou < 4160 | aou > 4210) %>%
-  filter(aou != 7010)
-
+bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE)
 bbs_occ_sub = bbs_occ %>% 
-  dplyr::count(aou, stateroute) %>% 
-  filter(n < 16) %>% 
+  group_by(aou) %>%
+  dplyr::count(stateroute) %>% 
   dplyr::mutate(occ = n/15) 
 
-exp_pres = read.csv("Data/expect_pres.csv", header = TRUE)
+exp_pres = read.csv("Data/expect_pres.csv", header = TRUE) %>%
+  filter(!stateroute %in% bad_rtes$stateroute)
+# remove routes where bbs_occ_sub
 traits = read.csv("Data/Master_RO_Correlates.csv", header = TRUE)
 bsize = read.csv("data/DunningBodySize_old_2008.11.12.csv", header = TRUE)
 lat_long = read.csv("Data/latlongs.csv", header = TRUE)
 tax_code = read.csv("Data/Tax_AOU_Alpha.csv", header = TRUE)
+bad_rtes = read.csv("Data/bad_rtes.csv", heade = TRUE)
 bi_env = read.csv("Data/all_env.csv", header = TRUE)
 bi_means = bi_env[,c("stateroute","mat.mean", "elev.mean", "map.mean", "ndvi.mean")]
 env_bio = read.csv("Data/env_bio.csv", header = TRUE)
 env_bio = na.omit(env_bio)
 env_bio_sub = env_bio[,c(1, 21:39)]
 
-# env_bio[,c("stateroute","bio.mean.bio4", "bio.mean.bio5", "bio.mean.bio6", "bio.mean.bio13", "bio.mean.bio14")]
+
+##### read in raw bbs data for 2016 ####
+bbs_new <- read.csv("Data/bbs_2016.csv", header = TRUE) 
+bbs_new$presence = 1
+bbs_new_exp_pres <- read.csv("Data/expect_pres_2016.csv", header = TRUE)
+bbs_new_all <- left_join(bbs_new_exp_pres, bbs_new, by = c("spAOU"="aou", "stateroute" = "stateroute"))
+bbs_new_all$presence <- case_when(is.na(bbs_new_all$presence) == TRUE ~ 0, 
+                                  bbs_new_all$presence == 1 ~ 1)
 
 all_env = left_join(bi_means, env_bio_sub, by = "stateroute")
 
 #update tax_code Winter Wren
 tax_code$AOU_OUT[tax_code$AOU_OUT == 7220] <- 7222
-tax_code$AOU_OUT[tax_code$AOU_OUT == 4810] = 4812
-tax_code$AOU_OUT[tax_code$AOU_OUT == 4123] = 4120
+tax_code$AOU_OUT[tax_code$AOU_OUT == 4810] <- 4812
+tax_code$AOU_OUT[tax_code$AOU_OUT == 4123] <- 4120
 
 # BBS cleaning
-bbs_inc_absence = full_join(bbs_occ_sub, exp_pres, by = c("aou" ="spAOU", "stateroute" = "stateroute"))
+bbs_inc_absence = full_join(bbs_occ_sub, exp_pres, by = c("aou" ="spAOU", "stateroute" = "stateroute")) %>%
+  select(aou, stateroute, occ)
 bbs_inc_absence$occ[is.na(bbs_inc_absence$occ)] <- 0
 bbs_inc_absence$presence = 0
 bbs_inc_absence$presence[bbs_inc_absence$occ > 0] <- 1
 num_occ = bbs_inc_absence %>% group_by(aou) %>% tally(presence) %>% left_join(bbs_inc_absence, ., by = "aou")
 
 # 412 focal species
-bbs_final_occ = filter(num_occ,n.y > 1)
+bbs_final_occ = filter(num_occ,n > 49)
 bbs_occ_code = left_join(bbs_final_occ, tax_code, by = c("aou" = "AOU_OUT"))
 
 # 319 focal species
-bbs_final_occ_ll = filter(bbs_occ_code, aou %in% tax_code$AOU_OUT) %>%
-  dplyr::select(aou, stateroute, occ, presence, ALPHA.CODE, latitude, longitude)
+bbs_final_occ_ll = left_join(bbs_occ_code, lat_long, by = "stateroute") %>%
+  filter(aou %in% tax_code$AOU_OUT & stateroute %in% bbs_occ_sub$stateroute) 
+
 bbs_final_occ_ll$sp_success = 15 * bbs_final_occ_ll$occ
 bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ) 
 bbs_final_occ_ll$presence <- as.numeric(bbs_final_occ_ll$presence)
@@ -64,8 +70,7 @@ auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 
 #### change spp here ##### 
 sdm_input <- filter(bbs_final_occ_ll, aou == 6280) %>% 
-  left_join(all_env, by = "stateroute") %>% 
-  na.omit(.)
+  left_join(all_env, by = "stateroute") 
 sdm_notrans <- filter(sdm_input, occ >= 0.33| occ == 0) %>% na.omit(.)
 
 # Determine geographic extent of our data using AOU = i
@@ -92,7 +97,7 @@ pred_rf_occ <- predict(rf_occ,type=c("response"))
 pred_rf_pr <- predict(rf_pres,type=c("response"))
 max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
 
-sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
+sdm_output = data.frame(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
 
 
 ##### plots ######
@@ -117,7 +122,7 @@ pred_gam_pr_notrans <- predict(gam_pres_notrans,type=c("response"))
 pred_rf_occ_notrans <- predict(rf_occ_notrans,type=c("response"))
 pred_rf_pr_notrans <- predict(rf_pres_notrans,type=c("response"))
 max_pred_pres_notrans <- predict(max_ind_pres_notrans, sdm_notrans[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
-sdm_output_notrans = cbind(sdm_notrans, pred_glm_pr_notrans, pred_glm_occ_notrans, pred_gam_pr_notrans, pred_gam_occ_notrans, pred_rf_occ_notrans, pred_rf_pr_notrans, max_pred_pres_notrans) 
+sdm_output_notrans = data.frame(sdm_notrans, pred_glm_pr_notrans, pred_glm_occ_notrans, pred_gam_pr_notrans, pred_gam_occ_notrans, pred_rf_occ_notrans, pred_rf_pr_notrans, max_pred_pres_notrans) 
 
 
 
@@ -132,12 +137,6 @@ rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), as.numeric(sd
 rmse_rf_notrans <- rmse(as.vector(as.numeric(sdm_output_notrans$pred_rf_pr_notrans)), sdm_output_notrans$presence)
 rmse_me_pres <- rmse(sdm_output$max_pred_pres, as.numeric(sdm_output$presence))
 rmse_me_pres_notrans <- rmse(sdm_output_notrans$max_pred_pres_notrans, as.numeric(sdm_output_notrans$presence))
-
-
-
-
-
-
 
 
 

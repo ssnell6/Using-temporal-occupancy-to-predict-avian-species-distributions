@@ -8,23 +8,20 @@ library(maptools)
 library(pROC)
 library(hydroGOF)
 
-bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE) %>% filter(aou > 2880) %>%
-  filter(aou < 3650 | aou > 3810) %>%
-  filter(aou < 3900 | aou > 3910) %>%
-  filter(aou < 4160 | aou > 4210) %>%
-  filter(aou != 7010)
-
+bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE)
 bbs_occ_sub = bbs_occ %>% 
-  dplyr::count(aou, stateroute) %>% 
-  filter(n < 16) %>% 
+  group_by(aou) %>%
+  dplyr::count(stateroute) %>% 
   dplyr::mutate(occ = n/15) 
 
-
-exp_pres = read.csv("Data/expect_pres.csv", header = TRUE)
+exp_pres = read.csv("Data/expect_pres.csv", header = TRUE) %>%
+  filter(!stateroute %in% bad_rtes$stateroute)
+# remove routes where bbs_occ_sub
 traits = read.csv("Data/Master_RO_Correlates.csv", header = TRUE)
 bsize = read.csv("data/DunningBodySize_old_2008.11.12.csv", header = TRUE)
 lat_long = read.csv("Data/latlongs.csv", header = TRUE)
 tax_code = read.csv("Data/Tax_AOU_Alpha.csv", header = TRUE)
+bad_rtes = read.csv("Data/bad_rtes.csv", header = TRUE)
 bi_env = read.csv("Data/all_env.csv", header = TRUE)
 bi_means = bi_env[,c("stateroute","mat.mean", "elev.mean", "map.mean", "ndvi.mean")]
 env_bio = read.csv("Data/env_bio.csv", header = TRUE)
@@ -43,8 +40,7 @@ cas <- v_sf[v_sf$aou ==6292,]
 tm_shape(cas) + tm_symbols(size = 0.75, alpha = 0.5, col = 'occ') + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
 
 ##### read in raw bbs data for 2016 ####
-bbs_new <- read.csv("Data/bbs_2015_on.csv", header = TRUE) %>%
-  filter(Year == 2016)
+bbs_new <- read.csv("Data/bbs_2016.csv", header = TRUE) 
 bbs_new$presence = 1
 bbs_new_exp_pres <- read.csv("Data/expect_pres_2016.csv", header = TRUE)
 bbs_new_all <- left_join(bbs_new_exp_pres, bbs_new, by = c("spAOU"="aou", "stateroute" = "stateroute"))
@@ -59,20 +55,21 @@ tax_code$AOU_OUT[tax_code$AOU_OUT == 4810] <- 4812
 tax_code$AOU_OUT[tax_code$AOU_OUT == 4123] <- 4120
 
 # BBS cleaning
-bbs_inc_absence = full_join(bbs_occ_sub, exp_pres, by = c("aou" ="spAOU", "stateroute" = "stateroute"))
+bbs_inc_absence = full_join(bbs_occ_sub, exp_pres, by = c("aou" ="spAOU", "stateroute" = "stateroute")) %>%
+  select(aou, stateroute, occ)
 bbs_inc_absence$occ[is.na(bbs_inc_absence$occ)] <- 0
 bbs_inc_absence$presence = 0
 bbs_inc_absence$presence[bbs_inc_absence$occ > 0] <- 1
 num_occ = bbs_inc_absence %>% group_by(aou) %>% tally(presence) %>% left_join(bbs_inc_absence, ., by = "aou")
 
 # 412 focal species
-bbs_final_occ = filter(num_occ,n.y > 49)
+bbs_final_occ = filter(num_occ,n > 49)
 bbs_occ_code = left_join(bbs_final_occ, tax_code, by = c("aou" = "AOU_OUT"))
 
 # 319 focal species
-bbs_final_occ_ll = filter(bbs_occ_code, aou %in% tax_code$AOU_OUT) %>%
-  dplyr::select(aou, stateroute, occ, presence, ALPHA.CODE) %>%
-  full_join(lat_long, by = "stateroute")
+bbs_final_occ_ll = left_join(bbs_occ_code, lat_long, by = "stateroute") %>%
+  filter(aou %in% tax_code$AOU_OUT & stateroute %in% bbs_occ_sub$stateroute) 
+  
 bbs_final_occ_ll$sp_success = 15 * bbs_final_occ_ll$occ
 bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ) 
 bbs_final_occ_ll$presence <- as.numeric(bbs_final_occ_ll$presence)
@@ -109,11 +106,10 @@ for(i in sp_list){
   bbs_new_sub <- filter(bbs_new, aou == i) 
   bbs_new_sub$pres_2016 <- bbs_new_sub$presence
   sdm_input <- filter(all_env, stateroute %in% bbs_sub$stateroute) %>%
-    full_join(bbs_sub, by = "stateroute") %>%
-    na.omit(.)
+    full_join(bbs_sub, by = "stateroute") 
   sdm_input <- data.frame(sdm_input)
   if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
-  if(nrow(filter(sdm_input, presence == 1)) > 49){
+  if(nrow(filter(sdm_input, presence == 1)) > 59){
     glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
     glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
     gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = sdm_input)
@@ -160,161 +156,6 @@ for(i in sp_list){
 auc_df = data.frame(auc_df)
 names(auc_df) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres","rmse_me_pres")
 # write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
-pres_3000 <- auc_df %>% group_by(AOU) %>%
-  na.omit() %>%
-  nest() %>%
-  # filter(sum(data$predicted_pres) > 0)
-  mutate(pres_pres_glmocc = purrr::map(data, ~{
-    dat <- .
-    table(dat$rmse_occ, dat$presence)[2,2]}),
-    pres_abs_glmocc = purrr::map(data, ~{
-      newdat <- .
-      table(newdat$rmse_occ, newdat$presence)[1,2]}), 
-    abs_abs_glmocc = purrr::map(data, ~{
-      newdat2 <- .
-      table(newdat2$rmse_occ, newdat2$presence)[1,1]}), 
-    abs_pres_glmocc = purrr::map(data, ~{
-      newdat3 <- .
-      table(newdat3$rmse_occ, newdat3$presence)[2,1]}), 
-    
-    pres_pres_glmpr = purrr::map(data, ~{
-      newdat4 <- .
-      table(newdat4$rmse_pres, newdat4$presence)[2,2]}),
-    pres_abs_glmpr = purrr::map(data, ~{
-      newdat5 <- .
-      table(newdat5$rmse_pres, newdat5$presence)[1,2]}), 
-    abs_abs_glmpr = purrr::map(data, ~{
-      newdat6 <- .
-      table(newdat6$rmse_pres, newdat6$presence)[1,1]}), 
-    abs_pres_glmpr = purrr::map(data, ~{
-      newdat7 <- .
-      table(newdat7$rmse_pres, newdat7$presence)[2,1]}), 
-    
-    pres_pres_gamocc = purrr::map(data, ~{
-      newdat8 <- .
-      table(newdat8$rmse_gam, newdat8$presence)[2,2]}),
-    pres_abs_gamocc = purrr::map(data, ~{
-      newdat9 <- .
-      table(newdat9$rmse_gam, newdat9$presence)[1,2]}), 
-    abs_abs_gamocc = purrr::map(data, ~{
-      newdat10 <- .
-      table(newdat10$rmse_gam, newdat10$presence)[1,1]}), 
-    abs_pres_gamocc = purrr::map(data, ~{
-      newdat11 <- .
-      table(newdat11$rmse_gam, newdat11$presence)[2,1]}),
-    
-    pres_pres_gampr = purrr::map(data, ~{
-      newdat12 <- .
-      table(newdat12$rmse_gam_pres, newdat12$presence)[2,2]}),
-    pres_abs_gampr = purrr::map(data, ~{
-      newdat13 <- .
-      table(newdat13$rmse_gam_pres, newdat13$presence)[1,2]}), 
-    abs_abs_gampr = purrr::map(data, ~{
-      newdat14 <- .
-      table(newdat14$rmse_gam_pres, newdat14$presence)[1,1]}), 
-    abs_pres_gampr = purrr::map(data, ~{
-      newdat15 <- .
-      table(newdat15$rmse_gam_pres, newdat15$presence)[2,1]}),
-    
-    pres_pres_rfocc = purrr::map(data, ~{
-      newdat16 <- .
-      table(newdat16$rmse_rf, newdat16$presence)[2,2]}),
-    pres_abs_rfocc = purrr::map(data, ~{
-      newdat17 <- .
-      table(newdat17$rmse_rf, newdat17$presence)[1,2]}), 
-    abs_abs_rfocc = purrr::map(data, ~{
-      newdat18 <- .
-      table(newdat18$rmse_rf, newdat18$presence)[1,1]}), 
-    abs_pres_rfocc = purrr::map(data, ~{
-      newdat19 <- .
-      table(newdat19$rmse_rf, newdat19$presence)[2,1]}),
-    
-    pres_pres_rfpres = purrr::map(data, ~{
-      newdat20 <- .
-      table(newdat20$rmse_rf_pres, newdat20$presence)[2,2]}),
-    pres_abs_rfpres = purrr::map(data, ~{
-      newdat21 <- .
-      table(newdat21$rmse_rf_pres, newdat21$presence)[1,2]}), 
-    abs_abs_rfpres = purrr::map(data, ~{
-      newdat22 <- .
-      table(newdat22$rmse_rf_pres, newdat22$presence)[1,1]}), 
-    abs_pres_rfpres = purrr::map(data, ~{
-      newdat23 <- .
-      table(newdat23$rmse_rf_pres, newdat23$presence)[2,1]}),
-    
-    pres_pres_max = purrr::map(data, ~{
-      newdat24 <- .
-      table(newdat24$rmse_me_pres, newdat24$presence)[2,2]}),
-    pres_abs_max = purrr::map(data, ~{
-      newdat25 <- .
-      table(newdat25$rmse_me_pres, newdat25$presence)[1,2]}), 
-    abs_abs_max = purrr::map(data, ~{
-      newdat26 <- .
-      table(newdat26$rmse_me_pres, newdat26$presence)[1,1]}), 
-    abs_pres_max = purrr::map(data, ~{
-      newdat27 <- .
-      table(newdat27$rmse_me_pres, newdat27$presence)[2,1]}),
-    length = purrr::map(data, ~{
-      newdatlength <- .
-      length = length(newdatlength$stateroute)})) %>%
-  dplyr::select(-data) %>%
-  unnest()
-
-
-pres_spatial$accuracy_gamocc <- ((pres_spatial$pres_pres_gamocc + pres_spatial$abs_abs_gamocc)/pres_spatial$length)*100
-pres_spatial$sensitivity_gamocc <- (pres_spatial$pres_pres_gamocc/(pres_spatial$pres_pres_gamocc + pres_spatial$pres_abs_gamocc))*100
-pres_spatial$specificity_gamocc <- (pres_spatial$abs_abs_gamocc/(pres_spatial$abs_pres_gamocc + pres_spatial$abs_abs_gamocc))*100
-pres_spatial$pp_gamocc <- (pres_spatial$pres_pres_gamocc/(pres_spatial$pres_pres_gamocc + pres_spatial$abs_pres_gamocc))*100
-pres_spatial$np_gamocc <- (pres_spatial$abs_abs_gamocc/(pres_spatial$abs_abs_gamocc + pres_spatial$pres_abs_gamocc))*100
-
-# pres_spatial$truepos_gampr <- pres_spatial$pres_pres_gampr/pres_spatial$length*100
-# pres_spatial$falsepos_gampr <- pres_spatial$pres_abs_gampr/pres_spatial$length*100
-pres_spatial$accuracy_gampr <- ((pres_spatial$pres_pres_gampr + pres_spatial$abs_abs_gampr)/pres_spatial$length)*100
-pres_spatial$sensitivity_gampr <- (pres_spatial$pres_pres_gampr/(pres_spatial$pres_pres_gampr + pres_spatial$pres_abs_gampr))*100
-pres_spatial$specificity_gampr <- (pres_spatial$abs_abs_gampr/(pres_spatial$abs_pres_gampr + pres_spatial$abs_abs_gampr))*100
-pres_spatial$pp_gampr <- (pres_spatial$pres_pres_gampr/(pres_spatial$pres_pres_gampr + pres_spatial$abs_pres_gampr))*100
-pres_spatial$np_gampr <- (pres_spatial$abs_abs_gampr/(pres_spatial$abs_abs_gampr + pres_spatial$pres_abs_gampr))*100
-
-# pres_spatial$truepos_glmocc <- pres_spatial$pres_pres_glmocc/pres_spatial$length*100
-# pres_spatial$falsepos_glmocc <- pres_spatial$pres_abs_glmocc/pres_spatial$length*100
-pres_spatial$accuracy_glmocc <- ((pres_spatial$pres_pres_glmocc + pres_spatial$abs_abs_glmocc)/pres_spatial$length)*100
-pres_spatial$sensitivity_glmocc <- (pres_spatial$pres_pres_glmocc/(pres_spatial$pres_pres_glmocc + pres_spatial$pres_abs_glmocc))*100
-pres_spatial$specificity_glmocc <- (pres_spatial$abs_abs_glmocc/(pres_spatial$abs_pres_glmocc + pres_spatial$abs_abs_glmocc))*100
-pres_spatial$pp_glmocc <- (pres_spatial$pres_pres_glmocc/(pres_spatial$pres_pres_glmocc + pres_spatial$abs_pres_glmocc))*100
-pres_spatial$np_glmocc <- (pres_spatial$abs_abs_glmocc/(pres_spatial$abs_abs_glmocc + pres_spatial$pres_abs_glmocc))*100
-
-# pres_spatial$truepos_glmpr <- pres_spatial$pres_pres_glmpr/pres_spatial$length*100
-# pres_spatial$falsepos_glmpr <- pres_spatial$pres_abs_glmpr/pres_spatial$length*100
-pres_spatial$accuracy_glmpr <- ((pres_spatial$pres_pres_glmpr + pres_spatial$abs_abs_glmpr)/pres_spatial$length)*100
-pres_spatial$sensitivity_glmpr <- (pres_spatial$pres_pres_glmpr/(pres_spatial$pres_pres_glmpr + pres_spatial$pres_abs_glmpr))*100
-pres_spatial$specificity_glmpr <- (pres_spatial$abs_abs_glmpr/(pres_spatial$abs_pres_glmpr + pres_spatial$abs_abs_glmpr))*100
-pres_spatial$pp_glmpr <- (pres_spatial$pres_pres_glmpr/(pres_spatial$pres_pres_glmpr + pres_spatial$abs_pres_glmpr))*100
-pres_spatial$np_glmpr <- (pres_spatial$abs_abs_glmpr/(pres_spatial$abs_abs_glmpr + pres_spatial$pres_abs_glmpr))*100
-
-# pres_spatial$truepos_rfocc <- pres_spatial$pres_pres_rfocc/pres_spatial$length*100
-# pres_spatial$falsepos_rfocc <- pres_spatial$pres_abs_rfocc/pres_spatial$length*100
-pres_spatial$accuracy_rfocc <- ((pres_spatial$pres_pres_rfocc + pres_spatial$abs_abs_rfocc)/pres_spatial$length)*100
-pres_spatial$sensitivity_rfocc <- (pres_spatial$pres_pres_rfocc/(pres_spatial$pres_pres_rfocc + pres_spatial$pres_abs_rfocc))*100
-pres_spatial$specificity_rfocc <- (pres_spatial$abs_abs_rfocc/(pres_spatial$abs_pres_rfocc + pres_spatial$abs_abs_rfocc))*100
-pres_spatial$pp_rfocc <- (pres_spatial$pres_pres_rfocc/(pres_spatial$pres_pres_rfocc + pres_spatial$abs_pres_rfocc))*100
-pres_spatial$np_rfocc <- (pres_spatial$abs_abs_rfocc/(pres_spatial$abs_abs_rfocc + pres_spatial$pres_abs_rfocc))*100
-
-# pres_spatial$truepos_rfpr <- pres_spatial$pres_pres_rfpr/pres_spatial$length*100
-# pres_spatial$falsepos_rfpr <- pres_spatial$pres_abs_rfpr/pres_spatial$length*100
-pres_spatial$accuracy_rfpr <- ((pres_spatial$pres_pres_rfpres + pres_spatial$abs_abs_rfpres)/pres_spatial$length)*100
-pres_spatial$sensitivity_rfpr <- (pres_spatial$pres_pres_rfpres/(pres_spatial$pres_pres_rfpres + pres_spatial$pres_abs_rfpres))*100
-pres_spatial$specificity_rfpr <- (pres_spatial$abs_abs_rfpres/(pres_spatial$abs_pres_rfpres + pres_spatial$abs_abs_rfpres))*100
-pres_spatial$pp_rfpr <- (pres_spatial$pres_pres_rfpres/(pres_spatial$pres_pres_rfpres + pres_spatial$abs_pres_rfpres))*100
-pres_spatial$np_rfpr <- (pres_spatial$abs_abs_rfpres/(pres_spatial$abs_abs_rfpres + pres_spatial$pres_abs_rfpres))*100
-
-# pres_spatial$truepos_max <- pres_spatial$pres_pres_max/pres_spatial$length*100
-# pres_spatial$falsepos_max <- pres_spatial$pres_abs_max/pres_spatial$length*100
-pres_spatial$accuracy_max <- ((pres_spatial$pres_pres_max + pres_spatial$abs_abs_max)/pres_spatial$length)*100
-pres_spatial$sensitivity_max <- (pres_spatial$pres_pres_max/(pres_spatial$pres_pres_max + pres_spatial$pres_abs_max))*100
-pres_spatial$specificity_max <- (pres_spatial$abs_abs_max/(pres_spatial$abs_pres_max + pres_spatial$abs_abs_max))*100
-pres_spatial$pp_max <- (pres_spatial$pres_pres_max/(pres_spatial$pres_pres_max + pres_spatial$abs_pres_max))*100
-pres_spatial$np_max <- (pres_spatial$abs_abs_max/(pres_spatial$abs_abs_max + pres_spatial$pres_abs_max))*100
-
 
 ##### no trans #####
 auc_df_notrans = c()
@@ -328,11 +169,10 @@ for(i in sp_list){
   bbs_new_sub <- filter(bbs_new, aou == i) 
   bbs_new_sub$pres_2016 <- bbs_new_sub$presence
   sdm_input <- filter(all_env, stateroute %in% bbs_sub$stateroute) %>%
-    full_join(bbs_sub, by = "stateroute") %>%
-    na.omit(.)
+    full_join(bbs_sub, by = "stateroute")
   sdm_input <- data.frame(sdm_input)
   if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
-    if(nrow(filter(sdm_input, presence == 1)) > 49){
+    if(nrow(filter(sdm_input, presence == 1)) > 59){
       glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
       glm_pres <- glm(excl_pres ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
       gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = sdm_input)
@@ -370,8 +210,6 @@ for(i in sp_list){
   # write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
 }
 
-
-setwd("C:/Git/SDMs")
 auc_df_notrans = data.frame(auc_df_notrans)
 names(auc_df_notrans) = c("AOU", "rmse_occ_notrans", "rmse_pres_notrans","rmse_gam_notrans", "rmse_gam_pres_notrans", "rmse_rf_notrans", "rmse_rf_pres_notrans","rmse_me_pres_notrans")
 # write.csv(auc_df_notrans, "Data/auc_df_notrans.csv", row.names = FALSE)
@@ -593,32 +431,37 @@ auc_df_notrans <- read.csv("Data/auc_df_notrans.csv", header = TRUE)
 num_pres = bbs_final_occ_ll %>%
   group_by(aou) %>% 
   dplyr::filter(., presence == "1") %>%
-  dplyr::summarise(n = n_distinct(stateroute))  
+  dplyr::summarise(n_pres = n_distinct(stateroute))  
 
 num_routes = bbs_final_occ_ll %>% group_by(aou) %>% 
-  dplyr::summarise(n = n_distinct(stateroute))  %>%
-  dplyr::filter(., n >= 40)
+  dplyr::summarise(n = n_distinct(stateroute)) 
 
-auc_df_merge = left_join(auc_df, num_pres, by = c("AOU" = "aou"))
+auc_df_merge = left_join(auc_df, num_pres, by = c("AOU" = "aou")) %>%
+  left_join(num_routes,  by = c("AOU" = "aou"))
 auc_df_traits = left_join(auc_df_merge, traits, by = "AOU") %>%
   left_join(., tax_code, by = c("AOU" = "AOU_OUT"))
+
+auc_df_merge$glm_diff <- auc_df_merge$rmse_occ - auc_df$rmse_pres
+auc_df_merge$gam_diff <- auc_df_merge$rmse_gam - auc_df$rmse_gam_pres
+auc_df_merge$rf_diff <- auc_df_merge$rmse_rf - auc_df$rmse_rf_pres
+
 
 # plot GLM occ v pres 
 #  + geom_label(data = auc_df_traits, aes(x = AUC, y = AUC_pres, label = ALPHA.CODE))
 r1 = ggplot(auc_df_traits, aes(x = rmse_occ, y = rmse_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("GLM RMSE")) + ylab(bquote("Pres GLM RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-  geom_point(shape=16, aes(size = auc_df_traits$n)) + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
+  geom_point(shape=16, aes(size = auc_df_traits$n_pres)) + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
   theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
 # ggsave("Figures/Occ_Pres_labelled.pdf", height = 8, width = 12)
   
-r2 = ggplot(auc_df_traits, aes(x = rmse_gam, y = rmse_gam_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("GAM RMSE")) + ylab(bquote("Pres GAM RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(shape=16, aes(size = auc_df_traits$n))+  scale_y_continuous(limit = c(0, .5)) + scale_x_continuous(limit = c(0, .5))  + 
+r2 = ggplot(auc_df_traits, aes(x = rmse_gam, y = rmse_gam_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("GAM RMSE")) + ylab(bquote("Pres GAM RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(shape=16, aes(size = auc_df_traits$n_pres))+  scale_y_continuous(limit = c(0, .5)) + scale_x_continuous(limit = c(0, .5))  + 
     theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
     guides(colour = guide_legend(override.aes = list(shape = 15))) +
     theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
 #  ggsave("Figures/Occ_numPres_RF.pdf", height = 8, width = 12)
 
-r3 = ggplot(auc_df_traits, aes(x = rmse_rf, y = rmse_rf_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("RF RMSE")) + ylab(bquote("Pres RF RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + scale_y_continuous(limit = c(0, .5)) + scale_x_continuous(limit = c(0, .5)) + geom_point(shape=16, aes(size = auc_df_traits$n)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + guides(colour = guide_legend(override.aes = list(shape = 15))) + theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
+r3 = ggplot(auc_df_traits, aes(x = rmse_rf, y = rmse_rf_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("RF RMSE")) + ylab(bquote("Pres RF RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + scale_y_continuous(limit = c(0, .5)) + scale_x_continuous(limit = c(0, .5)) + geom_point(shape=16, aes(size = auc_df_traits$n_pres)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + guides(colour = guide_legend(override.aes = list(shape = 15))) + theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
 #  ggsave("Figures/Occ_numPres_gam.pdf", height = 8, width = 12)
 
 # density plot
@@ -647,13 +490,18 @@ grid <- plot_grid(r1 + theme(legend.position="none"),
 ggsave("Figures/rmse_plot.pdf", height = 10, width = 14)
 
 # pres:pres
-auc_df_notrans <- auc_df_notrans[,c("AOU","rmse_pres_notrans","rmse_gam_pres_notrans", "rmse_rf_pres_notrans", "rmse_me_pres_notrans")]
-pres_pres <- left_join(auc_df_notrans, auc_df[,c("AOU","rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres")], by = "AOU")
+pres_pres1 <- left_join(auc_df_notrans, auc_df[,c("AOU","rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres")], by = "AOU") %>%
+  left_join(num_pres, by = c("AOU" = "aou"))
 
-pres_pres1 = left_join(pres_pres, num_pres, by = c("AOU" = "aou"))
+
+pres_pres1$glm_diff <-  pres_pres1$rmse_pres_notrans - pres_pres1$rmse_pres
+pres_pres1$gam_diff <-  pres_pres1$rmse_gam_pres_notrans - pres_pres1$rmse_gam_pres
+pres_pres1$rf_diff <-  pres_pres1$rmse_rf_pres_notrans - pres_pres1$rmse_rf_pres
+pres_pres1$me_diff <-  pres_pres1$rmse_me_pres_notrans - pres_pres1$rmse_me_pres
+
 # plot GLM occ v pres 
 r1 = ggplot(pres_pres1, aes(x = rmse_pres_notrans, y = rmse_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Pres GLM RMSE")) + xlab(bquote("GLM No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-  geom_point(shape=16, aes(size = pres_pres1$n))  + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
+  geom_point(shape=16, aes(size = pres_pres1$n_pres))  + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
   theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
@@ -661,21 +509,21 @@ r1 = ggplot(pres_pres1, aes(x = rmse_pres_notrans, y = rmse_pres)) +theme_classi
 
 
 r2 =  ggplot(pres_pres1, aes(x = rmse_gam_pres_notrans, y = rmse_gam_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Pres GAM RMSE")) + xlab(bquote("GAM No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-  geom_point(shape=16, aes(size = pres_pres1$n))  + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
+  geom_point(shape=16, aes(size = pres_pres1$n_pres))  + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
   theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
 #  ggsave("Figures/Occ_numPres_RF.pdf", height = 8, width = 12)
 
 r3 =  ggplot(pres_pres1, aes(x = rmse_rf_pres_notrans, y = rmse_rf_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Pres RF RMSE")) + xlab(bquote("RF No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-  geom_point(shape=16, aes(size = pres_pres1$n))  + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
+  geom_point(shape=16, aes(size = pres_pres1$n_pres))  + scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
   theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
 #  ggsave("Figures/Occ_numPres_gam.pdf", height = 8, width = 12)
 
 r4 =  ggplot(pres_pres1, aes(x = rmse_me_pres_notrans, y = rmse_me_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Pres ME RMSE")) + xlab(bquote("ME No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-  geom_point(shape=16, aes(size = pres_pres1$n)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  geom_point(shape=16, aes(size = pres_pres1$n_pres)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
 
@@ -705,3 +553,4 @@ plot_grid(r1 + theme(legend.position="none"),
           nrow = 2, 
           scale = 0.9) 
 ggsave("Figures/rmse_pres_pres.pdf", height = 14, width = 24)
+
