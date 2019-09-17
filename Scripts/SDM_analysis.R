@@ -565,6 +565,7 @@ ggplot(data=auc_df_plot, aes(factor(AOU), y=val, fill=factor(glm_mod))) +
   geom_bar(stat = "identity") + theme_classic() 
 
 #### diff vs RO
+# weridness in the sign of if sel in diff vs RO plots whats going on with the 1 point
 auc_df_merge$sign <- ifelse(auc_df_merge$glm_diff > 0, "pos", "neg")
 glm <- ggplot(auc_df_merge, aes(x = RO, y = glm_diff)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("RO")) + ylab(bquote("Difference")) + 
   geom_point(shape=16, size = 3, aes(color = sign)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
