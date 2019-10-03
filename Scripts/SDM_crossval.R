@@ -19,7 +19,6 @@ bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE) %>% filter(aou > 2880)
 
 bbs_occ_sub = bbs_occ %>% 
   dplyr::count(aou, stateroute) %>% 
-  filter(n < 16) %>% 
   dplyr::mutate(occ = n/15) 
 
 auc_df <- read.csv("Data/auc_df.csv", header = TRUE)
@@ -36,13 +35,12 @@ env_bio = na.omit(env_bio)
 env_bio_sub = env_bio[,c(1, 21:39)]
 
 # read in raw bbs data for 2016
-bbs_new <- read.csv("Data/bbs_2015_on.csv", header = TRUE) %>%
-  filter(Year == 2016)
+bbs_new <- read.csv("Data/bbs_2016.csv", header = TRUE) 
 bbs_new$presence = 1
 bbs_new_exp_pres <- read.csv("Data/expect_pres_2016.csv", header = TRUE)
 bbs_new_all <- left_join(bbs_new_exp_pres, bbs_new, by = c("spAOU"="aou", "stateroute" = "stateroute"))
-bbs_new_all$pres_2016 <- case_when(is.na(bbs_new_all$presence) == TRUE ~ 0, 
-                                   bbs_new_all$presence == 1 ~ 1)
+bbs_new_all$presence <- case_when(is.na(bbs_new_all$presence) == TRUE ~ 0, 
+                                  bbs_new_all$presence == 1 ~ 1)
 
 all_env = left_join(bi_means, env_bio_sub, by = "stateroute")
 
@@ -92,7 +90,7 @@ for(i in sp_list){
   sdm_input <- left_join(bbs_sub, temp, by = "stateroute")
   sdm_input = na.omit(sdm_input)
   if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
-    if(nrow(filter(sdm_input, presence == 1)) > 49){
+    if(nrow(filter(sdm_input, presence == 1)) > 59){
       
       glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
       glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
@@ -119,7 +117,7 @@ for(i in sp_list){
       threshmax_pres <-threshfun(max_pred_pres)
     
       sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
-      pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute") %>%
+      pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "presence")], by = "stateroute") %>%
         mutate(predicted_glm_occ = ifelse(pred_glm_occ > threshglm_occ, 1, 0),
                predicted_glm_pr = ifelse(pred_glm_pr > threshglm_pr, 1, 0),
                predicted_gam_occ = ifelse(pred_gam_occ > threshgam_occ, 1, 0),
@@ -127,7 +125,7 @@ for(i in sp_list){
                predicted_rf_occ = ifelse(pred_rf_occ > threshrf_occ, 1, 0),
                predicted_rf_pr = ifelse(pred_rf_pr > threshrf_pr, 1, 0),
                predicted_max_pres = ifelse(max_pred_pres > threshmax_pres, 1, 0)) %>%
-        dplyr::select(aou, stateroute, occ, presence, latitude, longitude, pred_gam_occ, pres_2016, predicted_glm_occ, predicted_glm_pr,predicted_gam_occ, predicted_gam_pr, predicted_rf_occ, predicted_rf_pr, predicted_max_pres)
+        dplyr::select(aou, stateroute, occ, presence.x, latitude, longitude, pred_gam_occ, presence.y, predicted_glm_occ, predicted_glm_pr,predicted_gam_occ, predicted_gam_pr, predicted_rf_occ, predicted_rf_pr, predicted_max_pres)
       test_df = rbind(test_df, pred_2016)
     }
   }
@@ -137,101 +135,107 @@ test_df <- data.frame(test_df)
 
 # write.csv(test_df, "Data/temporal_crossval_df.csv", row.names = FALSE)
 test_df <- read.csv("Data/temporal_crossval_df.csv", header = TRUE) 
-# to account for species not detected in 2015-2016 but are within the range
-test_df$pres_2016[is.na(test_df$pres_2016)] = 0 
 
-pres_matrix <- test_df %>% group_by(aou) %>%
+# to account for species not detected in 2015-2016 but are within the range
+test_df$presence.y[is.na(test_df$presence.y)] = 0 
+
+# temp measure to avoid error
+test_df2 <- filter(test_df, !aou %in% c(4090,4900,4950,4860))
+
+pres_matrix <- test_df2 %>% group_by(aou) %>%
   nest() %>%
-  mutate(pres_pres_glmocc = purrr::map(data, ~{
+  dplyr::mutate(pres_pres_glmocc = purrr::map(data, ~{
     dat <- .
-    table(dat$predicted_glm_occ, dat$presence)[2,2]}),
+    table(dat$predicted_glm_occ, dat$presence.x)[2,2]}),
     pres_abs_glmocc = purrr::map(data, ~{
       newdat <- .
-      table(newdat$predicted_glm_occ, newdat$presence)[1,2]}), 
+      table(newdat$predicted_glm_occ, newdat$presence.x)[1,2]}),
     abs_abs_glmocc = purrr::map(data, ~{
       newdat2 <- .
-      table(newdat2$predicted_glm_occ, newdat2$presence)[1,1]}), 
+      table(newdat2$predicted_glm_occ, newdat2$presence.x)[1,1]}),
     abs_pres_glmocc = purrr::map(data, ~{
       newdat3 <- .
-      table(newdat3$predicted_glm_occ, newdat3$presence)[2,1]}), 
-    
+      table(newdat3$predicted_glm_occ, newdat3$presence.x)[2,1]}),
+
     pres_pres_glmpr = purrr::map(data, ~{
       newdat4 <- .
-      table(newdat4$predicted_glm_pr, newdat4$presence)[2,2]}),
+      table(newdat4$predicted_glm_pr, newdat4$presence.x)[2,2]}),
     pres_abs_glmpr = purrr::map(data, ~{
       newdat5 <- .
-      table(newdat5$predicted_glm_pr, newdat5$presence)[1,2]}), 
+      table(newdat5$predicted_glm_pr, newdat5$presence.x)[1,2]}),
     abs_abs_glmpr = purrr::map(data, ~{
       newdat6 <- .
-      table(newdat6$predicted_glm_pr, newdat6$presence)[1,1]}), 
+      table(newdat6$predicted_glm_pr, newdat6$presence.x)[1,1]}),
     abs_pres_glmpr = purrr::map(data, ~{
       newdat7 <- .
-      table(newdat7$predicted_glm_pr, newdat7$presence)[2,1]}), 
-    
+      table(newdat7$predicted_glm_pr, newdat7$presence.x)[2,1]}),
+
     pres_pres_gamocc = purrr::map(data, ~{
       newdat8 <- .
-      table(newdat8$predicted_gam_occ, newdat8$presence)[2,2]}),
+      table(newdat8$predicted_gam_occ, newdat8$presence.x)[2,2]}),
     pres_abs_gamocc = purrr::map(data, ~{
       newdat9 <- .
-      table(newdat9$predicted_gam_occ, newdat9$presence)[1,2]}), 
+      table(newdat9$predicted_gam_occ, newdat9$presence.x)[1,2]}),
     abs_abs_gamocc = purrr::map(data, ~{
       newdat10 <- .
-      table(newdat10$predicted_gam_occ, newdat10$presence)[1,1]}), 
+      table(newdat10$predicted_gam_occ, newdat10$presence.x)[1,1]}),
     abs_pres_gamocc = purrr::map(data, ~{
       newdat11 <- .
-      table(newdat11$predicted_gam_occ, newdat11$presence)[2,1]}),
-    
+      table(newdat11$predicted_gam_occ, newdat11$presence.x)[2,1]}),
+
     pres_pres_gampr = purrr::map(data, ~{
       newdat12 <- .
-      table(newdat12$predicted_gam_pr, newdat12$presence)[2,2]}),
+      table(newdat12$predicted_gam_pr, newdat12$presence.x)[2,2]}),
     pres_abs_gampr = purrr::map(data, ~{
       newdat13 <- .
-      table(newdat13$predicted_gam_pr, newdat13$presence)[1,2]}), 
+      table(newdat13$predicted_gam_pr, newdat13$presence.x)[1,2]}),
     abs_abs_gampr = purrr::map(data, ~{
       newdat14 <- .
-      table(newdat14$predicted_gam_pr, newdat14$presence)[1,1]}), 
+      table(newdat14$predicted_gam_pr, newdat14$presence.x)[1,1]}),
     abs_pres_gampr = purrr::map(data, ~{
       newdat15 <- .
-      table(newdat15$predicted_gam_pr, newdat15$presence)[2,1]}),
-    
+      table(newdat15$predicted_gam_pr, newdat15$presence.x)[2,1]}),
+
     pres_pres_rfocc = purrr::map(data, ~{
       newdat16 <- .
-      table(newdat16$predicted_rf_occ, newdat16$presence)[2,2]}),
+      table(newdat16$predicted_rf_occ, newdat16$presence.x)[2,2]}),
     pres_abs_rfocc = purrr::map(data, ~{
       newdat17 <- .
-      table(newdat17$predicted_rf_occ, newdat17$presence)[1,2]}), 
+      table(newdat17$predicted_rf_occ, newdat17$presence.x)[1,2]}),
     abs_abs_rfocc = purrr::map(data, ~{
       newdat18 <- .
-      table(newdat18$predicted_rf_occ, newdat18$presence)[1,1]}), 
+      table(newdat18$predicted_rf_occ, newdat18$presence.x)[1,1]}),
     abs_pres_rfocc = purrr::map(data, ~{
       newdat19 <- .
-      table(newdat19$predicted_rf_occ, newdat19$presence)[2,1]}),
-    
+      table(newdat19$predicted_rf_occ, newdat19$presence.x)[2,1]}),
+
     pres_pres_rfpres = purrr::map(data, ~{
       newdat20 <- .
-      table(newdat20$predicted_rf_pr, newdat20$presence)[2,2]}),
+      table(newdat20$predicted_rf_pr, newdat20$presence.x)[2,2]}),
     pres_abs_rfpres = purrr::map(data, ~{
       newdat21 <- .
-      table(newdat21$predicted_rf_pr, newdat21$presence)[1,2]}), 
+      table(newdat21$predicted_rf_pr, newdat21$presence.x)[1,2]}),
     abs_abs_rfpres = purrr::map(data, ~{
       newdat22 <- .
-      table(newdat22$predicted_rf_pr, newdat22$presence)[1,1]}), 
+      table(newdat22$predicted_rf_pr, newdat22$presence.x)[1,1]}),
     abs_pres_rfpres = purrr::map(data, ~{
       newdat23 <- .
-      table(newdat23$predicted_rf_pr, newdat23$presence)[2,1]}),
-    
+      table(newdat23$predicted_rf_pr, newdat23$presence.x)[2,1]}),
+  
+    # inset row above for the folowing: 4090, 4900, 4950, 4860
+   # 4/518, 10/180, 16/883, 21/504
     pres_pres_max = purrr::map(data, ~{
       newdat24 <- .
-      table(newdat24$predicted_max_pres, newdat24$presence)[2,2]}),
+      table(newdat24$predicted_max_pres, newdat24$presence.x[2,2])}),
     pres_abs_max = purrr::map(data, ~{
       newdat25 <- .
-      table(newdat25$predicted_max_pres, newdat25$presence)[1,2]}), 
+      table(newdat25$predicted_max_pres, newdat25$presence.x)[1,2]}),
     abs_abs_max = purrr::map(data, ~{
       newdat26 <- .
-      table(newdat26$predicted_max_pres, newdat26$presence)[1,1]}), 
+      table(newdat26$predicted_max_pres, newdat26$presence.x)[1,1]}),
     abs_pres_max = purrr::map(data, ~{
       newdat27 <- .
-      table(newdat27$predicted_max_pres, newdat27$presence)[2,1]}),
+      table(newdat27$predicted_max_pres, newdat27$presence.x)[2,1]}),
     length = purrr::map(data, ~{
       newdatlength <- .
       length = length(newdatlength$stateroute)})) %>%

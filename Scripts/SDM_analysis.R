@@ -374,56 +374,6 @@ r.core = raster(mod.core, res = 0.6) # 40x40 km/111 (degrees) * 2 tp eliminate h
 # bioclim is 4 km
 plot.core = rasterize(mod.core, r.core)
 
-# panel 1
-data(wrld_simpl)
-# Plot the base map
-plot(wrld_simpl, 
-     xlim = c(min.lon, max.lon),
-     ylim = c(min.lat, max.lat),
-     axes = TRUE, 
-     col = "grey95")
-
-points(x = sdm_input$longitude, y = sdm_input$latitude, col = c("gray", "black")[as.factor(sdm_input$presence)], pch = c(20, 4)[as.factor(sdm_input$presence)], cex = 1.6)
-points(x = sdm_notrans$longitude, y = sdm_notrans$latitude, col = "black", pch = 20, cex = 1.6)
-box()
-
-# panel 2 pres
-data(wrld_simpl)
-# Plot the base map
-plot(wrld_simpl, 
-     xlim = c(min.lon, max.lon),
-     ylim = c(min.lat, max.lat),
-     axes = TRUE, 
-     col = "grey95")
-
-plot(plot.r[[4]], add = TRUE)
-box()
-
-# panel 3 occ
-data(wrld_simpl)
-# Plot the base map
-plot(wrld_simpl, 
-     xlim = c(min.lon, max.lon),
-     ylim = c(min.lat, max.lat),
-     axes = TRUE, 
-     col = "grey95")
-
-plot(plot.r[[5]], add = TRUE)
-box()
-
-# panel 4 core
-# Plot the base map
-plot(wrld_simpl, 
-     xlim = c(min.lon, max.lon),
-     ylim = c(min.lat, max.lat),
-     axes = TRUE, 
-     col = "grey95")
-
-plot(plot.core[[4]], add = TRUE)
-box()
-
-
-
 ###### global plots ####
 auc_df <- read.csv("Data/auc_df.csv", header = TRUE)
 auc_df_notrans <- read.csv("Data/auc_df_notrans.csv", header = TRUE)
@@ -492,6 +442,10 @@ grid <- plot_grid(r1 + theme(legend.position="none"),
 
 ggsave("Figures/rmse_plot.pdf", height = 10, width = 14)
 
+# t test for each occ:pres
+t.test(auc_df$rmse_occ, auc_df$rmse_pres)
+t.test(auc_df$rmse_gam, auc_df$rmse_gam_pres)
+t.test(auc_df$rmse_rf, auc_df$rmse_rf_pres)
 # pres:pres
 pres_pres1 <- left_join(auc_df_notrans, auc_df[,c("AOU","rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres")], by = "AOU") %>%
   left_join(num_pres, by = c("AOU" = "aou"))
@@ -565,22 +519,27 @@ ggplot(data=auc_df_plot, aes(factor(AOU), y=val, fill=factor(glm_mod))) +
   geom_bar(stat = "identity") + theme_classic() 
 
 #### diff vs RO
-# weridness in the sign of if sel in diff vs RO plots whats going on with the 1 point
-auc_df_merge$sign <- ifelse(auc_df_merge$glm_diff > 0, "pos", "neg")
-glm <- ggplot(auc_df_merge, aes(x = RO, y = glm_diff)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("RO")) + ylab(bquote("Difference")) + 
+auc_df_merge$sign <- ifelse(auc_df_merge$glm_diff >= 0, "pos", "neg")
+glm <- ggplot(auc_df_merge, aes(x = RO, y = glm_diff)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -2),axis.title.y=element_text(size=34, angle=90, vjust = 3)) + xlab(bquote("RO")) + ylab(bquote("No Transients - Presence RMSE")) + 
   geom_point(shape=16, size = 3, aes(color = sign)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
-  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
-auc_df_merge$sign <- ifelse(auc_df_merge$gam_diff > 0, "pos", "neg")
-gam <- ggplot(auc_df_merge, aes(x = RO, y = gam_diff)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("RO")) + ylab(bquote("Difference")) + 
+  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines"))  +
+  scale_color_manual(values = c("steelblue2", "purple4")) +
+  annotate("text", x = 0.9, y = -0.3, label = "GLM", size = 10)
+auc_df_merge$sign <- ifelse(auc_df_merge$gam_diff >= 0, "pos", "neg")
+gam <- ggplot(auc_df_merge, aes(x = RO, y = gam_diff)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -2),axis.title.y=element_text(size=34, angle=90, vjust = 3)) + xlab(bquote("RO")) + ylab(bquote("No Transients - Presence RMSE")) + 
   geom_point(shape=16,size = 3, aes(color = sign)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
-  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
-auc_df_merge$sign <- ifelse(auc_df_merge$rf_diff > 0, "pos", "neg")
-rf <- ggplot(auc_df_merge, aes(x = RO, y = rf_diff)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("RO")) + ylab(bquote("Difference")) + 
+  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines"))  +
+  scale_color_manual(values = c("#034e7b", "purple4")) +
+  annotate("text", x = 0.9, y = -0.4, label = "GAM", size = 10)
+auc_df_merge$sign <- ifelse(auc_df_merge$rf_diff >= 0, "pos", "neg")
+rf <- ggplot(auc_df_merge, aes(x = RO, y = rf_diff)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -2),axis.title.y=element_text(size=34, angle=90, vjust = 3)) + xlab(bquote("RO")) + ylab(bquote("No Transients - Presence RMSE")) + 
   geom_point(shape=16, size = 3,aes(color = sign)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
-  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
+  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) + 
+  scale_color_manual(values = c("#238b45", "purple4")) +
+  annotate("text", x = 0.9, y = -0.4, label = "RF", size = 10)
 theme_set(theme_cowplot(font_size=20,font_family = "URWHelvetica"))
 plot_grid(glm + theme(legend.position="none"),
           gam + theme(legend.position="none"),
@@ -591,7 +550,8 @@ plot_grid(glm + theme(legend.position="none"),
           label_size = 30,
           nrow = 1, 
           scale = 0.9) 
-ggsave("Figures/RO_v_diff.pdf", height = 6, width = 16)
+ggsave("Figures/RO_v_diff.pdf", height = 8, width = 16)
+
 #### diff vs. number of presence 
 ggplot(auc_df_merge, aes(x = glm_diff, y = n_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Pres ME RMSE")) + xlab(bquote("ME No Transients")) + 
   geom_point(shape=16, aes(color = sign)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +

@@ -223,7 +223,7 @@ legend <- ggplot(rmse_plot, aes(pres_rmse, pres_mod)) + geom_line(lwd = 1.5, aes
 
 library(cowplot)
 theme_set(theme_cowplot(font_size=20,font_family = "URWHelvetica"))
-grid <- plot_grid(r1 + theme(legend.position="none"),
+grid <- plot_grid(r1 + theme(legend.position="top"),
           r2 + theme(legend.position="none"),
           r3 + theme(legend.position="none"),
           r4 + theme(legend.position="none"),
@@ -281,7 +281,7 @@ legend <- ggplot(rmse_plot_pres, aes(rmse, mod)) + geom_line(lwd = 1.5, aes(colo
 
 library(cowplot)
 theme_set(theme_cowplot(font_size=20,font_family = "URWHelvetica"))
-plot_grid(r1 + theme(legend.position="none"),
+plot_grid(r1 + theme(legend.position="top"),
           r2 + theme(legend.position="none"),
           r3 + theme(legend.position="none"),
           r4 + theme(legend.position="none"),
