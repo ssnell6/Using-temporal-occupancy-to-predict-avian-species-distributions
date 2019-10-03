@@ -511,7 +511,7 @@ mime() %>%
 bbs_env <- left_join(bbs_final_occ_ll, all_env, by = "stateroute")
 rmse = c()
 sdm_space_cval = c()
-for(i in sp_list[1:50]){
+for(i in sp_list){
   print(i)
   space_sub <- dplyr::filter(bbs_env,  aou == i)
   #Randomly shuffle the data
