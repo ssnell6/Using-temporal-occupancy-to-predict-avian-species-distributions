@@ -8,7 +8,8 @@ library(maptools)
 library(pROC)
 library(hydroGOF)
 
-bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE) 
+bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE) %>%
+  filter(year %in% 2006:2010)
 
 bbs_occ_sub = bbs_occ %>% 
   dplyr::count(aou, stateroute) %>% 
