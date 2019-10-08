@@ -325,7 +325,7 @@ pdf('Temporal_XVal.pdf', height = 8, width = 14)
       theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(sp) + ylab(bquote("Percent")) +
       scale_fill_manual(values = c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462","#b3de69"),
                         breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
-                        labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GAM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
+                        labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GLM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
       theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
       guides(colour = guide_legend(override.aes = list(shape = 15))) +
       theme(legend.title=element_blank(), legend.text=element_text(size=30), legend.key.width=unit(2, "lines"))
@@ -375,12 +375,15 @@ pres_matrix_plot <- gather(pres_matrix_means, "Mod", "value", mean_accuracy_gamo
 pres_matrix_plot2 <-  separate(data = pres_matrix_plot, col = Mod, into = c("Mean","Measure", "Modtype"), sep = "_") 
 pres_matrix_plot2$Modtype <- factor(pres_matrix_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max", ordered = TRUE))
 
+#+ scale_color_manual(values=c("#034e7b","#034e7b","steelblue2", "steelblue2","#238b45", "#238b45" ,"purple"), labels=c("rmse_gam", "rmse_gam_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres",  "rmse_me_pres"))
+
+
 pplot = ggplot(pres_matrix_plot2, aes(x = Measure, y = value)) +   
   geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity") +
-  theme_classic()+ theme(axis.title.x=element_text(size=54, vjust = -4),axis.title.y=element_text(size=54, angle=90, vjust = 5)) + xlab(bquote("Measure")) + ylab(bquote("Percent")) +
-  scale_fill_manual(values = c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462","#b3de69"),
+  theme_classic()+ theme(axis.title.x=element_text(size=54),axis.title.y=element_text(size=54, angle=90)) + xlab(bquote("Measure")) + ylab(bquote("Percent")) +
+  scale_fill_manual(values = c("#034e7b","#08306b","steelblue2", "dodgerblue2","#238b45", "darkgreen" ,"purple"),
                     breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
-                    labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GAM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
+                    labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GLM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
   scale_x_discrete(labels=c("Accuracy","Negative \nPredictive","Positive \nPredictive", "Sensitivity", "Specificity")) +
   theme(axis.text.x=element_text(size = 50),axis.ticks=element_blank(), axis.text.y=element_text(size=50)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
@@ -761,9 +764,9 @@ for(sp in unique(pres_spatial_plot2$aou)){
   plot <- ggplot(plotsub, aes(x = Measure, y = value)) +   
     geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity") +
     theme_classic()+ theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90)) + xlab(sp) + ylab(bquote("Percent")) +
-    scale_fill_manual(values = c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462","#b3de69"),
+    scale_fill_manual(values =c("#034e7b","#08306b","steelblue2", "dodgerblue2","#238b45", "darkgreen" ,"purple"),
                       breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
-                      labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GAM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
+                      labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GLM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
     theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
     guides(colour = guide_legend(override.aes = list(shape = 15))) +
     theme(legend.title=element_blank(), legend.text=element_text(size=30), legend.key.width=unit(2, "lines"))
@@ -771,6 +774,7 @@ for(sp in unique(pres_spatial_plot2$aou)){
 }
 dev.off()
 
+pres_spatial <- data.frame(pres_spatial)
 pres_spatial_means <- pres_spatial %>%
   summarise(
     mean_accuracy_gamocc = mean(accuracy_gamocc),
@@ -815,10 +819,10 @@ pres_spatial_plot2$Modtype <- factor(pres_spatial_plot2$Modtype, levels = c("gam
 
 splot = ggplot(pres_spatial_plot2, aes(x = Measure, y = value)) +   
   geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity") +
-  theme_classic()+ theme(axis.title.x=element_text(size=54, vjust = -4),axis.title.y=element_text(size=54, angle=90, vjust = 5)) + xlab(bquote("Measure")) + ylab(bquote("Percent")) +
-  scale_fill_manual(values = c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462","#b3de69"),
+  theme_classic()+ theme(axis.title.x=element_text(size=54),axis.title.y=element_text(size=54, angle=90)) + xlab(bquote("Measure")) + ylab(bquote("Percent")) +
+  scale_fill_manual(values = c("#034e7b","#08306b","steelblue2", "dodgerblue2","#238b45", "darkgreen" ,"purple"),
                     breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
-                    labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GAM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
+                    labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GLM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
   scale_x_discrete(labels=c("Accuracy","Negative \nPredictive","Positive \nPredictive", "Sensitivity", "Specificity")) +
   theme(axis.text.x=element_text(size = 50),axis.ticks=element_blank(), axis.text.y=element_text(size=50)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
