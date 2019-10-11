@@ -69,7 +69,7 @@ bbs_final_occ_ll$presence <- as.numeric(bbs_final_occ_ll$presence)
 auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 
 #### change spp here ##### 
-sdm_input <- filter(bbs_final_occ_ll, aou == 6280) %>% 
+sdm_input <- filter(bbs_final_occ_ll, aou == 2890) %>% 
   left_join(all_env, by = "stateroute") 
 sdm_notrans <- filter(sdm_input, occ > 0.33| occ == 0) %>% na.omit(.)
 
@@ -247,4 +247,163 @@ fig_gam <- tmap_arrange(sdm_gam_occ, sdm_gam_pr, sdm_gam_core, ncol = 1)
 fig_rf <- tmap_arrange(sdm_rf_occ, sdm_rf_pr, sdm_rf_core, ncol = 1)
 
 final_fig1 <- tmap_arrange(point_map, sdm_maxent_pr, sdm_maxent_core, sdm_glm_occ, sdm_glm_pr, sdm_glm_core, sdm_gam_occ, sdm_gam_pr, sdm_gam_core, sdm_rf_occ, sdm_rf_pr, sdm_rf_core, nrow = 4, ncol = 3) 
-tmap_save(final_fig1, "Figures/Fig1.pdf", height = 16, width = 20)
+tmap_save(final_fig1, "Figures/map2890.pdf", height = 16, width = 20)
+
+
+
+
+#### MAPS #####
+auc_df = read.csv("Data/auc_df.csv", header = TRUE)
+setwd("Figures/maps/")
+
+
+mapfun <- function(pdf_name, vec, num){ 
+  
+  pdf(pdf_name, height = 8, width = 10)
+  par(mfrow = c(2, 3)) # makes plots too small
+  
+  for(i in unique(sp_list)){
+    print(i)
+    sdm_output = c()
+    
+    bbs_sub <- filter(bbs_final_occ_ll, aou == i)
+    temp <- filter(all_env, stateroute %in% bbs_sub$stateroute)
+    sdm_input <- left_join(bbs_sub, temp, by = "stateroute")
+    sdm_input = na.omit(sdm_input)
+    j = unique(sdm_input$ALPHA.CODE)
+    
+    # print(length(sdm_input$stateroute))
+    if(length(unique(sdm_input$stateroute)) > 40  & length(unique(sdm_input$presence)) >1){
+      #   if(levels(as.factor(sdm_input$presence)) > 1){
+      glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+      glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+      gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = sdm_input)
+      gam_pres <- mgcv::gam(presence ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = sdm_input)
+      rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+      rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+      
+      max_ind_pres = dismo::maxent(sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_input$presence)
+      
+      # predict
+      pred_glm_occ <- predict(glm_occ,type=c("response"))
+      pred_glm_pr <- predict(glm_pres,type=c("response"))
+      pred_gam_occ <- predict(gam_occ,type=c("response"))
+      pred_gam_pr <- predict(gam_pres,type=c("response"))
+      pred_rf_occ <- predict(rf_occ,type=c("response"))
+      pred_rf_pr <- predict(rf_pres,type=c("response"))
+      max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
+      
+      sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres)  
+      
+      
+      # Determine geographic extent of our data using AOU = i
+      max.lat <- ceiling(max(sdm_input$latitude))
+      min.lat <- floor(min(sdm_input$latitude))
+      max.lon <- ceiling(max(sdm_input$longitude))
+      min.lon <- floor(min(sdm_input$longitude))
+      
+      geographic.extent <- extent(x = c(min.lon, max.lon, min.lat, max.lat))
+      
+      
+      mod.r <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
+                                      data = sdm_output[,c("latitude", "longitude", "pred_glm_pr", "pred_glm_occ", "pred_gam_pr", "pred_gam_occ",  "pred_rf_pr", "pred_rf_occ","max_pred_pres")], 
+                                      proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
+      r = raster(mod.r, res = 0.6) # 40x40 km/111 (degrees) * 2 tp eliminate holes
+      # bioclim is 4 km
+      plot.r = rasterize(mod.r, r)
+      
+      data(wrld_simpl)
+      # Plot the base map
+      plot(wrld_simpl, 
+           xlim = c(min.lon, max.lon),
+           ylim = c(min.lat, max.lat),
+           axes = TRUE, 
+           col = "grey95", main = paste("SDM plot for ", j, sep=""))
+      
+      plot(plot.r[[num]], add = TRUE)
+      
+      # points(x = bbs_sub$longitude, y = bbs_sub$latitude, col = bbs_sub$presence, pch = 20, cex = 0.75)
+      # Add the points for individual observation if necessary
+      # sdm_input$presence <-droplevels(sdm_input$presence, exclude = c("0"))
+      # sdm_input$col = c("black", "white")
+      points(x = sdm_input$longitude, y = sdm_input$latitude, col = sdm_input$presence, pch = 20, cex = 0.75)
+      
+      box()
+    }
+    
+  }
+  dev.off()
+}
+# dev.off()
+
+# using function to generate maps for all methods
+mapfun(pdf_name = 'SDM_glm_pres_6280.pdf',vec = "pred_glm_pr", 4)
+
+mapfun(pdf_name = 'SDM_glm_occ_6280.pdf', vec = "pred_glm_occ", 5)
+
+mapfun(pdf_name = 'SDM_gam_pres_6280.pdf',vec = "pred_gam_pr", 6)
+
+mapfun(pdf_name = 'SDM_gam_occ_6280.pdf', vec = "pred_gam_occ", 7)
+
+mapfun(pdf_name = 'SDM_rf_pr_6280.pdf', vec = "pred_rf_pr", 8)
+
+mapfun(pdf_name = 'SDM_rf_occ_6280.pdf', vec = "pred_rf_occ", 9)
+
+mapfun(pdf_name = 'SDM_me_pres_6280.pdf', vec = "pred_me_pres", 10)
+
+setwd("C:/Git/SDMs")
+
+env.data = as.matrix(sdm_input[,c("latitude", "longitude", "elev.mean", "ndvi.mean", "bio.mean.bio1", "bio.mean.bio12")])
+
+env.proj = SpatialPointsDataFrame(coords = sdm_input[,c("longitude", "latitude")],
+                                  data = sdm_input[,c("latitude", "longitude", "elev.mean", "ndvi.mean", "bio.mean.bio1", "bio.mean.bio12")], 
+                                  proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
+r = raster(env.proj)
+env.proj.raster = rasterize(env.proj, r)
+env.stack = raster::stack(env.proj.raster@data$elev.mean, env.proj.raster@data$ndvi.mean)
+
+
+
+# temp filter for vis purposes
+sdm_input <- filter(bbs_final_occ_ll, Aou == 6280) %>% left_join(all_env, by = "stateroute") 
+sdm_notrans <- filter(sdm_input, occ >= 0.33) 
+
+# Determine geographic extent of our data using AOU = i
+max.lat <- ceiling(max(sdm_input$latitude))
+min.lat <- floor(min(sdm_input$latitude))
+max.lon <- ceiling(max(sdm_input$longitude))
+min.lon <- floor(min(sdm_input$longitude))
+
+#   if(levels(as.factor(sdm_input$presence)) > 1){
+glm_occ <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+glm_pres <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
+
+# predict
+pred_glm_occ <- predict(glm_occ,type=c("response"))
+pred_glm_pr <- predict(glm_pres,type=c("response"))
+
+sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ)  
+
+mod.r <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
+                                data = sdm_output[,c("latitude", "longitude", "pred_glm_pr", "pred_glm_occ")], 
+                                proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
+r = raster(mod.r, res = 0.6) # 40x40 km/111 (degrees) * 2 tp eliminate holes
+# bioclim is 4 km
+plot.r = rasterize(mod.r, r)
+
+glm_occ_notrans <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_notrans)
+glm_pres_notrans <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_notrans)
+
+# predict
+pred_glm_occ_notrans <- predict(glm_occ_notrans,type=c("response"))
+pred_glm_pr_notrans <- predict(glm_pres_notrans,type=c("response"))
+
+sdm_output_notrans = cbind(sdm_notrans, pred_glm_pr_notrans, pred_glm_occ_notrans)  
+
+mod.core <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
+                                   data = sdm_output[,c("latitude", "longitude", "pred_glm_pr", "pred_glm_occ")], 
+                                   proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
+r.core = raster(mod.core, res = 0.6) # 40x40 km/111 (degrees) * 2 tp eliminate holes
+# bioclim is 4 km
+plot.core = rasterize(mod.core, r.core)
+
