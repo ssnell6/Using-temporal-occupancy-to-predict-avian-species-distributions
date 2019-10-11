@@ -305,9 +305,9 @@ pres_pres1 <- left_join(auc_df_notrans, auc_df[,c("AOU","rmse_pres","rmse_gam_pr
   left_join(num_pres, by = c("AOU" = "aou"))
 
 
-pres_pres1$glm_diff <-  pres_pres1$rmse_occ_notrans - pres_pres1$rmse_pres
-pres_pres1$gam_diff <-  pres_pres1$rmse_gam_notrans - pres_pres1$rmse_gam_pres
-pres_pres1$rf_diff <-  pres_pres1$rmse_rf_notrans - pres_pres1$rmse_rf_pres
+pres_pres1$glm_diff <-  pres_pres1$rmse_pres_notrans - pres_pres1$rmse_pres
+pres_pres1$gam_diff <-  pres_pres1$rmse_gam_pres_notrans - pres_pres1$rmse_gam_pres
+pres_pres1$rf_diff <-  pres_pres1$rmse_rf_pres_notrans - pres_pres1$rmse_rf_pres
 # pres_pres1$me_diff <-  pres_pres1$rmse_me_pres_notrans - pres_pres1$rmse_me_pres
 
 # plot GLM occ v pres 
