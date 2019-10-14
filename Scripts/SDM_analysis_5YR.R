@@ -200,6 +200,11 @@ auc_df_merge = left_join(auc_df, num_pres, by = c("AOU" = "aou"))
 auc_df_traits = left_join(auc_df_merge, traits, by = "AOU") %>%
   left_join(., tax_code, by = c("AOU" = "AOU_OUT"))
 
+auc_df_merge$glm_diff <- auc_df_merge$rmse_occ - auc_df$rmse_pres
+auc_df_merge$gam_diff <- auc_df_merge$rmse_gam - auc_df$rmse_gam_pres
+auc_df_merge$rf_diff <- auc_df_merge$rmse_rf - auc_df$rmse_rf_pres
+auc_df_merge$RO <- auc_df_merge$n_pres/auc_df_merge$n
+
 # plot GLM occ v pres 
 #  + geom_label(data = auc_df_traits, aes(x = AUC, y = AUC_pres, label = ALPHA.CODE))
 r1 = ggplot(auc_df_traits, aes(x = rmse_occ, y = rmse_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("GLM RMSE")) + ylab(bquote("Pres GLM RMSE"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
@@ -246,7 +251,7 @@ pres_pres <- left_join(auc_df_notrans, auc_df, by = "AOU") %>%
   left_join(num_pres, by = c("AOU" = "aou"))
 # plot GLM occ v pres 
 r1 = ggplot(pres_pres, aes(x = rmse_pres_notrans, y = rmse_pres)) +
-  theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Presence RMSE")) + xlab(bquote("Presence No Transients"))+ 
+  theme_classic()+ theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Presence RMSE")) + xlab(bquote("Presence No Transients"))+ 
   geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
   geom_point(shape=16, aes(size = pres_pres$n))  + 
   scale_y_continuous(limit = c(0, 0.5)) + 
@@ -257,7 +262,7 @@ r1 = ggplot(pres_pres, aes(x = rmse_pres_notrans, y = rmse_pres)) +
 # ggsave("Figures/Occ_Pres_labelled.pdf", height = 8, width = 12)
 
 r2 =  ggplot(pres_pres, aes(x = rmse_gam_pres_notrans, y = rmse_gam_pres)) +
-  theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Presence RMSE")) + 
+  theme_classic()+ theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Presence RMSE")) + 
   xlab(bquote("Presence No Transients"))+ 
   geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
   geom_point(shape=16, aes(size = pres_pres$n))  + 
@@ -270,7 +275,7 @@ r2 =  ggplot(pres_pres, aes(x = rmse_gam_pres_notrans, y = rmse_gam_pres)) +
 #  ggsave("Figures/Occ_numPres_RF.pdf", height = 8, width = 12)
 
 r3 =  ggplot(pres_pres, aes(x = rmse_rf_pres_notrans, y = rmse_rf_pres)) +
-  theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Presence  RMSE")) + xlab(bquote("Presence No Transients"))+ 
+  theme_classic()+ theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Presence  RMSE")) + xlab(bquote("Presence No Transients"))+ 
   geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
   geom_point(shape=16, aes(size = pres_pres$n))  + 
   scale_y_continuous(limit = c(0, 0.5)) + scale_x_continuous(limit = c(0, .5)) +
@@ -280,7 +285,7 @@ r3 =  ggplot(pres_pres, aes(x = rmse_rf_pres_notrans, y = rmse_rf_pres)) +
   annotate("text", x = 0.45, y = 0.02, label = "RF", size = 10)
 #  ggsave("Figures/Occ_numPres_gam.pdf", height = 8, width = 12)
 
-r4 =  ggplot(pres_pres, aes(x = rmse_me_pres_notrans, y = rmse_me_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Presence RMSE")) + xlab(bquote("Presence No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  +
+r4 =  ggplot(pres_pres, aes(x = rmse_me_pres_notrans, y = rmse_me_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Presence RMSE")) + xlab(bquote("Presence No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  +
   geom_point(shape=16, aes(size = pres_pres$n)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) +
@@ -290,7 +295,7 @@ r4 =  ggplot(pres_pres, aes(x = rmse_me_pres_notrans, y = rmse_me_pres)) +theme_
 rmse_plot_pres = gather(pres_pres, pres_mod, pres_rmse, c("rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres")) %>%
   gather(notrans_mod, notrans_rmse, c("rmse_pres_notrans","rmse_gam_pres_notrans", "rmse_rf_pres_notrans", "rmse_me_pres_notrans"))
 
-r4 = ggplot(rmse_plot_pres) + geom_density(lwd = 1.5, aes(pres_rmse, color = pres_mod)) + geom_density(lwd = 1.5, lty = 2,aes(notrans_rmse, color = notrans_mod)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","#034e7b", "purple","purple", "steelblue2", "steelblue2","#238b45", "#238b45"), labels=c("rmse_gam_pres","rmse_gam_pres_notrans",   "rmse_me_pres","rmse_me_pres_notrans","rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) +  xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
+r4 = ggplot(rmse_plot_pres) + geom_density(lwd = 1.5, aes(pres_rmse, color = pres_mod)) + geom_density(lwd = 1.5, lty = 2,aes(notrans_rmse, color = notrans_mod)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","#034e7b", "purple","purple", "steelblue2", "steelblue2","#238b45", "#238b45"), labels=c("rmse_gam_pres","rmse_gam_pres_notrans",   "rmse_me_pres","rmse_me_pres_notrans","rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) +  xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
 
 # scale_color_manual(values=c("#034e7b","#034e7b", "purple", "steelblue2", "steelblue2","#238b45", "#238b45"), labels=c("rmse_gam", "rmse_gam_pres",  "rmse_me_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres"))
 

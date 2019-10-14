@@ -278,6 +278,7 @@ legend <- ggplot(rmse_plot, aes(pres_rmse, pres_mod)) + geom_line(lwd = 1.5, aes
 rmse_plot_sub <- filter(rmse_plot, pres_mod == "rmse_pres" | pres_mod == "rmse_gam_pres")
 rmse_plot_sub$pres_mod[rmse_plot_sub$pres_mod == "rmse_pres"] <- "Temporal Occupancy"
 rmse_plot_sub$pres_mod[rmse_plot_sub$pres_mod == "rmse_gam_pres"] <- "Presence"
+rmse_plot_sub$pres_mod <- factor(rmse_plot_sub$pres_mod, levels = c("Presence", "Temporal Occupancy"), ordered = TRUE)
 legend_bw <- ggplot(rmse_plot_sub, aes(pres_rmse, pres_mod)) + geom_line(lwd = 1.5, aes(lty = pres_mod)) +theme(legend.spacing.x = unit(0.5, 'cm'), legend.key.size = unit(1, "cm"), legend.title = element_blank())
 
 
@@ -414,10 +415,10 @@ ro_plot <- gather(auc_df_merge, "mod", "diff", c(glm_diff, gam_diff, rf_diff))
 ro_plot$mod[ro_plot$mod == "gam_diff"] = "GAM"
 ro_plot$mod[ro_plot$mod == "glm_diff"] = "GLM"
 ro_plot$mod[ro_plot$mod == "rf_diff"] = "RF"
-RO_plot <- ggplot(ro_plot, aes(x = RO, y = diff, group = mod)) +theme_classic()+ theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90)) + xlab(bquote("Range Occupancy")) + ylab(bquote("Delta RMSE (Occupancy - Presence)")) + 
-  geom_point(size = 4, aes(color = mod, shape = mod)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+RO_plot <- ggplot(ro_plot, aes(x = RO, y = diff, group = mod)) +theme_classic()+ theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90)) + xlab(bquote("Range Occupancy")) + ylab(expression(Delta~"RMSE (Occupancy - Presence)")) + 
+  geom_point(size = 6, aes(color = mod, shape = mod)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=35)) +
   geom_hline(yintercept = 0, lty = 2, lwd =1.5, color = "black") +
-  theme(legend.title=element_blank(), legend.text=element_text(size=25), legend.position = c(0.1,0.9), legend.key.width=unit(4, "lines")) + 
+  theme(legend.title=element_blank(), legend.text=element_text(size=30), legend.position = c(0.1,0.9), legend.key.width=unit(4, "lines")) + 
   scale_color_manual(values = c("#034e7b","steelblue2","#238b45")) 
 ggsave("Figures/RO_v_diff.pdf", height = 10, width = 14)
 #### diff vs. number of presence 
@@ -440,3 +441,4 @@ ggplot(auc_df_merge) + geom_density(lwd = 1.5, aes(gam_diff, col = sign)) + them
 
 auc_df_merge$sign <- ifelse(auc_df_merge$rf_diff > 0, "pos", "neg")
 ggplot(auc_df_merge) + geom_density(lwd = 1.5, aes(rf_diff, col = sign)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","purple"), labels=c("neg","pos")) +  xlab("Difference") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
+

@@ -379,9 +379,9 @@ pres_matrix_plot2$Modtype <- factor(pres_matrix_plot2$Modtype, levels = c("gamoc
 
 
 pplot = ggplot(pres_matrix_plot2, aes(x = Measure, y = value)) +   
-  geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity") +
+  geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity", color = "black") +
   theme_classic()+ theme(axis.title.x=element_text(size=54),axis.title.y=element_text(size=54, angle=90)) + xlab(bquote("Measure")) + ylab(bquote("Percent")) +
-  scale_fill_manual(values = c("#034e7b","#08306b","steelblue2", "dodgerblue2","#238b45", "darkgreen" ,"purple"),
+  scale_fill_manual(values = c("#034e7b","navyblue","steelblue2", "dodgerblue2","#238b45", "darkgreen" ,"purple"),
                     breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
                     labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GLM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
   scale_x_discrete(labels=c("Accuracy","Negative \nPredictive","Positive \nPredictive", "Sensitivity", "Specificity")) +
@@ -818,9 +818,9 @@ pres_spatial_plot2 <-  separate(data = pres_spatial_plot, col = Mod, into = c("M
 pres_spatial_plot2$Modtype <- factor(pres_spatial_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max", ordered = TRUE))
 
 splot = ggplot(pres_spatial_plot2, aes(x = Measure, y = value)) +   
-  geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity") +
+  geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity", color = "black") +
   theme_classic()+ theme(axis.title.x=element_text(size=54),axis.title.y=element_text(size=54, angle=90)) + xlab(bquote("Measure")) + ylab(bquote("Percent")) +
-  scale_fill_manual(values = c("#034e7b","#08306b","steelblue2", "dodgerblue2","#238b45", "darkgreen" ,"purple"),
+  scale_fill_manual(values = c("#034e7b","navyblue","steelblue2", "dodgerblue2","#238b45", "darkgreen" ,"purple"),
                     breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
                     labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GLM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
   scale_x_discrete(labels=c("Accuracy","Negative \nPredictive","Positive \nPredictive", "Sensitivity", "Specificity")) +

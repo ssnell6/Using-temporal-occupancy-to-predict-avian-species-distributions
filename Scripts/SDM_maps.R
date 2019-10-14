@@ -48,7 +48,7 @@ tax_code$AOU_OUT[tax_code$AOU_OUT == 4123] <- 4120
 
 # BBS cleaning
 bbs_inc_absence = full_join(bbs_occ_sub, exp_pres, by = c("aou" ="spAOU", "stateroute" = "stateroute")) %>%
-  select(aou, stateroute, occ)
+  dplyr::select(aou, stateroute, occ)
 bbs_inc_absence$occ[is.na(bbs_inc_absence$occ)] <- 0
 bbs_inc_absence$presence = 0
 bbs_inc_absence$presence[bbs_inc_absence$occ > 0] <- 1
