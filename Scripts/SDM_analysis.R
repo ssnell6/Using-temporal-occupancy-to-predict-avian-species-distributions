@@ -232,11 +232,19 @@ num_pres = bbs_final_occ_ll %>%
   dplyr::filter(., presence == "1") %>%
   dplyr::summarise(n_pres = n_distinct(stateroute))  
 
+num_abs = bbs_final_occ_ll %>%
+  group_by(aou) %>% 
+  dplyr::filter(., presence == "0") %>%
+  dplyr::summarise(n_abs = n_distinct(stateroute))  
+
+
 num_routes = bbs_final_occ_ll %>% group_by(aou) %>% 
   dplyr::summarise(n = n_distinct(stateroute)) 
 
 auc_df_merge = left_join(auc_df, num_pres, by = c("AOU" = "aou")) %>%
-  left_join(num_routes,  by = c("AOU" = "aou"))
+  left_join(num_routes,  by = c("AOU" = "aou")) %>%
+  left_join(num_abs, by = c("AOU" = "aou"))
+
 auc_df_traits = left_join(auc_df_merge, traits, by = "AOU") %>%
   left_join(., tax_code, by = c("AOU" = "AOU_OUT"))
 
