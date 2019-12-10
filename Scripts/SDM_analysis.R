@@ -248,9 +248,9 @@ auc_df_merge = left_join(auc_df, num_pres, by = c("AOU" = "aou")) %>%
 auc_df_traits = left_join(auc_df_merge, traits, by = "AOU") %>%
   left_join(., tax_code, by = c("AOU" = "AOU_OUT"))
 
-auc_df_merge$glm_diff <- auc_df_merge$rmse_occ - auc_df$rmse_pres
-auc_df_merge$gam_diff <- auc_df_merge$rmse_gam - auc_df$rmse_gam_pres
-auc_df_merge$rf_diff <- auc_df_merge$rmse_rf - auc_df$rmse_rf_pres
+auc_df_merge$glm_diff <- auc_df_merge$rmse_occ - auc_df_merge$rmse_pres
+auc_df_merge$gam_diff <- auc_df_merge$rmse_gam - auc_df_merge$rmse_gam_pres
+auc_df_merge$rf_diff <- auc_df_merge$rmse_rf - auc_df_merge$rmse_rf_pres
 auc_df_merge$RO <- auc_df_merge$n_pres/auc_df_merge$n
 
 # plot GLM occ v pres 
