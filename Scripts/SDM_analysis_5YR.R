@@ -9,7 +9,8 @@ library(pROC)
 library(hydroGOF)
 
 bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE) %>%
-  filter(year %in% 2006:2010)
+  filter(year %in% c(2001, 2004, 2007, 2010, 2013))
+# 2006:2010
 
 bbs_occ_sub = bbs_occ %>% 
   dplyr::count(aou, stateroute) %>% 
