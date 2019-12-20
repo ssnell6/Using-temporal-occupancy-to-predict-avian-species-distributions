@@ -14,7 +14,6 @@ bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE) %>%
 
 bbs_occ_sub = bbs_occ %>% 
   dplyr::count(aou, stateroute) %>% 
-  filter(n < 6) %>%
   dplyr::mutate(occ = n/5) 
 
 exp_pres = read.csv("Data/expect_pres.csv", header = TRUE) %>%
