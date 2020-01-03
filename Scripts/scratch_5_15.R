@@ -10,12 +10,14 @@ auc_df_15 <- read.csv("Data/auc_df.csv", header = TRUE)
 auc_df_5 <- read.csv("Data/auc_df_5.csv", header = TRUE)
 join_pres <- read.csv("Data/five_fifteen_diff.csv", header = TRUE)
 
-comp_plot <- full_join(auc_df_15, auc_df_5, by = "AOU") %>%
+comp_plot <- full_join(auc_df_15[,c("AOU","rmse_occ", "rmse_pres")], auc_df_5[,c("AOU","rmse_occ", "rmse_pres")], by = "AOU") %>%
   full_join(join_pres, by = c("AOU" = "aou")) %>%
+  left_join(tax_code, by = c("AOU" = "AOU_OUT")) %>%
   mutate(delta_rmse = rmse_occ.x - rmse_occ.y,
-         delta_rpres = fifteen_pres - five_pres)
+         delta_rpres = fifteen_pres - five_pres) %>%
+  na.omit()
 
-ggplot(comp_plot, aes(x = delta_rpres, y = delta_rmse)) + geom_point() + geom_hline(yintercept = 0)
+ggplot(comp_plot, aes(x = delta_rpres, y = delta_rmse)) + geom_text(aes(label = ALPHA.CODE)) + geom_hline(yintercept = 0) 
 
 ggplot(comp_plot, aes(x = rmse_occ.x, y = rmse_occ.y)) + geom_point() + geom_hline(yintercept = 0)
 cor(comp_plot$rmse_occ.x, comp_plot$rmse_occ.y)
