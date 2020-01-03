@@ -346,17 +346,17 @@ r3 =  ggplot(pres_pres1, aes(x = rmse_rf_pres_notrans, y = rmse_rf_pres)) +theme
   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) + annotate("text", x = 0.45, y = 0.02, label = "RF", size = 10)
 #  ggsave("Figures/Occ_numPres_gam.pdf", height = 8, width = 12)
 
-# r4 =  ggplot(pres_pres1, aes(x = rmse_me_pres_notrans, y = rmse_me_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Pres ME RMSE")) + xlab(bquote("ME No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  + 
-#   geom_point(shape=16, aes(size = pres_pres1$n_pres)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
-#   guides(colour = guide_legend(override.aes = list(shape = 15))) +
-#   theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
+r4 =  ggplot(pres_pres1, aes(x = rmse_me_pres_notrans, y = rmse_me_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Pres ME RMSE")) + xlab(bquote("ME No Transients"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5)  +
+  geom_point(shape=16, aes(size = pres_pres1$n_pres)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
+  guides(colour = guide_legend(override.aes = list(shape = 15))) +
+  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines"))
 
 
 # density plot
 rmse_plot_pres = gather(pres_pres1, pres_mod, pres_rmse, c("rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres")) %>%
-  gather(notrans_mod, notrans_rmse, c("rmse_pres_notrans","rmse_gam_pres_notrans", "rmse_rf_pres_notrans"))
+  gather(notrans_mod, notrans_rmse, c("rmse_pres_notrans","rmse_gam_pres_notrans", "rmse_rf_pres_notrans", "rmse_me_pres_notrans"))
 
-r4 = ggplot(rmse_plot_pres) + geom_density(lwd = 1.5, aes(pres_rmse, color = pres_mod)) + geom_density(lwd = 1.5, lty = 2,aes(notrans_rmse, color = notrans_mod)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34, vjust = -1),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","#034e7b", "purple", "steelblue2", "steelblue2","#238b45", "#238b45"), labels=c("rmse_gam_pres","rmse_gam_pres_notrans",   "rmse_me_pres","rmse_me_pres_notrans", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) +  xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
+r5 = ggplot(rmse_plot_pres) + geom_density(lwd = 1.5, aes(pres_rmse, color = pres_mod)) + geom_density(lwd = 1.5, lty = 2,aes(notrans_rmse, color = notrans_mod)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34, vjust = -1),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","#034e7b", "purple","purple", "steelblue2", "steelblue2","#238b45", "#238b45"), labels=c("rmse_gam_pres","rmse_gam_pres_notrans",   "rmse_me_pres","rmse_me_pres_notrans", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres")) +  xlab("RMSE") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
 
 # scale_color_manual(values=c("#034e7b","#034e7b", "purple", "steelblue2", "steelblue2","#238b45", "#238b45"), labels=c("rmse_gam", "rmse_gam_pres",  "rmse_me_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres"))
 
@@ -369,13 +369,14 @@ plot_grid(r1 + theme(legend.position="top"),
           r2 + theme(legend.position="none"),
           r3 + theme(legend.position="none"),
           r4 + theme(legend.position="none"),
+          r5 + theme(legend.position="none"),
           align = 'hv',
-          labels = c("A","B", "C", "D"),
+          labels = c("A","B", "C", "D", "E"),
           label_x = 0.22, 
           label_size = 30,
           nrow = 2, 
           scale = 0.9) 
-ggsave("Figures/rmse_pres_pres.pdf", height = 10, width = 14)
+ggsave("Figures/rmse_pres_pres.pdf", height = 14, width = 20)
 
 # experimental figure 3
 ##### stacked bar chart

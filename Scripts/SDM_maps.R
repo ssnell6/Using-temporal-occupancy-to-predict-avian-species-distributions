@@ -69,7 +69,7 @@ bbs_final_occ_ll$presence <- as.numeric(bbs_final_occ_ll$presence)
 auc_df = read.csv("Data/auc_df.csv", header = TRUE)
 
 #### change spp here ##### 
-sdm_input <- filter(bbs_final_occ_ll, aou == 2890) %>% 
+sdm_input <- filter(bbs_final_occ_ll, aou == 6280) %>% 
   left_join(all_env, by = "stateroute") 
 sdm_notrans <- filter(sdm_input, occ > 0.33| occ == 0) %>% na.omit(.)
 
@@ -184,8 +184,8 @@ scale_fun <- function(r){
 }
 
 point_map <- tm_shape(routes_sf) + 
-  tm_symbols(size = 0.75, shape="presence", shapes = c(16,4), alpha = 0.5, col = "#5E5E5E") + 
-  tm_legend(show=FALSE) +
+  tm_symbols(size = 0.75, shape="presence", shapes = c(16,4), alpha = 0.5, col = "black") + 
+ # tm_legend(show=FALSE) +
   tm_shape(us_sf) + tm_borders( "black", lwd = 3) + 
   tm_shape(routes_notrans)  + 
   tm_symbols(col = "presence", palette = "-PRGn", size = 0.75, shapes = c(16,4)) + tm_legend(outside = TRUE)+ 
@@ -247,7 +247,7 @@ fig_gam <- tmap_arrange(sdm_gam_occ, sdm_gam_pr, sdm_gam_core, ncol = 1)
 fig_rf <- tmap_arrange(sdm_rf_occ, sdm_rf_pr, sdm_rf_core, ncol = 1)
 
 final_fig1 <- tmap_arrange(point_map, sdm_maxent_pr, sdm_maxent_core, sdm_glm_occ, sdm_glm_pr, sdm_glm_core, sdm_gam_occ, sdm_gam_pr, sdm_gam_core, sdm_rf_occ, sdm_rf_pr, sdm_rf_core, nrow = 4, ncol = 3) 
-tmap_save(final_fig1, "Figures/map2890.pdf", height = 16, width = 20)
+tmap_save(final_fig1, "Figures/Figure1.pdf", height = 16, width = 20)
 
 
 
