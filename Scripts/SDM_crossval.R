@@ -371,21 +371,23 @@ pres_matrix_means <- pres_matrix %>%
  mean_pp_max = mean(pp_max),           
  mean_np_max = mean(np_max))       
  
-pres_matrix_plot <- gather(pres_matrix_means, "Mod", "value", mean_accuracy_gamocc:mean_np_max)
-pres_matrix_plot2 <-  separate(data = pres_matrix_plot, col = Mod, into = c("Mean","Measure", "Modtype"), sep = "_") 
-pres_matrix_plot2$Modtype <- factor(pres_matrix_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max", ordered = TRUE))
+pres_matrix_plot <- gather(pres_matrix_means, "Mod", "inverse", mean_accuracy_gamocc:mean_np_max)
+pres_matrix_plot2 <-  separate(data = pres_matrix_plot, col = Mod, into = c("Mean","Measure", "Modtype"), sep = "_")   %>% mutate(value = 100-inverse)
+pres_matrix_plot2$Modtype <- factor(pres_matrix_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"), ordered = TRUE)
 
+pres_matrix_plot2$Measure <- factor(pres_matrix_plot2$Measure, levels = c("pp","np","sensitivity","specificity", "accuracy") , ordered = TRUE)
 #+ scale_color_manual(values=c("#034e7b","#034e7b","steelblue2", "steelblue2","#238b45", "#238b45" ,"purple"), labels=c("rmse_gam", "rmse_gam_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres",  "rmse_me_pres"))
 
 
-pplot = ggplot(pres_matrix_plot2, aes(x = Measure, y = value)) +   
-  geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity", color = "black") +
-  theme_classic()+ theme(axis.title.x=element_text(size=54),axis.title.y=element_text(size=54, angle=90)) + xlab(bquote("Measure")) + ylab(bquote("Percent")) +
+pplot = filter(pres_matrix_plot2, Measure != "accuracy") %>%
+  ggplot(aes(x = Measure, y = value)) +   
+  geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity", color = "white", lwd = 3) +
+  theme_classic()+ theme(axis.title.x=element_text(size=54),axis.title.y=element_text(size=54, angle=90)) + xlab(bquote("")) + ylab(bquote("Percent")) +
   scale_fill_manual(values = c("#034e7b","navyblue","steelblue2", "dodgerblue2","#238b45", "darkgreen" ,"purple"),
                     breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
                     labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GLM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
-  scale_x_discrete(labels=c("Accuracy","Negative \nPredictive","Positive \nPredictive", "Sensitivity", "Specificity")) +
-  theme(axis.text.x=element_text(size = 50),axis.ticks=element_blank(), axis.text.y=element_text(size=50)) +
+  scale_x_discrete(labels=c("False \ndiscovery rate","False \nomission rate", "False \nnegative rate", "False \npositive rate")) +
+  theme(axis.text.x=element_text(size = 50, colour = "black"),axis.ticks=element_blank(), axis.text.y=element_text(size=50, colour = "black")) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=50), legend.key.width=unit(2, "lines"), legend.key.size = unit(2, "cm")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
 ggsave("Figures/temp_crossval.pdf", width = 30, height = 20)
@@ -755,7 +757,7 @@ pres_spatial$np_max <- (pres_spatial$abs_abs_max/(pres_spatial$abs_abs_max + pre
 # kappa(test_df$presence, test_df$predicted_pres, cutoff = 0.7)
 # t.test(test_df$predicted_pres, test_df$presence, paired = TRUE, alternative= "two.sided")
 pres_spatial_plot <- gather(pres_spatial, "Mod", "value", accuracy_gamocc:np_max)
-pres_spatial_plot2 <-  separate(data = pres_spatial_plot, col = Mod, into = c("Measure", "Modtype"), sep = "_") 
+pres_spatial_plot2 <-  separate(data = pres_spatial_plot, col = Mod, into = c("Measure", "Modtype"), sep = "_")
 pres_spatial_plot2$Modtype <- factor(pres_spatial_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max", ordered = TRUE))
 pdf('Spatial_XVal.pdf', height = 8, width = 14)
 for(sp in unique(pres_spatial_plot2$aou)){ 
@@ -813,21 +815,36 @@ pres_spatial_means <- pres_spatial %>%
     mean_pp_max = mean(pp_max),           
     mean_np_max = mean(np_max))       
 
-pres_spatial_plot <- gather(pres_spatial_means, "Mod", "value", mean_accuracy_gamocc:mean_np_max)
-pres_spatial_plot2 <-  separate(data = pres_spatial_plot, col = Mod, into = c("Mean","Measure", "Modtype"), sep = "_") 
+pres_spatial_plot <- gather(pres_spatial_means, "Mod", "inverse", mean_accuracy_gamocc:mean_np_max)
+pres_spatial_plot2 <-  separate(data = pres_spatial_plot, col = Mod, into = c("Mean","Measure", "Modtype"), sep = "_")  %>%
+  mutate(value = 100 - inverse)
 pres_spatial_plot2$Modtype <- factor(pres_spatial_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max", ordered = TRUE))
+pres_spatial_plot2$Measure <- factor(pres_spatial_plot2$Measure, levels = c("pp","np","sensitivity","specificity", "accuracy") , ordered = TRUE)
 
-splot = ggplot(pres_spatial_plot2, aes(x = Measure, y = value)) +   
-  geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity", color = "black") +
-  theme_classic()+ theme(axis.title.x=element_text(size=54),axis.title.y=element_text(size=54, angle=90)) + xlab(bquote("Measure")) + ylab(bquote("Percent")) +
+splot = filter(pres_spatial_plot2, Measure != "accuracy") %>%
+  ggplot(aes(x = Measure, y = value)) +   
+  geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity",  color = "white", lwd = 3) +
+  theme_classic()+ theme(axis.title.x=element_text(size=54),axis.title.y=element_text(size=54, angle=90)) + xlab(bquote("")) + ylab(bquote("Percent")) +
   scale_fill_manual(values = c("#034e7b","navyblue","steelblue2", "dodgerblue2","#238b45", "darkgreen" ,"purple"),
                     breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
                     labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GLM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
-  scale_x_discrete(labels=c("Accuracy","Negative \nPredictive","Positive \nPredictive", "Sensitivity", "Specificity")) +
-  theme(axis.text.x=element_text(size = 50),axis.ticks=element_blank(), axis.text.y=element_text(size=50)) +
+  scale_x_discrete(labels=c("False \ndiscovery rate","False \nomission rate", "False \nnegative rate", "False \npositive rate")) +
+  theme(axis.text.x=element_text(size = 50, colour = "black"),axis.ticks=element_blank(), axis.text.y=element_text(size=50, colour = "black")) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=50), legend.key.width=unit(2, "lines"), legend.key.size = unit(2, "cm")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
 ggsave("Figures/spatial_crossval.pdf", width = 30, height = 20)
+
+
+library(cowplot)
+theme_set(theme_cowplot(font_size=20,font_family = "URWHelvetica"))
+grid <- plot_grid(pplot + theme(legend.position="top"),
+                  splot + theme(legend.position="none"),
+                  align = 'v',
+                  labels = c("A","B"),
+                  label_x = 0.12, 
+                  label_size = 30,
+                  nrow = 2) 
+ggsave("Figures/xval_plot.pdf", height = 20, width = 24)
 
 glm_acc <- ggplot(pres_spatial, aes(x = accuracy_glmocc/100, y = accuracy_glmpr/100)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + xlab(bquote("Spatial Occ Accuracy")) + ylab(bquote("Spatial Pres Accuracy"))+ geom_abline(intercept = 0, slope = 1, col = "black", lwd = 1.5) + geom_point(shape=16, aes(size = pres_spatial$length)) + 
   scale_y_continuous(limit = c(0, 1)) +
