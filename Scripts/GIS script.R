@@ -22,8 +22,8 @@ bbs_final_occ_ll = read.csv("Data/bbs_final_occ_ll.csv", header = TRUE) # %>% fi
   # read.csv("Data/final_focal_spp.csv", header = TRUE)
 bbs_final_names.1 = left_join(bbs_final_occ_ll, AOU[,c("AOU_OUT", "CRC_SCI_NAME")], by = c("aou" = "AOU_OUT"))
 bbs_final_names.1$focalcat = gsub(" ", "_",bbs_final_names.1$CRC_SCI_NAME)
-bbs_final_names.2 = bbs_final_names.1[-grep("_spuh", bbs_final_names.1$focalcat),] 
-bbs_final_names.3 = bbs_final_names.2[-grep("/", bbs_final_names.2$focalcat),] 
+bbs_final_names.3 = bbs_final_names.1[-grep("_spuh", bbs_final_names.1$focalcat),] 
+# bbs_final_names.3 = bbs_final_names.2[-grep("/", bbs_final_names.2$focalcat),] 
 # bbs_final_names.4 = bbs_final_names.3[-grep("", bbs_final_names.3$focalcat),] 
 
 bbs_final_names = bbs_final_names.3 %>% filter(aou %in% auc_df$AOU) %>%
