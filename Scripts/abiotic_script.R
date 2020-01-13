@@ -4,6 +4,7 @@ library(sp)
 library(raster)
 library(maptools)
 library(dplyr)
+library(gimms)
 
 # reading in bioclim, TO, RO, and lat long data for BBS
 bioclim.data <- getData(name = "worldclim",
@@ -71,18 +72,24 @@ write.csv(env_bio, "data/env_bio.csv", row.names = FALSE)
 
 prj.string = "+proj=longlat +datum=WGS84"
 #### for maps ####
-elev <- raster("Z:/GIS/DEM/sdat_10003_1_20170424_102000103.tif")
-# NorthAm = readOGR("Z:/GIS/geography", "continent")
-# NorthAm2 = spTransform(NorthAm, CRS("+proj=longlat +datum=WGS84"))
-# elevNA2 = projectRaster(elev, crs = prj.string) #UNMASKED!
-#elevNA3 <- raster::mask(elevNA2, NorthAm2)
+crop_extent <- c(-180, 180, -60, 90)
+bioclim.sub <- subset(bioclim.data, c("bio4", "bio5", "bio6", "bio13", "bio14"))
 
-gimms_ndvi = read.csv("C:/Git/Biotic-Interactions/ENV DATA/gimms_ndvi_bbs_data.csv", header = TRUE)
-gimms_agg = gimms_ndvi %>% filter(month == c("may", "jun", "jul")) %>% 
-  group_by(site_id)  %>%  summarise(ndvi.mean=mean(ndvi))
-gimms_agg$stateroute = gimms_agg$site_id
-# = gimms_agg[,c("stateroute", "ndvi.mean")]
-ndvi = projectRaster(elev, crs = prj.string) 
+elev <- raster("Z:/GIS/DEM/sdat_10003_1_20170424_102000103.tif")
+elev_crop <- crop(elev, bioclim.sub)
+
+gimms_files <- list.files("\\\\BioArk\\HurlbertLab\\GIS\\gimms\\")
+gimms_df <- data.frame(file_name = gimms_files[-1], year = as.numeric(substr(gimms_files[-1], 15, 18)))
+files <- filter(gimms_df, year %in% 2000:2014)
+setwd("\\\\BioArk\\HurlbertLab\\GIS\\gimms\\")
+gimms_jan <- rasterizeGimms(as.character(files$file_name)[1])
+gimms_jul <- rasterizeGimms(as.character(files$file_name)[2])
+gimms_breeding <- stack(c(gimms_jan[[11:12]], gimms_jul[[1:4]]))
+gimms_crop <- crop(gimms_breeding, bioclim.sub)
+# writeRaster(gimms_crop, "gimms_crop.tif")
+env_stack <- stack(c(elev_crop, gimms_crop, bioclim.sub))
+
+
 
 r = raster(nrows = 22, ncols = 30, geographic.extent, 1) 
 projection(r) <- "+proj=longlat +datum=WGS84"
