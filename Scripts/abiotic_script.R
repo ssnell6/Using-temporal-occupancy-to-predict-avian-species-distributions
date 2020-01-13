@@ -66,3 +66,31 @@ bio.var = raster::extract(bioclim.data, circs.sp, fun = var, na.rm=T)
 
 env_bio = data.frame(stateroute = names(circs.sp), bio.point = bio.point, bio.mean = bio.mean, bio.var = bio.var)
 write.csv(env_bio, "data/env_bio.csv", row.names = FALSE)
+
+
+
+prj.string = "+proj=longlat +datum=WGS84"
+#### for maps ####
+elev <- raster("Z:/GIS/DEM/sdat_10003_1_20170424_102000103.tif")
+# NorthAm = readOGR("Z:/GIS/geography", "continent")
+# NorthAm2 = spTransform(NorthAm, CRS("+proj=longlat +datum=WGS84"))
+# elevNA2 = projectRaster(elev, crs = prj.string) #UNMASKED!
+#elevNA3 <- raster::mask(elevNA2, NorthAm2)
+
+gimms_ndvi = read.csv("C:/Git/Biotic-Interactions/ENV DATA/gimms_ndvi_bbs_data.csv", header = TRUE)
+gimms_agg = gimms_ndvi %>% filter(month == c("may", "jun", "jul")) %>% 
+  group_by(site_id)  %>%  summarise(ndvi.mean=mean(ndvi))
+gimms_agg$stateroute = gimms_agg$site_id
+# = gimms_agg[,c("stateroute", "ndvi.mean")]
+ndvi = projectRaster(elev, crs = prj.string) 
+
+r = raster(nrows = 22, ncols = 30, geographic.extent, 1) 
+projection(r) <- "+proj=longlat +datum=WGS84"
+p = rasterToPoints(r)
+p = data.frame(p)
+names(p) = c("longitude", "latitude")
+mod.p <- SpatialPointsDataFrame(coords = p, data = p, proj4string = CRS("+proj=longlat +datum=WGS84"))
+
+
+bioclim.data
+
