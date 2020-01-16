@@ -71,6 +71,7 @@ write.csv(env_bio, "data/env_bio.csv", row.names = FALSE)
 
 
 prj.string = "+proj=longlat +datum=WGS84"
+
 #### for maps ####
 crop_extent <- c(-180, 180, -60, 90)
 bioclim.sub <- subset(bioclim.data, c("bio4", "bio5", "bio6", "bio13", "bio14"))
@@ -107,13 +108,5 @@ bio_points <- raster::extract(bio_crop, mod.p, na.rm=T)
 env_pred = data.frame(lat = mod.p$latitude, long = mod.p$longitude, elev_point = elev_points, bio_point = bio_points, gimms_point = gimms_points)
 write.csv(env_pred, "Data/predicted_env_lat_longs.csv", row.names = FALSE)
 
-r = raster(nrows = 22, ncols = 30, geographic.extent, 1) 
-projection(r) <- "+proj=longlat +datum=WGS84"
-p = rasterToPoints(r)
-p = data.frame(p)
-names(p) = c("longitude", "latitude")
-mod.p <- SpatialPointsDataFrame(coords = p, data = p, proj4string = CRS("+proj=longlat +datum=WGS84"))
 
-
-bioclim.data
 

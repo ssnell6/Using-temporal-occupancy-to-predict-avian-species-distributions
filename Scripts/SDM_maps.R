@@ -308,7 +308,7 @@ sdm_glm_core <- tm_shape(c_mask) + tm_raster("pred_glm_pr_notrans", palette = pa
   tm_layout(paste("RMSE =",signif(rmse_notrans, 2)), title.size = 2, title.position = c("right","bottom")) +
   tm_layout(main.title = "F") 
 
-sdm_gam_occ <- tm_shape(r_mask) + tm_raster("pred_gam_occ", palette = palette, style = "cont", title = "GAM Occ", breaks=quantile(r_mask$pred_gam_occ, probs = seq(0.2,0.8, by = 0.2)), legend.show = FALSE) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_gam, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+sdm_gam_occ <- tm_shape(pred_mask) + tm_raster("pred_gam_occ", palette = palette, style = "cont", title = "GAM Occ", breaks=quantile(pred_mask$pred_gam_occ, probs = seq(0.2,0.8, by = 0.2)), legend.show = FALSE) + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_gam, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "G") 
 #sdm_occ
 
