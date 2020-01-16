@@ -76,7 +76,6 @@ crop_extent <- c(-180, 180, -60, 90)
 bioclim.sub <- subset(bioclim.data, c("bio4", "bio5", "bio6", "bio13", "bio14"))
 
 elev <- raster("Z:/GIS/DEM/sdat_10003_1_20170424_102000103.tif")
-elev_crop <- crop(elev, bioclim.sub)
 
 gimms_files <- list.files("\\\\BioArk\\HurlbertLab\\GIS\\gimms\\")
 gimms_df <- data.frame(file_name = gimms_files[-1], year = as.numeric(substr(gimms_files[-1], 15, 18)))
@@ -85,11 +84,28 @@ setwd("\\\\BioArk\\HurlbertLab\\GIS\\gimms\\")
 gimms_jan <- rasterizeGimms(as.character(files$file_name)[1])
 gimms_jul <- rasterizeGimms(as.character(files$file_name)[2])
 gimms_breeding <- stack(c(gimms_jan[[11:12]], gimms_jul[[1:4]]))
-gimms_crop <- crop(gimms_breeding, bioclim.sub)
-# writeRaster(gimms_crop, "gimms_crop.tif")
-env_stack <- stack(c(elev_crop, gimms_crop, bioclim.sub))
+gimms_reclass <- reclassify(gimms_breeding, cbind(0, NA))
+gimms_mean <- mean(gimms_reclass, na.rm=FALSE)
+
+gimms_crop <- crop(gimms_mean, elev)
+bio_crop <- crop(bioclim.sub, elev)
+
+# RADIUS = 0.1
+# mod.p$rowname <- 1:660
+# #Draw circles around all routes
+# circs = sapply(1:nrow(mod.p), function(x){
+#   circ =  make.cir(mod.p@coords[x,],RADIUS)
+#   circ = Polygons(list(circ),ID=mod.p$rowname[x])
+# }
+# )
+# circs.sp = SpatialPolygons(circs, proj4string=CRS(prj.string))
 
 
+elev_points <- raster::extract(elev, mod.p, na.rm=T)
+gimms_points <- raster::extract(gimms_crop, mod.p, na.rm=T)
+bio_points <- raster::extract(bio_crop, mod.p, na.rm=T)
+env_pred = data.frame(lat = mod.p$latitude, long = mod.p$longitude, elev_point = elev_points, bio_point = bio_points, gimms_point = gimms_points)
+write.csv(env_pred, "Data/predicted_env_lat_longs.csv", row.names = FALSE)
 
 r = raster(nrows = 22, ncols = 30, geographic.extent, 1) 
 projection(r) <- "+proj=longlat +datum=WGS84"

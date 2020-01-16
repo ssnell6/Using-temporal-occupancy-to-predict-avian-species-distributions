@@ -140,11 +140,13 @@ projection(r) <- "+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"
 p = rasterToPoints(r)
 p = data.frame(p)
 names(p) = c("longitude", "latitude")
+# p.full <- rbind(p, sdm_input[,c("longitude", "latitude")])
 mod.p <- SpatialPointsDataFrame(coords = p, data = p, proj4string = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"))
-sdm_output_impute = full_join(sdm_output, p, by = c("latitude", "longitude")) %>%
-  select(latitude, longitude, pred_glm_occ, pred_glm_pr, pred_gam_occ, pred_gam_pr, pred_rf_occ, pred_rf_pr,  max_pred_pres)
-imputed_Data <- mice(sdm_output_impute, m=5, maxit = 50, method = 'pmm', seed = 500)
-completedData <- complete(imputed_Data,1)
+
+# sdm_output_impute = full_join(sdm_output, p, by = c("latitude", "longitude")) %>%
+#   select(latitude, longitude, pred_glm_occ, pred_glm_pr, pred_gam_occ, pred_gam_pr, pred_rf_occ, pred_rf_pr,  max_pred_pres)
+# imputed_Data <- mice(sdm_output_impute, m=5, maxit = 50, method = 'pmm', seed = 500)
+# completedData <- complete(imputed_Data,1)
 
 # original code
 mod.r <- SpatialPointsDataFrame(coords = completedData[,c("longitude", "latitude")],
@@ -155,6 +157,27 @@ mask <- readOGR("Z:/GIS/geography/continent.shp")
 projection(mask) <- "+proj=longlat +datum=WGS84"
 r_mask <- mask(plot.r, mask)
 
+###### reg predict #####
+env_pred_raw <- read.csv("Data/predicted_env_lat_longs.csv", header = TRUE) 
+env_pred <- env_pred_raw %>%
+  select(elev_point,bio_point.bio4, bio_point.bio5, bio_point.bio6,bio_point.bio13, bio_point.bio14, gimms_point)
+names(env_pred) <- c("elev.mean","bio.mean.bio4", "bio.mean.bio5", "bio.mean.bio6", "bio.mean.bio13", "bio.mean.bio14", "ndvi.mean")
+pred_glm_occ <- predict(glm_occ, env_pred)
+pred_glm_pr <- predict(glm_pres, env_pred)
+pred_gam_occ <- predict(gam_occ, env_pred)
+pred_gam_pr <- predict(gam_pres, env_pred)
+pred_rf_occ <- predict(rf_occ,env_pred)
+pred_rf_pr <- predict(rf_pres,env_pred)
+max_pred_pres <- predict(max_ind_pres, env_pred)
+
+sdm_output_pred = data.frame(env_pred_raw$lat, env_pred_raw$long, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
+
+# sdm_output_pred <- na.omit(sdm_output_pred)
+mod.pred <- SpatialPointsDataFrame(coords = sdm_output_pred[,c("env_pred_raw.long", "env_pred_raw.lat")],
+                                   data = sdm_output_pred[,c("pred_glm_pr", "pred_glm_occ", "pred_gam_pr", "pred_gam_occ", "pred_rf_occ", "pred_rf_pr", "max_pred_pres")], proj4string = CRS("+proj=longlat +datum=WGS84"))
+r.pred = raster(mod.pred, res = 1) # 40x40 km/111 (degrees) * 2 tp eliminate holes, bioclim is 4 km
+plot.pred <- rasterize(mod.pred, r.pred)
+pred_mask <- mask(plot.pred, mask)
 
 ##### no trans ######
 glm_occ_notrans <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_notrans)
@@ -201,7 +224,6 @@ sdm_output_impute.core = full_join(sdm_output_notrans, p, by = c("latitude", "lo
   select(latitude, longitude, pred_glm_occ_notrans, pred_glm_pr_notrans, pred_gam_occ_notrans, pred_gam_pr_notrans, pred_rf_occ_notrans, pred_rf_pr_notrans,  max_pred_pres_notrans)
 imputed_Data.core <- mice(sdm_output_impute.core, m=5, maxit = 50, method = 'pmm', seed = 500)
 completedData.core <- complete(imputed_Data.core,1)
-
 # original code
 mod.core <- SpatialPointsDataFrame(coords = completedData.core[,c("longitude", "latitude")],
                    data = completedData.core, proj4string = CRS("+proj=longlat +datum=WGS84"))
@@ -264,13 +286,13 @@ point_map_allen <- tm_shape(routes_sf) +
   tm_layout("  Observed \nOccurences", title.size = 2, title.position = c("right","bottom")) +
   tm_layout(main.title = "A") 
 
-sdm_maxent_pr <- tm_shape(r_mask) + tm_raster("max_pred_pres", palette = palette, style = "cont", breaks=quantile(r_mask$max_pred_pres, probs = seq(0.2,0.8, by = 0.2)) , legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_me_pres, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+sdm_maxent_pr <- tm_shape(pred_mask) + tm_raster("max_pred_pres", palette = palette, style = "cont", breaks=quantile(pred_mask$max_pred_pres, probs = seq(0.2,0.8, by = 0.2)) , legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_me_pres, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "B") 
 
-sdm_maxent_core <- tm_shape(c_mask) + tm_raster("max_pred_pres_notrans", palette = palette, style = "cont", title = "MaxEnt Core", breaks=quantile(c_mask$max_pred_pres_notrans, probs = seq(0.2,0.8, by = 0.2)),legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_me_pres_notrans, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
+sdm_maxent_core <- tm_shape(c_mask) + tm_raster("max_pred_pres_notrans", palette = palette, style = "cont", title = "MaxEnt Core", breaks=quantile(pred_mask$max_pred_pres_notrans, probs = seq(0.2,0.8, by = 0.2)),legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_me_pres_notrans, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "C") 
 
-sdm_glm_occ <- tm_shape(r_mask) + tm_raster("pred_glm_occ", palette = palette, style = "cont", title = "GLM Occ",breaks=quantile(r_mask$pred_glm_occ, probs = seq(0.2,0.8, by = 0.2)), legend.show = FALSE) + 
+sdm_glm_occ <- tm_shape(pred_mask) + tm_raster("pred_glm_occ", palette = palette, style = "cont", title = "GLM Occ",breaks=quantile(pred_mask$pred_glm_occ, probs = seq(0.2,0.8, by = 0.2)), legend.show = FALSE) + 
   tm_shape(us_sf) + tm_borders( "black", lwd = 3) + 
   tm_layout(paste("RMSE =",signif(rmse_occ, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "D") 
