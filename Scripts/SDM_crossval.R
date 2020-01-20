@@ -74,7 +74,7 @@ bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ)
 
 
 threshfun <- function(pred_vals){ 
- thresh <-  max(pred_vals) * 0.7
+ thresh <-  max(pred_vals) * 0.5
 }
 
 sp_list = unique(auc_df$AOU)
@@ -133,14 +133,15 @@ for(i in sp_list){
 
 test_df <- data.frame(test_df)
 
-# write.csv(test_df, "Data/temporal_crossval_df.csv", row.names = FALSE)
+# write.csv(test_df, "Data/temporal_crossval_df.csv", row.names = FALSE) # wrote _5 for thresh of .5
 test_df <- read.csv("Data/temporal_crossval_df.csv", header = TRUE) 
 
 # to account for species not detected in 2015-2016 but are within the range
 test_df$presence.y[is.na(test_df$presence.y)] = 0 
 
 # temp measure to avoid error
-test_df2 <- filter(test_df, !aou %in% c(4090,4900,4950,4860))
+test_df2 <- filter(test_df, !aou %in% c(4090,4900,4950,4860,
+                                        7550, 7310, 6120, 3870, 3960,4430,4560,4641,5970,6290,7660))
 
 pres_matrix <- test_df2 %>% group_by(aou) %>%
   nest() %>%
@@ -226,7 +227,7 @@ pres_matrix <- test_df2 %>% group_by(aou) %>%
    # 4/518, 10/180, 16/883, 21/504
    pres_pres_max = purrr::map(data, ~{
      newdat24 <- .
-     table(newdat24$predicted_max_pres, newdat24$presence.x)[2,2]}),
+     table(newdat24$predicted_max_pres, newdat24$presence.x)}),
    pres_abs_max = purrr::map(data, ~{
      newdat25 <- .
      table(newdat25$predicted_max_pres, newdat25$presence.x)[1,2]}), 
