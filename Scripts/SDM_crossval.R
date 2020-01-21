@@ -140,10 +140,11 @@ test_df <- read.csv("Data/temporal_crossval_df.csv", header = TRUE)
 test_df$presence.y[is.na(test_df$presence.y)] = 0 
 
 # temp measure to avoid error
-test_df2 <- filter(test_df, !aou %in% c(4090,4900,4950,4860,
-                                        7550, 7310, 6120, 3870, 3960,4430,4560,4641,5970,6290,7660))
+#test_df2 <- filter(test_df, !aou %in% c(4090,4900,4950,4860,
+      # 7550, 7310, 6120, 3870, 3960,4430,4560,4641,5970,6290,7660))
+empty = data.frame(stateroute = 0,occ = 0,presence.x = 0,latitude = 0,longitude = 0,pred_gam_occ = 0,presence.y = 0,predicted_glm_occ = 0,predicted_glm_pr = 0, predicted_gam_occ = 0,predicted_gam_pr = 0,predicted_rf_occ = 0, predicted_rf_pr = 0, predicted_max_pres = 0)
 
-pres_matrix <- test_df2 %>% group_by(aou) %>%
+pres_matrix <- test_df %>% group_by(aou) %>%
   nest() %>%
   dplyr::mutate(pres_pres_glmocc = purrr::map(data, ~{
     dat <- .
@@ -157,7 +158,7 @@ pres_matrix <- test_df2 %>% group_by(aou) %>%
     abs_pres_glmocc = purrr::map(data, ~{
       newdat3 <- .
       table(newdat3$predicted_glm_occ, newdat3$presence.x)[2,1]}),
-
+    
     pres_pres_glmpr = purrr::map(data, ~{
       newdat4 <- .
       table(newdat4$predicted_glm_pr, newdat4$presence.x)[2,2]}),
@@ -170,7 +171,7 @@ pres_matrix <- test_df2 %>% group_by(aou) %>%
     abs_pres_glmpr = purrr::map(data, ~{
       newdat7 <- .
       table(newdat7$predicted_glm_pr, newdat7$presence.x)[2,1]}),
-
+    
     pres_pres_gamocc = purrr::map(data, ~{
       newdat8 <- .
       table(newdat8$predicted_gam_occ, newdat8$presence.x)[2,2]}),
@@ -183,7 +184,7 @@ pres_matrix <- test_df2 %>% group_by(aou) %>%
     abs_pres_gamocc = purrr::map(data, ~{
       newdat11 <- .
       table(newdat11$predicted_gam_occ, newdat11$presence.x)[2,1]}),
-
+    
     pres_pres_gampr = purrr::map(data, ~{
       newdat12 <- .
       table(newdat12$predicted_gam_pr, newdat12$presence.x)[2,2]}),
@@ -196,7 +197,7 @@ pres_matrix <- test_df2 %>% group_by(aou) %>%
     abs_pres_gampr = purrr::map(data, ~{
       newdat15 <- .
       table(newdat15$predicted_gam_pr, newdat15$presence.x)[2,1]}),
-
+    
     pres_pres_rfocc = purrr::map(data, ~{
       newdat16 <- .
       table(newdat16$predicted_rf_occ, newdat16$presence.x)[2,2]}),
@@ -209,7 +210,7 @@ pres_matrix <- test_df2 %>% group_by(aou) %>%
     abs_pres_rfocc = purrr::map(data, ~{
       newdat19 <- .
       table(newdat19$predicted_rf_occ, newdat19$presence.x)[2,1]}),
-
+    
     pres_pres_rfpres = purrr::map(data, ~{
       newdat20 <- .
       table(newdat20$predicted_rf_pr, newdat20$presence.x)[2,2]}),
@@ -225,18 +226,20 @@ pres_matrix <- test_df2 %>% group_by(aou) %>%
   
     # inset row above for the folowing: 4090, 4900, 4950, 4860
    # 4/518, 10/180, 16/883, 21/504
+   
+   # will try to create this table using 2 steps and then calling the table command. needs to be sequential
    pres_pres_max = purrr::map(data, ~{
      newdat24 <- .
-     table(newdat24$predicted_max_pres, newdat24$presence.x)}),
+     if_else(nrow(table(newdat24$predicted_max_pres, newdat24$presence.x)) == 1, bind_rows(newdat24, empty), as.double(table(newdat24$predicted_max_pres, newdat24$presence.x))[2,2])}),
    pres_abs_max = purrr::map(data, ~{
      newdat25 <- .
-     table(newdat25$predicted_max_pres, newdat25$presence.x)[1,2]}), 
+     if_else(is.na(table(newdat25$predicted_max_pres, newdat25$presence.x)[1,2]), 0, as.double(table(newdat25$predicted_max_pres, newdat25$presence.x)[1,2]))}),
    abs_abs_max = purrr::map(data, ~{
      newdat26 <- .
-     table(newdat26$predicted_max_pres, newdat26$presence.x)[1,1]}), 
+     if_else(is.na(table(newdat26$predicted_max_pres, newdat26$presence.x)[1,1]), 0, as.double(table(newdat26$predicted_max_pres, newdat26$presence.x)[1,1]))}),
    abs_pres_max = purrr::map(data, ~{
      newdat27 <- .
-     table(newdat27$predicted_max_pres, newdat27$presence.x)[2,1]}),
+     if_else(is.na(table(newdat27$predicted_max_pres, newdat27$presence.x)[2,1]), 0, as.double(table(newdat27$predicted_max_pres, newdat27$presence.x)[2,1]))}),
     length = purrr::map(data, ~{
       newdatlength <- .
       length = length(newdatlength$stateroute)})) %>%
@@ -244,6 +247,13 @@ pres_matrix <- test_df2 %>% group_by(aou) %>%
   unnest()
 
 pres_matrix <- data.frame(pres_matrix)
+
+t <- pres_matrix %>%
+  mutate(nrow = map(data, ~{
+    data <- .
+    nrow(data)
+  }))
+
 
 newdf = c()
 for(i in unique(test_df2$aou)){ 
