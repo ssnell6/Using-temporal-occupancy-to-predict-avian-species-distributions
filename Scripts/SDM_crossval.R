@@ -579,141 +579,151 @@ for(i in sp_list){
   }
 }
 sdm_space_cval <- data.frame(sdm_space_cval)
-write.csv(sdm_space_cval,"Data/space_cval_5.csv", row.names = FALSE)
-sdm_space_cval <- read.csv("Data/space_cval.csv", header = TRUE) 
+# write.csv(sdm_space_cval,"Data/space_cval_5.csv", row.names = FALSE)
+sdm_space_cval <- read.csv("Data/space_cval_5.csv", header = TRUE) 
 rmse <- data.frame(rmse)
 names(rmse) <- c("aou","rmse_occ", "rmse_pres", "rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres", "rmse_me_pres")
 # write.csv(rmse,"Data/space_cval_rmse.csv", row.names = FALSE)
 # temp measure to avoid error
-sdm_space_cval2 <- filter(sdm_space_cval, !aou %in% c(4090,4900,4950))
+empty = data.frame(stateroute = 0,occ = 0,presence.x = 0,latitude = 0,longitude = 0,pred_gam_occ = 0,presence.y = 0,predicted_glm_occ = 0,predicted_glm_pr = 0, predicted_gam_occ = 0,predicted_gam_pr = 0,predicted_rf_occ = 0, predicted_rf_pr = 0, predicted_max_pres = 0)
 
-pres_spatial <- sdm_space_cval2 %>% group_by(aou) %>%
+pres_spatial <- sdm_space_cval %>% group_by(aou) %>%
   na.omit() %>%
   dplyr::select(stateroute, aou, occ, presence, latitude, longitude, predicted_glm_occ, predicted_glm_pr, predicted_gam_occ, predicted_gam_pr, predicted_rf_occ, predicted_rf_pr, predicted_max_pres) %>%
   nest() %>%
   dplyr::mutate(pres_pres_glmocc = purrr::map_dbl(data, ~{
     dat <- .
-    if(nrow(table(dat$predicted_glm_occ, dat$presence.x)) == 1){
+    if(nrow(table(dat$predicted_glm_occ, dat$presence)) == 1){
       sub.1 <- bind_rows(dat, empty)
-      pres_pres_glmocc = table(sub.1$predicted_glm_occ, sub.1$presence.x)[2,2] 
+      pres_pres_glmocc = table(sub.1$predicted_glm_occ, sub.1$presence)[2,2] 
     } else{
-      pres_pres_glmocc = table(dat$predicted_glm_occ, dat$presence.x)[2,2]
+      pres_pres_glmocc = table(dat$predicted_glm_occ, dat$presence)[2,2]
     }}),
     pres_abs_glmocc = purrr::map_dbl(data, ~{
       newdat <- .
-      table(newdat$predicted_glm_occ, newdat$presence.x)[1,2]}),
+      table(newdat$predicted_glm_occ, newdat$presence)[1,2]}),
     abs_abs_glmocc = purrr::map_dbl(data, ~{
       newdat2 <- .
-      table(newdat2$predicted_glm_occ, newdat2$presence.x)[1,1]}),
+      table(newdat2$predicted_glm_occ, newdat2$presence)[1,1]}),
     abs_pres_glmocc = purrr::map_dbl(data, ~{
       newdat3 <- .
-      table(newdat3$predicted_glm_occ, newdat3$presence.x)[2,1]}),
+      table(newdat3$predicted_glm_occ, newdat3$presence)[2,1]}),
     
     pres_pres_glmpr = purrr::map_dbl(data, ~{
       newdat4 <- .
-      if(nrow(table(newdat4$predicted_glm_pr, newdat4$presence.x)) == 1){
+      if(nrow(table(newdat4$predicted_glm_pr, newdat4$presence)) == 1){
         sub.1 <- bind_rows(newdat4, empty)
-        pres_pres_glmpr = table(sub.1$predicted_glm_pr, sub.1$presence.x)[2,2] 
+        pres_pres_glmpr = table(sub.1$predicted_glm_pr, sub.1$presence)[2,2] 
       } else{
-        pres_pres_glmpr = table(newdat4$predicted_glm_pr, newdat4$presence.x)[2,2]
+        pres_pres_glmpr = table(newdat4$predicted_glm_pr, newdat4$presence)[2,2]
       }}),
     pres_abs_glmpr = purrr::map_dbl(data, ~{
       newdat5 <- .
-      table(newdat5$predicted_glm_pr, newdat5$presence.x)[1,2]}),
+      table(newdat5$predicted_glm_pr, newdat5$presence)[1,2]}),
     abs_abs_glmpr = purrr::map_dbl(data, ~{
       newdat6 <- .
-      table(newdat6$predicted_glm_pr, newdat6$presence.x)[1,1]}),
+      table(newdat6$predicted_glm_pr, newdat6$presence)[1,1]}),
     abs_pres_glmpr = purrr::map_dbl(data, ~{
       newdat7 <- .
-      if(nrow(table(newdat7$predicted_glm_pr, newdat7$presence.x)) == 1){
+      if(nrow(table(newdat7$predicted_glm_pr, newdat7$presence)) == 1){
         sub.1 <- bind_rows(newdat7, empty)
-        abs_pres_glmpr = table(sub.1$predicted_glm_pr, sub.1$presence.x)[2,1] 
+        abs_pres_glmpr = table(sub.1$predicted_glm_pr, sub.1$presence)[2,1] 
       } else{
-        abs_pres_glmpr = table(newdat7$predicted_glm_pr, newdat7$presence.x)[2,1]
+        abs_pres_glmpr = table(newdat7$predicted_glm_pr, newdat7$presence)[2,1]
       }}),
     
     pres_pres_gamocc = purrr::map_dbl(data, ~{
       newdat8 <- .
-      table(newdat8$predicted_gam_occ, newdat8$presence.x)[2,2]}),
+      table(newdat8$predicted_gam_occ, newdat8$presence)[2,2]}),
     pres_abs_gamocc = purrr::map_dbl(data, ~{
       newdat9 <- .
-      table(newdat9$predicted_gam_occ, newdat9$presence.x)[1,2]}),
+      table(newdat9$predicted_gam_occ, newdat9$presence)[1,2]}),
     abs_abs_gamocc = purrr::map_dbl(data, ~{
       newdat10 <- .
-      table(newdat10$predicted_gam_occ, newdat10$presence.x)[1,1]}),
+      table(newdat10$predicted_gam_occ, newdat10$presence)[1,1]}),
     abs_pres_gamocc = purrr::map_dbl(data, ~{
       newdat11 <- .
-      table(newdat11$predicted_gam_occ, newdat11$presence.x)[2,1]}),
+      table(newdat11$predicted_gam_occ, newdat11$presence)[2,1]}),
     
     pres_pres_gampr = purrr::map_dbl(data, ~{
       newdat12 <- .
-      table(newdat12$predicted_gam_pr, newdat12$presence.x)[2,2]}),
+      if(nrow(table(newdat12$predicted_gam_pr, newdat12$presence)) == 1){
+        sub.1 <- bind_rows(newdat12, empty)
+        abs_pres_glmpr = table(sub.1$predicted_gam_pr, sub.1$presence)[2,2] 
+      } else{
+        abs_pres_glmpr = table(newdat12$predicted_gam_pr, newdat12$presence)[2,2]
+      }}),
     pres_abs_gampr = purrr::map_dbl(data, ~{
       newdat13 <- .
-      table(newdat13$predicted_gam_pr, newdat13$presence.x)[1,2]}),
+      table(newdat13$predicted_gam_pr, newdat13$presence)[1,2]}),
     abs_abs_gampr = purrr::map_dbl(data, ~{
       newdat14 <- .
-      table(newdat14$predicted_gam_pr, newdat14$presence.x)[1,1]}),
+      table(newdat14$predicted_gam_pr, newdat14$presence)[1,1]}),
     abs_pres_gampr = purrr::map_dbl(data, ~{
       newdat15 <- .
-      table(newdat15$predicted_gam_pr, newdat15$presence.x)[2,1]}),
+        if(nrow(table(newdat15$predicted_gam_pr, newdat15$presence)) == 1){
+          sub.1 <- bind_rows(newdat15, empty)
+          abs_pres_glmpr = table(sub.1$predicted_gam_pr, sub.1$presence)[2,1] 
+        } else{
+          abs_pres_glmpr = table(newdat15$predicted_gam_pr, newdat15$presence)[2,1]
+        }}),
     
     pres_pres_rfocc = purrr::map_dbl(data, ~{
       newdat16 <- .
-      table(newdat16$predicted_rf_occ, newdat16$presence.x)[2,2]}),
+      table(newdat16$predicted_rf_occ, newdat16$presence)[2,2]}),
     pres_abs_rfocc = purrr::map_dbl(data, ~{
       newdat17 <- .
-      table(newdat17$predicted_rf_occ, newdat17$presence.x)[1,2]}),
+      table(newdat17$predicted_rf_occ, newdat17$presence)[1,2]}),
     abs_abs_rfocc = purrr::map_dbl(data, ~{
       newdat18 <- .
-      table(newdat18$predicted_rf_occ, newdat18$presence.x)[1,1]}),
+      table(newdat18$predicted_rf_occ, newdat18$presence)[1,1]}),
     abs_pres_rfocc = purrr::map_dbl(data, ~{
       newdat19 <- .
-      table(newdat19$predicted_rf_occ, newdat19$presence.x)[2,1]}),
+      table(newdat19$predicted_rf_occ, newdat19$presence)[2,1]}),
     
     pres_pres_rfpres = purrr::map_dbl(data, ~{
       newdat20 <- .
-      if(nrow(table(newdat20$predicted_rf_pr, newdat20$presence.x)) == 1){
+      if(nrow(table(newdat20$predicted_rf_pr, newdat20$presence)) == 1){
         sub.1 <- bind_rows(newdat20, empty)
-        pres_pres_rfpres = table(sub.1$predicted_rf_pr, sub.1$presence.x)[2,2] 
+        pres_pres_rfpres = table(sub.1$predicted_rf_pr, sub.1$presence)[2,2] 
       } else{
-        pres_pres_rfpres = table(newdat20$predicted_rf_pr, newdat20$presence.x)[2,2]
+        pres_pres_rfpres = table(newdat20$predicted_rf_pr, newdat20$presence)[2,2]
       }}),
     pres_abs_rfpres = purrr::map_dbl(data, ~{
       newdat21 <- .
-      table(newdat21$predicted_rf_pr, newdat21$presence.x)[1,2]}),
+      table(newdat21$predicted_rf_pr, newdat21$presence)[1,2]}),
     abs_abs_rfpres = purrr::map_dbl(data, ~{
       newdat22 <- .
-      table(newdat22$predicted_rf_pr, newdat22$presence.x)[1,1]}),
+      table(newdat22$predicted_rf_pr, newdat22$presence)[1,1]}),
     abs_pres_rfpres = purrr::map_dbl(data, ~{
       newdat23 <- .
-      if(nrow(table(newdat23$predicted_rf_pr, newdat23$presence.x)) == 1){
+      if(nrow(table(newdat23$predicted_rf_pr, newdat23$presence)) == 1){
         sub.1 <- bind_rows(newdat23, empty)
-        abs_pres_rfpres = table(sub.1$predicted_rf_pr, sub.1$presence.x)[2,1] 
+        abs_pres_rfpres = table(sub.1$predicted_rf_pr, sub.1$presence)[2,1] 
       } else{
-        abs_pres_rfpres = table(newdat23$predicted_rf_pr, newdat23$presence.x)[2,1]
+        abs_pres_rfpres = table(newdat23$predicted_rf_pr, newdat23$presence)[2,1]
       }}),
     pres_pres_max = purrr::map_dbl(data, ~{
       newdat24 <- .
-      if(nrow(table(newdat24$predicted_max_pres, newdat24$presence.x)) == 1){
+      if(nrow(table(newdat24$predicted_max_pres, newdat24$presence)) == 1){
         sub.1 <- bind_rows(newdat24, empty)
-        pres_pres_max = table(sub.1$predicted_max_pres, sub.1$presence.x)[2,2]
+        pres_pres_max = table(sub.1$predicted_max_pres, sub.1$presence)[2,2]
       } else{
-        pres_pres_max = table(newdat24$predicted_max_pres, newdat24$presence.x)[2,2]
+        pres_pres_max = table(newdat24$predicted_max_pres, newdat24$presence)[2,2]
       }}),
     pres_abs_max = purrr::map_dbl(data, ~{
       newdat25 <- .
-      table(newdat25$predicted_max_pres, newdat25$presence.x)[1,2]}),
+      table(newdat25$predicted_max_pres, newdat25$presence)[1,2]}),
     abs_abs_max = purrr::map_dbl(data, ~{
       newdat26 <- .
-      table(newdat26$predicted_max_pres, newdat26$presence.x)[1,1]}),
+      table(newdat26$predicted_max_pres, newdat26$presence)[1,1]}),
     abs_pres_max = purrr::map_dbl(data, ~{
       newdat27 <- .
-      if(nrow(table(newdat27$predicted_max_pres, newdat27$presence.x)) == 1){
+      if(nrow(table(newdat27$predicted_max_pres, newdat27$presence)) == 1){
         sub.1 <- bind_rows(newdat27, empty)
-        abs_pres_max = table(sub.1$predicted_max_pres, sub.1$presence.x)[2,1]
+        abs_pres_max = table(sub.1$predicted_max_pres, sub.1$presence)[2,1]
       } else{
-        abs_pres_max = table(newdat27$predicted_max_pres, newdat27$presence.x)[2,1]
+        abs_pres_max = table(newdat27$predicted_max_pres, newdat27$presence)[2,1]
       }}),
     length = purrr::map_dbl(data, ~{
       newdatlength <- .
@@ -727,48 +737,36 @@ pres_spatial$specificity_gamocc <- (pres_spatial$abs_abs_gamocc/(pres_spatial$ab
 pres_spatial$pp_gamocc <- (pres_spatial$pres_pres_gamocc/(pres_spatial$pres_pres_gamocc + pres_spatial$abs_pres_gamocc))*100
 pres_spatial$np_gamocc <- (pres_spatial$abs_abs_gamocc/(pres_spatial$abs_abs_gamocc + pres_spatial$pres_abs_gamocc))*100
 
-# pres_spatial$truepos_gampr <- pres_spatial$pres_pres_gampr/pres_spatial$length*100
-# pres_spatial$falsepos_gampr <- pres_spatial$pres_abs_gampr/pres_spatial$length*100
 pres_spatial$accuracy_gampr <- ((pres_spatial$pres_pres_gampr + pres_spatial$abs_abs_gampr)/pres_spatial$length)*100
 pres_spatial$sensitivity_gampr <- (pres_spatial$pres_pres_gampr/(pres_spatial$pres_pres_gampr + pres_spatial$pres_abs_gampr))*100
 pres_spatial$specificity_gampr <- (pres_spatial$abs_abs_gampr/(pres_spatial$abs_pres_gampr + pres_spatial$abs_abs_gampr))*100
 pres_spatial$pp_gampr <- (pres_spatial$pres_pres_gampr/(pres_spatial$pres_pres_gampr + pres_spatial$abs_pres_gampr))*100
 pres_spatial$np_gampr <- (pres_spatial$abs_abs_gampr/(pres_spatial$abs_abs_gampr + pres_spatial$pres_abs_gampr))*100
 
-# pres_spatial$truepos_glmocc <- pres_spatial$pres_pres_glmocc/pres_spatial$length*100
-# pres_spatial$falsepos_glmocc <- pres_spatial$pres_abs_glmocc/pres_spatial$length*100
 pres_spatial$accuracy_glmocc <- ((pres_spatial$pres_pres_glmocc + pres_spatial$abs_abs_glmocc)/pres_spatial$length)*100
 pres_spatial$sensitivity_glmocc <- (pres_spatial$pres_pres_glmocc/(pres_spatial$pres_pres_glmocc + pres_spatial$pres_abs_glmocc))*100
 pres_spatial$specificity_glmocc <- (pres_spatial$abs_abs_glmocc/(pres_spatial$abs_pres_glmocc + pres_spatial$abs_abs_glmocc))*100
 pres_spatial$pp_glmocc <- (pres_spatial$pres_pres_glmocc/(pres_spatial$pres_pres_glmocc + pres_spatial$abs_pres_glmocc))*100
 pres_spatial$np_glmocc <- (pres_spatial$abs_abs_glmocc/(pres_spatial$abs_abs_glmocc + pres_spatial$pres_abs_glmocc))*100
 
-# pres_spatial$truepos_glmpr <- pres_spatial$pres_pres_glmpr/pres_spatial$length*100
-# pres_spatial$falsepos_glmpr <- pres_spatial$pres_abs_glmpr/pres_spatial$length*100
 pres_spatial$accuracy_glmpr <- ((pres_spatial$pres_pres_glmpr + pres_spatial$abs_abs_glmpr)/pres_spatial$length)*100
 pres_spatial$sensitivity_glmpr <- (pres_spatial$pres_pres_glmpr/(pres_spatial$pres_pres_glmpr + pres_spatial$pres_abs_glmpr))*100
 pres_spatial$specificity_glmpr <- (pres_spatial$abs_abs_glmpr/(pres_spatial$abs_pres_glmpr + pres_spatial$abs_abs_glmpr))*100
 pres_spatial$pp_glmpr <- (pres_spatial$pres_pres_glmpr/(pres_spatial$pres_pres_glmpr + pres_spatial$abs_pres_glmpr))*100
 pres_spatial$np_glmpr <- (pres_spatial$abs_abs_glmpr/(pres_spatial$abs_abs_glmpr + pres_spatial$pres_abs_glmpr))*100
 
-# pres_spatial$truepos_rfocc <- pres_spatial$pres_pres_rfocc/pres_spatial$length*100
-# pres_spatial$falsepos_rfocc <- pres_spatial$pres_abs_rfocc/pres_spatial$length*100
 pres_spatial$accuracy_rfocc <- ((pres_spatial$pres_pres_rfocc + pres_spatial$abs_abs_rfocc)/pres_spatial$length)*100
 pres_spatial$sensitivity_rfocc <- (pres_spatial$pres_pres_rfocc/(pres_spatial$pres_pres_rfocc + pres_spatial$pres_abs_rfocc))*100
 pres_spatial$specificity_rfocc <- (pres_spatial$abs_abs_rfocc/(pres_spatial$abs_pres_rfocc + pres_spatial$abs_abs_rfocc))*100
 pres_spatial$pp_rfocc <- (pres_spatial$pres_pres_rfocc/(pres_spatial$pres_pres_rfocc + pres_spatial$abs_pres_rfocc))*100
 pres_spatial$np_rfocc <- (pres_spatial$abs_abs_rfocc/(pres_spatial$abs_abs_rfocc + pres_spatial$pres_abs_rfocc))*100
 
-# pres_spatial$truepos_rfpr <- pres_spatial$pres_pres_rfpr/pres_spatial$length*100
-# pres_spatial$falsepos_rfpr <- pres_spatial$pres_abs_rfpr/pres_spatial$length*100
 pres_spatial$accuracy_rfpr <- ((pres_spatial$pres_pres_rfpres + pres_spatial$abs_abs_rfpres)/pres_spatial$length)*100
 pres_spatial$sensitivity_rfpr <- (pres_spatial$pres_pres_rfpres/(pres_spatial$pres_pres_rfpres + pres_spatial$pres_abs_rfpres))*100
 pres_spatial$specificity_rfpr <- (pres_spatial$abs_abs_rfpres/(pres_spatial$abs_pres_rfpres + pres_spatial$abs_abs_rfpres))*100
 pres_spatial$pp_rfpr <- (pres_spatial$pres_pres_rfpres/(pres_spatial$pres_pres_rfpres + pres_spatial$abs_pres_rfpres))*100
 pres_spatial$np_rfpr <- (pres_spatial$abs_abs_rfpres/(pres_spatial$abs_abs_rfpres + pres_spatial$pres_abs_rfpres))*100
 
-# pres_spatial$truepos_max <- pres_spatial$pres_pres_max/pres_spatial$length*100
-# pres_spatial$falsepos_max <- pres_spatial$pres_abs_max/pres_spatial$length*100
 pres_spatial$accuracy_max <- ((pres_spatial$pres_pres_max + pres_spatial$abs_abs_max)/pres_spatial$length)*100
 pres_spatial$sensitivity_max <- (pres_spatial$pres_pres_max/(pres_spatial$pres_pres_max + pres_spatial$pres_abs_max))*100
 pres_spatial$specificity_max <- (pres_spatial$abs_abs_max/(pres_spatial$abs_pres_max + pres_spatial$abs_abs_max))*100
@@ -780,22 +778,6 @@ pres_spatial$np_max <- (pres_spatial$abs_abs_max/(pres_spatial$abs_abs_max + pre
 pres_spatial_plot <- gather(pres_spatial, "Mod", "value", accuracy_gamocc:np_max)
 pres_spatial_plot2 <-  separate(data = pres_spatial_plot, col = Mod, into = c("Measure", "Modtype"), sep = "_")
 pres_spatial_plot2$Modtype <- factor(pres_spatial_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max", ordered = TRUE))
-pdf('Spatial_XVal.pdf', height = 8, width = 14)
-for(sp in unique(pres_spatial_plot2$aou)){ 
-  plotsub = filter(pres_spatial_plot2, aou == sp) %>%
-    distinct()
-  plot <- ggplot(plotsub, aes(x = Measure, y = value)) +   
-    geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity") +
-    theme_classic()+ theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90)) + xlab(sp) + ylab(bquote("Percent")) +
-    scale_fill_manual(values =c("#034e7b","#08306b","steelblue2", "dodgerblue2","#238b45", "darkgreen" ,"purple"),
-                      breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
-                      labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GLM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
-    theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
-    guides(colour = guide_legend(override.aes = list(shape = 15))) +
-    theme(legend.title=element_blank(), legend.text=element_text(size=30), legend.key.width=unit(2, "lines"))
-  print(plot)
-}
-dev.off()
 
 pres_spatial <- data.frame(pres_spatial)
 pres_spatial_means <- pres_spatial %>%
