@@ -75,6 +75,7 @@ bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ)
 
 threshfun <- function(pred_vals){ 
  thresh <-  max(pred_vals) * 0.5
+# thresh <- median(pred_vals)
 }
 
 sp_list = unique(auc_df$AOU)
@@ -133,7 +134,7 @@ for(i in sp_list){
 
 test_df <- data.frame(test_df)
 
-# write.csv(test_df, "Data/temporal_crossval_df.csv", row.names = FALSE) # wrote _5 for thresh of .5
+# write.csv(test_df, "Data/temporal_crossval_df_5.csv", row.names = FALSE) # wrote _5 for thresh of .5, med for median
 test_df <- read.csv("Data/temporal_crossval_df_5.csv", header = TRUE) 
 
 # to account for species not detected in 2015-2016 but are within the range
@@ -153,132 +154,102 @@ if(nrow(table(dat$col, dat$presence.x)) == 1){
   }
 }
 
+#### WORK ON THIS 
 pres_matrix <- test_df %>% group_by(aou) %>%
   nest() %>%
-  dplyr::mutate(pres_pres_glmocc = purrr::map_dbl(data, ~{
-    dat <- .
-    if(nrow(table(dat$predicted_glm_occ, dat$presence.x)) == 1){
-      sub.1 <- bind_rows(dat, empty)
-      pres_pres_glmocc = table(sub.1$predicted_glm_occ, sub.1$presence.x)[2,2] 
-    } else{
-      pres_pres_glmocc = table(dat$predicted_glm_occ, dat$presence.x)[2,2]
-    }}),
+  dplyr::mutate(pres_pres_glmocc = purrr::map(data, ~{
+      dat <- . 
+      dat %>%
+        group_by(predicted_glm_occ, presence.x) %>%
+        count()}))
+      # (dat$predicted_glm_occ == 1 & dat$presence.x == 1)}),
     pres_abs_glmocc = purrr::map_dbl(data, ~{
       newdat <- .
-      table(newdat$predicted_glm_occ, newdat$presence.x)[1,2]}),
+      sum(newdat$predicted_glm_occ == 1 & newdat$presence.x == 0)}),
     abs_abs_glmocc = purrr::map_dbl(data, ~{
       newdat2 <- .
-      table(newdat2$predicted_glm_occ, newdat2$presence.x)[1,1]}),
+      sum(newdat2$predicted_glm_occ == 0 & newdat2$presence.x == 0)}),
     abs_pres_glmocc = purrr::map_dbl(data, ~{
       newdat3 <- .
-      table(newdat3$predicted_glm_occ, newdat3$presence.x)[2,1]}),
+      sum(newdat3$predicted_glm_occ == 0 & newdat3$presence.x == 1)}),
 
     pres_pres_glmpr = purrr::map_dbl(data, ~{
       newdat4 <- .
-      if(nrow(table(newdat4$predicted_glm_pr, newdat4$presence.x)) == 1){
-        sub.1 <- bind_rows(newdat4, empty)
-        pres_pres_glmpr = table(sub.1$predicted_glm_pr, sub.1$presence.x)[2,2] 
-      } else{
-        pres_pres_glmpr = table(newdat4$predicted_glm_pr, newdat4$presence.x)[2,2]
-      }}),
+      sum(newdat4$predicted_glm_pr == 1 & newdat4$presence.x == 1)}),
     pres_abs_glmpr = purrr::map_dbl(data, ~{
       newdat5 <- .
-      table(newdat5$predicted_glm_pr, newdat5$presence.x)[1,2]}),
+      sum(newdat5$predicted_glm_pr == 1 & newdat5$presence.x == 0)}),
     abs_abs_glmpr = purrr::map_dbl(data, ~{
       newdat6 <- .
-      table(newdat6$predicted_glm_pr, newdat6$presence.x)[1,1]}),
+      sum(newdat6$predicted_glm_pr == 0 & newdat6$presence.x == 0)}),
     abs_pres_glmpr = purrr::map_dbl(data, ~{
       newdat7 <- .
-      if(nrow(table(newdat7$predicted_glm_pr, newdat7$presence.x)) == 1){
-        sub.1 <- bind_rows(newdat7, empty)
-        abs_pres_glmpr = table(sub.1$predicted_glm_pr, sub.1$presence.x)[2,1] 
-      } else{
-        abs_pres_glmpr = table(newdat7$predicted_glm_pr, newdat7$presence.x)[2,1]
-      }}),
+      sum(newdat7$predicted_glm_pr == 0 & newdat7$presence.x == 1)}),
 
     pres_pres_gamocc = purrr::map_dbl(data, ~{
       newdat8 <- .
-      table(newdat8$predicted_gam_occ, newdat8$presence.x)[2,2]}),
+      sum(newdat8$predicted_gam_occ == 1 & newdat8$presence.x == 1)}),
     pres_abs_gamocc = purrr::map_dbl(data, ~{
       newdat9 <- .
-      table(newdat9$predicted_gam_occ, newdat9$presence.x)[1,2]}),
+      sum(newdat9$predicted_gam_occ == 1 & newdat9$presence.x == 0)}),
     abs_abs_gamocc = purrr::map_dbl(data, ~{
       newdat10 <- .
-      table(newdat10$predicted_gam_occ, newdat10$presence.x)[1,1]}),
+      sum(newdat10$predicted_gam_occ == 0 & newdat10$presence.x == 0)}),
     abs_pres_gamocc = purrr::map_dbl(data, ~{
       newdat11 <- .
-      table(newdat11$predicted_gam_occ, newdat11$presence.x)[2,1]}),
+      sum(newdat11$predicted_gam_occ == 0 & newdat11$presence.x == 1)}),
 
     pres_pres_gampr = purrr::map_dbl(data, ~{
       newdat12 <- .
-      table(newdat12$predicted_gam_pr, newdat12$presence.x)[2,2]}),
+      sum(newdat12$predicted_gam_pr == 1 & newdat12$presence.x == 1)}),
     pres_abs_gampr = purrr::map_dbl(data, ~{
       newdat13 <- .
-      table(newdat13$predicted_gam_pr, newdat13$presence.x)[1,2]}),
+      sum(newdat13$predicted_gam_pr == 1 & newdat13$presence.x == 0)}),
     abs_abs_gampr = purrr::map_dbl(data, ~{
       newdat14 <- .
-      table(newdat14$predicted_gam_pr, newdat14$presence.x)[1,1]}),
+      sum(newdat14$predicted_gam_pr == 0 & newdat14$presence.x == 0)}),
     abs_pres_gampr = purrr::map_dbl(data, ~{
       newdat15 <- .
-      table(newdat15$predicted_gam_pr, newdat15$presence.x)[2,1]}),
+      sum(newdat15$predicted_gam_pr == 0 & newdat15$presence.x == 1)}),
 
     pres_pres_rfocc = purrr::map_dbl(data, ~{
       newdat16 <- .
-      table(newdat16$predicted_rf_occ, newdat16$presence.x)[2,2]}),
+      sum(newdat16$predicted_rf_occ == 1 & newdat16$presence.x == 1)}),
     pres_abs_rfocc = purrr::map_dbl(data, ~{
       newdat17 <- .
-      table(newdat17$predicted_rf_occ, newdat17$presence.x)[1,2]}),
+      sum(newdat17$predicted_rf_occ == 1 & newdat17$presence.x == 0)}),
     abs_abs_rfocc = purrr::map_dbl(data, ~{
       newdat18 <- .
-      table(newdat18$predicted_rf_occ, newdat18$presence.x)[1,1]}),
+      sum(newdat18$predicted_rf_occ == 0 & newdat18$presence.x == 0)}),
     abs_pres_rfocc = purrr::map_dbl(data, ~{
       newdat19 <- .
-      table(newdat19$predicted_rf_occ, newdat19$presence.x)[2,1]}),
+      sum(newdat19$predicted_rf_occ == 0 & newdat19$presence.x == 1)}),
 
     pres_pres_rfpres = purrr::map_dbl(data, ~{
       newdat20 <- .
-      if(nrow(table(newdat20$predicted_rf_pr, newdat20$presence.x)) == 1){
-        sub.1 <- bind_rows(newdat20, empty)
-        pres_pres_rfpres = table(sub.1$predicted_rf_pr, sub.1$presence.x)[2,2] 
-      } else{
-        pres_pres_rfpres = table(newdat20$predicted_rf_pr, newdat20$presence.x)[2,2]
-      }}),
+      sum(newdat20$predicted_rf_pr == 1 & newdat20$presence.x == 1)}),
     pres_abs_rfpres = purrr::map_dbl(data, ~{
       newdat21 <- .
-      table(newdat21$predicted_rf_pr, newdat21$presence.x)[1,2]}),
+      sum(newdat21$predicted_rf_pr == 1 & newdat21$presence.x == 0)}),
     abs_abs_rfpres = purrr::map_dbl(data, ~{
       newdat22 <- .
-      table(newdat22$predicted_rf_pr, newdat22$presence.x)[1,1]}),
+      sum(newdat22$predicted_rf_pr == 0 & newdat22$presence.x == 0)}),
     abs_pres_rfpres = purrr::map_dbl(data, ~{
       newdat23 <- .
-      if(nrow(table(newdat23$predicted_rf_pr, newdat23$presence.x)) == 1){
-        sub.1 <- bind_rows(newdat23, empty)
-        abs_pres_rfpres = table(sub.1$predicted_rf_pr, sub.1$presence.x)[2,1] 
-      } else{
-        abs_pres_rfpres = table(newdat23$predicted_rf_pr, newdat23$presence.x)[2,1]
-      }}),
+      sum(newdat23$predicted_rf_pr == 0 & newdat23$presence.x == 1)}),
+    
   pres_pres_max = purrr::map_dbl(data, ~{
        newdat24 <- .
-       if(nrow(table(newdat24$predicted_max_pres, newdat24$presence.x)) == 1){
-         sub.1 <- bind_rows(newdat24, empty)
-         pres_pres_max = table(sub.1$predicted_max_pres, sub.1$presence.x)[2,2]
-       } else{
-         pres_pres_max = table(newdat24$predicted_max_pres, newdat24$presence.x)[2,2]
-       }}),
+       sum(newdat24$predicted_max_pres == 1 & newdat24$presence.x == 1)}),
    pres_abs_max = purrr::map_dbl(data, ~{
      newdat25 <- .
-     table(newdat25$predicted_max_pres, newdat25$presence.x)[1,2]}),
+     sum(newdat25$predicted_max_pres == 1 & newdat25$presence.x == 0)}),
    abs_abs_max = purrr::map_dbl(data, ~{
      newdat26 <- .
-     table(newdat26$predicted_max_pres, newdat26$presence.x)[1,1]}),
+     sum(newdat26$predicted_max_pres == 0 & newdat26$presence.x == 0)}),
    abs_pres_max = purrr::map_dbl(data, ~{
      newdat27 <- .
-     if(nrow(table(newdat27$predicted_max_pres, newdat27$presence.x)) == 1){
-       sub.1 <- bind_rows(newdat27, empty)
-       abs_pres_max = table(sub.1$predicted_max_pres, sub.1$presence.x)[2,1]
-     } else{
-       abs_pres_max = table(newdat27$predicted_max_pres, newdat27$presence.x)[2,1]
-     }}),
+     sum(newdat27$predicted_max_pres == 0 & newdat27$presence.x == 1)}),
     length = purrr::map_dbl(data, ~{
       newdatlength <- .
       length(newdatlength$stateroute)})) %>%
@@ -331,6 +302,7 @@ pres_matrix$pp_max <- (pres_matrix$pres_pres_max/(pres_matrix$pres_pres_max + pr
 pres_matrix$np_max <- (pres_matrix$abs_abs_max/(pres_matrix$abs_abs_max + pres_matrix$pres_abs_max))*100
  
 pres_matrix_means <- pres_matrix %>%
+  na.omit() %>%
   summarise(
   mean_accuracy_gamocc = mean(accuracy_gamocc),
   mean_sensitivity_gamocc = mean(sensitivity_gamocc),
