@@ -155,108 +155,143 @@ if(nrow(table(dat$col, dat$presence.x)) == 1){
 }
 
 #### WORK ON THIS 
-pres_matrix <- test_df %>% group_by(aou) %>%
+glmocc <- test_df %>% group_by(aou) %>%
   nest() %>%
-  dplyr::mutate(pres_pres_glmocc = purrr::map(data, ~{
-      dat <- . 
+  dplyr::mutate(glmocc = purrr::map(data, ~{
+      dat <- .
       dat %>%
         group_by(predicted_glm_occ, presence.x) %>%
-        count()}))
-      # (dat$predicted_glm_occ == 1 & dat$presence.x == 1)}),
-    pres_abs_glmocc = purrr::map_dbl(data, ~{
-      newdat <- .
-      sum(newdat$predicted_glm_occ == 1 & newdat$presence.x == 0)}),
-    abs_abs_glmocc = purrr::map_dbl(data, ~{
-      newdat2 <- .
-      sum(newdat2$predicted_glm_occ == 0 & newdat2$presence.x == 0)}),
-    abs_pres_glmocc = purrr::map_dbl(data, ~{
-      newdat3 <- .
-      sum(newdat3$predicted_glm_occ == 0 & newdat3$presence.x == 1)}),
+        count()})) %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(glmocc)) %>%
+  mutate(cats = paste(predicted_glm_occ, presence.x, sep = "_"),
+         cats_cat = case_when(cats == "1_1" ~ "pres_pres_glmocc",
+                              cats == "1_0" ~ "pres_abs_glmocc",
+                              cats == "0_1" ~ "abs_pres_glmocc",
+                              cats == "0_0" ~ "abs_abs_glmocc")) %>%
+  select(aou, cats_cat, n) %>%
+  pivot_wider(names_from = cats_cat, values_from = n)
 
-    pres_pres_glmpr = purrr::map_dbl(data, ~{
-      newdat4 <- .
-      sum(newdat4$predicted_glm_pr == 1 & newdat4$presence.x == 1)}),
-    pres_abs_glmpr = purrr::map_dbl(data, ~{
-      newdat5 <- .
-      sum(newdat5$predicted_glm_pr == 1 & newdat5$presence.x == 0)}),
-    abs_abs_glmpr = purrr::map_dbl(data, ~{
-      newdat6 <- .
-      sum(newdat6$predicted_glm_pr == 0 & newdat6$presence.x == 0)}),
-    abs_pres_glmpr = purrr::map_dbl(data, ~{
-      newdat7 <- .
-      sum(newdat7$predicted_glm_pr == 0 & newdat7$presence.x == 1)}),
 
-    pres_pres_gamocc = purrr::map_dbl(data, ~{
-      newdat8 <- .
-      sum(newdat8$predicted_gam_occ == 1 & newdat8$presence.x == 1)}),
-    pres_abs_gamocc = purrr::map_dbl(data, ~{
-      newdat9 <- .
-      sum(newdat9$predicted_gam_occ == 1 & newdat9$presence.x == 0)}),
-    abs_abs_gamocc = purrr::map_dbl(data, ~{
-      newdat10 <- .
-      sum(newdat10$predicted_gam_occ == 0 & newdat10$presence.x == 0)}),
-    abs_pres_gamocc = purrr::map_dbl(data, ~{
-      newdat11 <- .
-      sum(newdat11$predicted_gam_occ == 0 & newdat11$presence.x == 1)}),
+glmpr <- test_df %>% group_by(aou) %>%
+  nest() %>%
+  dplyr::mutate(glmpr = purrr::map(data, ~{
+  newdat <- .
+  newdat %>%
+    group_by(predicted_glm_pr, presence.x) %>%
+    count()})) %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(glmpr)) %>%
+  mutate(cats = paste(predicted_glm_pr, presence.x, sep = "_"),
+         cats_cat = case_when(cats == "1_1" ~ "pres_pres_glmpr",
+                              cats == "1_0" ~ "pres_abs_glmpr",
+                              cats == "0_1" ~ "abs_pres_glmpr",
+                              cats == "0_0" ~ "abs_abs_glmpr")) %>%
+  select(aou, cats_cat, n) %>%
+  pivot_wider(names_from = cats_cat, values_from = n)
 
-    pres_pres_gampr = purrr::map_dbl(data, ~{
-      newdat12 <- .
-      sum(newdat12$predicted_gam_pr == 1 & newdat12$presence.x == 1)}),
-    pres_abs_gampr = purrr::map_dbl(data, ~{
-      newdat13 <- .
-      sum(newdat13$predicted_gam_pr == 1 & newdat13$presence.x == 0)}),
-    abs_abs_gampr = purrr::map_dbl(data, ~{
-      newdat14 <- .
-      sum(newdat14$predicted_gam_pr == 0 & newdat14$presence.x == 0)}),
-    abs_pres_gampr = purrr::map_dbl(data, ~{
-      newdat15 <- .
-      sum(newdat15$predicted_gam_pr == 0 & newdat15$presence.x == 1)}),
+gamocc <- test_df %>% group_by(aou) %>%
+  nest() %>%
+  dplyr::mutate(gamocc = purrr::map(data, ~{
+  newdat2 <- .
+  newdat2 %>%
+    group_by(predicted_gam_occ, presence.x) %>%
+    count()})) %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(gamocc)) %>%
+  mutate(cats = paste(predicted_gam_occ, presence.x, sep = "_"),
+         cats_cat = case_when(cats == "1_1" ~ "pres_pres_gamocc",
+                              cats == "1_0" ~ "pres_abs_gamocc",
+                              cats == "0_1" ~ "abs_pres_gamocc",
+                              cats == "0_0" ~ "abs_abs_gamocc")) %>%
+  select(aou, cats_cat, n) %>%
+  pivot_wider(names_from = cats_cat, values_from = n)
 
-    pres_pres_rfocc = purrr::map_dbl(data, ~{
-      newdat16 <- .
-      sum(newdat16$predicted_rf_occ == 1 & newdat16$presence.x == 1)}),
-    pres_abs_rfocc = purrr::map_dbl(data, ~{
-      newdat17 <- .
-      sum(newdat17$predicted_rf_occ == 1 & newdat17$presence.x == 0)}),
-    abs_abs_rfocc = purrr::map_dbl(data, ~{
-      newdat18 <- .
-      sum(newdat18$predicted_rf_occ == 0 & newdat18$presence.x == 0)}),
-    abs_pres_rfocc = purrr::map_dbl(data, ~{
-      newdat19 <- .
-      sum(newdat19$predicted_rf_occ == 0 & newdat19$presence.x == 1)}),
+gampr <- test_df %>% group_by(aou) %>%
+  nest() %>%
+  dplyr::mutate(gampr = purrr::map(data, ~{
+  newdat3 <- .
+  newdat3 %>%
+    group_by(predicted_gam_pr, presence.x) %>%
+    count()})) %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(gampr)) %>%
+  mutate(cats = paste(predicted_gam_pr, presence.x, sep = "_"),
+         cats_cat = case_when(cats == "1_1" ~ "pres_pres_gampr",
+                              cats == "1_0" ~ "pres_abs_gampr",
+                              cats == "0_1" ~ "abs_pres_gampr",
+                              cats == "0_0" ~ "abs_abs_gampr")) %>%
+  select(aou, cats_cat, n) %>%
+  pivot_wider(names_from = cats_cat, values_from = n)
 
-    pres_pres_rfpres = purrr::map_dbl(data, ~{
-      newdat20 <- .
-      sum(newdat20$predicted_rf_pr == 1 & newdat20$presence.x == 1)}),
-    pres_abs_rfpres = purrr::map_dbl(data, ~{
-      newdat21 <- .
-      sum(newdat21$predicted_rf_pr == 1 & newdat21$presence.x == 0)}),
-    abs_abs_rfpres = purrr::map_dbl(data, ~{
-      newdat22 <- .
-      sum(newdat22$predicted_rf_pr == 0 & newdat22$presence.x == 0)}),
-    abs_pres_rfpres = purrr::map_dbl(data, ~{
-      newdat23 <- .
-      sum(newdat23$predicted_rf_pr == 0 & newdat23$presence.x == 1)}),
-    
-  pres_pres_max = purrr::map_dbl(data, ~{
-       newdat24 <- .
-       sum(newdat24$predicted_max_pres == 1 & newdat24$presence.x == 1)}),
-   pres_abs_max = purrr::map_dbl(data, ~{
-     newdat25 <- .
-     sum(newdat25$predicted_max_pres == 1 & newdat25$presence.x == 0)}),
-   abs_abs_max = purrr::map_dbl(data, ~{
-     newdat26 <- .
-     sum(newdat26$predicted_max_pres == 0 & newdat26$presence.x == 0)}),
-   abs_pres_max = purrr::map_dbl(data, ~{
-     newdat27 <- .
-     sum(newdat27$predicted_max_pres == 0 & newdat27$presence.x == 1)}),
-    length = purrr::map_dbl(data, ~{
-      newdatlength <- .
-      length(newdatlength$stateroute)})) %>%
-  dplyr::select(-data) 
+rfocc <- test_df %>% group_by(aou) %>%
+  nest() %>%
+  dplyr::mutate(rfocc = purrr::map(data, ~{
+  newdat4 <- .
+  newdat4 %>%
+    group_by(predicted_rf_occ, presence.x) %>%
+    count()})) %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(rfocc)) %>%
+  mutate(cats = paste(predicted_rf_occ, presence.x, sep = "_"),
+         cats_cat = case_when(cats == "1_1" ~ "pres_pres_rfocc",
+                              cats == "1_0" ~ "pres_abs_rfocc",
+                              cats == "0_1" ~ "abs_pres_rfocc",
+                              cats == "0_0" ~ "abs_abs_rfocc")) %>%
+  select(aou, cats_cat, n) %>%
+  pivot_wider(names_from = cats_cat, values_from = n)
+
+rfpr <- test_df %>% group_by(aou) %>%
+  nest() %>%
+  dplyr::mutate(rfpres = purrr::map(data, ~{
+  newdat5 <- .
+  newdat5 %>%
+    group_by(predicted_rf_pr, presence.x) %>%
+    count()})) %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(rfpres)) %>%
+  mutate(cats = paste(predicted_rf_pr, presence.x, sep = "_"),
+         cats_cat = case_when(cats == "1_1" ~ "pres_pres_rfpr",
+                              cats == "1_0" ~ "pres_abs_rfpr",
+                              cats == "0_1" ~ "abs_pres_rfpr",
+                              cats == "0_0" ~ "abs_abs_rfpr")) %>%
+  select(aou, cats_cat, n) %>%
+  pivot_wider(names_from = cats_cat, values_from = n)
+
+maxpr <- test_df %>% group_by(aou) %>%
+  nest() %>%
+  dplyr::mutate(maxpres = purrr::map(data, ~{
+     newdat6 <- .
+     newdat6 %>%
+       group_by(predicted_max_pres, presence.x) %>%
+       count()})) %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(maxpres)) %>%
+  mutate(cats = paste(predicted_max_pres, presence.x, sep = "_"),
+         cats_cat = case_when(cats == "1_1" ~ "pres_pres_maxpr",
+                              cats == "1_0" ~ "pres_abs_maxpr",
+                              cats == "0_1" ~ "abs_pres_maxpr",
+                              cats == "0_0" ~ "abs_abs_maxpr")) %>%
+  select(aou, cats_cat, n) %>%
+  pivot_wider(names_from = cats_cat, values_from = n)
+
+length <- test_df %>% group_by(aou) %>%
+  nest() %>%
+  dplyr::mutate(length = purrr::map(data, ~{
+  newdatlength <- .
+  length(newdatlength$stateroute)})) %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(length))
+
+pres_matrix <- full_join(glmocc, glmpr, by = "aou") %>%
+  full_join(gamocc, by = "aou") %>%
+  full_join(gampr, by = "aou") %>%
+  full_join(rfocc, by = "aou") %>%
+  full_join(rfpr, by = "aou") %>%
+  full_join(maxpr, by = "aou") %>%
+  full_join(length, by = "aou")
 
 pres_matrix <- data.frame(pres_matrix)
-pres_matrix$length <- as.numeric(pres_matrix$length)
 
 
 pres_matrix$accuracy_gamocc <- ((pres_matrix$pres_pres_gamocc + pres_matrix$abs_abs_gamocc)/pres_matrix$length)*100
@@ -289,11 +324,11 @@ pres_matrix$specificity_rfocc <- (pres_matrix$abs_abs_rfocc/(pres_matrix$abs_pre
 pres_matrix$pp_rfocc <- (pres_matrix$pres_pres_rfocc/(pres_matrix$pres_pres_rfocc + pres_matrix$abs_pres_rfocc))*100
 pres_matrix$np_rfocc <- (pres_matrix$abs_abs_rfocc/(pres_matrix$abs_abs_rfocc + pres_matrix$pres_abs_rfocc))*100
 
-pres_matrix$accuracy_rfpr <- ((pres_matrix$pres_pres_rfpres + pres_matrix$abs_abs_rfpres)/pres_matrix$length)*100
-pres_matrix$sensitivity_rfpr <- (pres_matrix$pres_pres_rfpres/(pres_matrix$pres_pres_rfpres + pres_matrix$pres_abs_rfpres))*100
-pres_matrix$specificity_rfpr <- (pres_matrix$abs_abs_rfpres/(pres_matrix$abs_pres_rfpres + pres_matrix$abs_abs_rfpres))*100
-pres_matrix$pp_rfpr <- (pres_matrix$pres_pres_rfpres/(pres_matrix$pres_pres_rfpres + pres_matrix$abs_pres_rfpres))*100
-pres_matrix$np_rfpr <- (pres_matrix$abs_abs_rfpres/(pres_matrix$abs_abs_rfpres + pres_matrix$pres_abs_rfpres))*100
+pres_matrix$accuracy_rfpr <- ((pres_matrix$pres_pres_rfpr + pres_matrix$abs_abs_rfpr)/pres_matrix$length)*100
+pres_matrix$sensitivity_rfpr <- (pres_matrix$pres_pres_rfpr/(pres_matrix$pres_pres_rfpr + pres_matrix$pres_abs_rfpr))*100
+pres_matrix$specificity_rfpr <- (pres_matrix$abs_abs_rfpr/(pres_matrix$abs_pres_rfpr + pres_matrix$abs_abs_rfpr))*100
+pres_matrix$pp_rfpr <- (pres_matrix$pres_pres_rfpr/(pres_matrix$pres_pres_rfpr + pres_matrix$abs_pres_rfpr))*100
+pres_matrix$np_rfpr <- (pres_matrix$abs_abs_rfpr/(pres_matrix$abs_abs_rfpr + pres_matrix$pres_abs_rfpr))*100
 
 pres_matrix$accuracy_max <- ((pres_matrix$pres_pres_max + pres_matrix$abs_abs_max)/pres_matrix$length)*100
 pres_matrix$sensitivity_max <- (pres_matrix$pres_pres_max/(pres_matrix$pres_pres_max + pres_matrix$pres_abs_max))*100
