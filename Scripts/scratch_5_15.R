@@ -6,16 +6,20 @@
 #          fift_year_prop = n_pres.x/n)
 # write.csv(join_pres, "data/five_fifteen_diff.csv", row.names = FALSE)
 
-auc_df_15 <- read.csv("Data/auc_df.csv", header = TRUE)
-auc_df_5 <- read.csv("Data/auc_df_5.csv", header = TRUE)
-join_pres <- read.csv("Data/five_fifteen_diff.csv", header = TRUE)
-
-comp_plot <- full_join(auc_df_15[,c("AOU","rmse_occ", "rmse_pres")], auc_df_5[,c("AOU","rmse_occ", "rmse_pres")], by = "AOU") %>%
-  full_join(join_pres, by = c("AOU" = "aou")) %>%
+auc_df_15 <- read.csv("Data/auc_df.csv", header = TRUE) %>%
+  mutate(glm_diff = rmse_occ - rmse_pres,
+         gam_diff = rmse_gam - rmse_gam_pres,
+         rf_diff = rmse_rf - rmse_rf_pres) %>%
+  filter(gam_diff > 0)
+auc_df_5 <- read.csv("Data/auc_df_5.csv", header = TRUE) %>%
+  mutate(glm_diff_5 = rmse_occ - rmse_pres,
+         gam_diff_5 = rmse_gam - rmse_gam_pres,
+         rf_diff_5 = rmse_rf - rmse_rf_pres)
+comp_plot <- left_join(auc_df_15, auc_df_5, by = "AOU") %>%
   left_join(tax_code, by = c("AOU" = "AOU_OUT")) %>%
-  mutate(delta_rmse = rmse_occ.x - rmse_occ.y,
-         delta_rpres = fifteen_pres - five_pres) %>%
-  na.omit()
+  mutate(delta_glm_rmse = glm_diff - glm_diff_5,
+         delta_gam_rmse = gam_diff - gam_diff_5,
+         delta_rf_rmse = rf_diff - rf_diff_5) 
 
 ggplot(comp_plot, aes(x = delta_rpres, y = delta_rmse)) + geom_text(aes(label = ALPHA.CODE)) + geom_hline(yintercept = 0) 
 
