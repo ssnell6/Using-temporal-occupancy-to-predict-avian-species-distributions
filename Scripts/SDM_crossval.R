@@ -132,11 +132,18 @@ for(i in sp_list){
   }
 }
 
-test_df <- data.frame(test_df)
 
-# write.csv(test_df, "Data/temporal_crossval_df_5.csv", row.names = FALSE) # wrote _5 for thresh of .5, med for median
-test_df <- read.csv("Data/temporal_crossval_df_5.csv", header = TRUE) 
+# write.csv(test_df, "Data/temporal_crossval_df_75.csv", row.names = FALSE) # wrote _5 for thresh of .5, med for median
 
+
+test_df_25 <- read.csv("Data/temporal_crossval_df_25.csv", header = TRUE) 
+test_df_5 <- read.csv("Data/temporal_crossval_df_5.csv", header = TRUE) 
+test_df <- read.csv("Data/temporal_crossval_df_75.csv", header = TRUE) 
+
+# data.frame(test_df_75) %>%
+#   ggplot(aes(x = pred_gam_occ, group = as.factor(aou))) + geom_density()
+
+  
 # to account for species not detected in 2015-2016 but are within the range
 test_df$presence.y[is.na(test_df$presence.y)] = 0 
 
@@ -169,7 +176,7 @@ glmocc <- test_df %>% group_by(aou) %>%
                               cats == "1_0" ~ "pres_abs_glmocc",
                               cats == "0_1" ~ "abs_pres_glmocc",
                               cats == "0_0" ~ "abs_abs_glmocc")) %>%
-  select(aou, cats_cat, n) %>%
+  dplyr::select(aou, cats_cat, n) %>%
   pivot_wider(names_from = cats_cat, values_from = n)
 
 
@@ -187,7 +194,7 @@ glmpr <- test_df %>% group_by(aou) %>%
                               cats == "1_0" ~ "pres_abs_glmpr",
                               cats == "0_1" ~ "abs_pres_glmpr",
                               cats == "0_0" ~ "abs_abs_glmpr")) %>%
-  select(aou, cats_cat, n) %>%
+  dplyr::select(aou, cats_cat, n) %>%
   pivot_wider(names_from = cats_cat, values_from = n)
 
 gamocc <- test_df %>% group_by(aou) %>%
@@ -204,7 +211,7 @@ gamocc <- test_df %>% group_by(aou) %>%
                               cats == "1_0" ~ "pres_abs_gamocc",
                               cats == "0_1" ~ "abs_pres_gamocc",
                               cats == "0_0" ~ "abs_abs_gamocc")) %>%
-  select(aou, cats_cat, n) %>%
+  dplyr::select(aou, cats_cat, n) %>%
   pivot_wider(names_from = cats_cat, values_from = n)
 
 gampr <- test_df %>% group_by(aou) %>%
@@ -221,7 +228,7 @@ gampr <- test_df %>% group_by(aou) %>%
                               cats == "1_0" ~ "pres_abs_gampr",
                               cats == "0_1" ~ "abs_pres_gampr",
                               cats == "0_0" ~ "abs_abs_gampr")) %>%
-  select(aou, cats_cat, n) %>%
+  dplyr::select(aou, cats_cat, n) %>%
   pivot_wider(names_from = cats_cat, values_from = n)
 
 rfocc <- test_df %>% group_by(aou) %>%
@@ -238,7 +245,7 @@ rfocc <- test_df %>% group_by(aou) %>%
                               cats == "1_0" ~ "pres_abs_rfocc",
                               cats == "0_1" ~ "abs_pres_rfocc",
                               cats == "0_0" ~ "abs_abs_rfocc")) %>%
-  select(aou, cats_cat, n) %>%
+  dplyr::select(aou, cats_cat, n) %>%
   pivot_wider(names_from = cats_cat, values_from = n)
 
 rfpr <- test_df %>% group_by(aou) %>%
@@ -255,7 +262,7 @@ rfpr <- test_df %>% group_by(aou) %>%
                               cats == "1_0" ~ "pres_abs_rfpr",
                               cats == "0_1" ~ "abs_pres_rfpr",
                               cats == "0_0" ~ "abs_abs_rfpr")) %>%
-  select(aou, cats_cat, n) %>%
+  dplyr::select(aou, cats_cat, n) %>%
   pivot_wider(names_from = cats_cat, values_from = n)
 
 maxpr <- test_df %>% group_by(aou) %>%
@@ -272,7 +279,7 @@ maxpr <- test_df %>% group_by(aou) %>%
                               cats == "1_0" ~ "pres_abs_maxpr",
                               cats == "0_1" ~ "abs_pres_maxpr",
                               cats == "0_0" ~ "abs_abs_maxpr")) %>%
-  select(aou, cats_cat, n) %>%
+  dplyr::select(aou, cats_cat, n) %>%
   pivot_wider(names_from = cats_cat, values_from = n)
 
 length <- test_df %>% group_by(aou) %>%
@@ -394,7 +401,7 @@ pplot = filter(pres_matrix_plot2, Measure != "accuracy") %>%
   theme(axis.text.x=element_text(size = 50, colour = "black"),axis.ticks=element_blank(), axis.text.y=element_text(size=50, colour = "black")) +
   guides(colour = guide_legend(override.aes = list(shape = 15))) +
   theme(legend.title=element_blank(), legend.text=element_text(size=50), legend.key.width=unit(2, "lines"), legend.key.size = unit(2, "cm")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
-ggsave("Figures/temp_crossval.pdf", width = 30, height = 20)
+ggsave("Figures/temp_crossval_75.pdf", width = 30, height = 20)
 
 ####### dummy data #####
 bbs_occ = read.csv("Data/bbs_sub1.csv", header=TRUE)
