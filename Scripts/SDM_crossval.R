@@ -75,7 +75,6 @@ bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ)
 
 threshfun <- function(pred_vals){ 
  thresh <-  max(pred_vals) * 0.5
-# thresh <- median(pred_vals)
 }
 
 sp_list = unique(auc_df$AOU)
