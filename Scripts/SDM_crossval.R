@@ -987,3 +987,9 @@ t.test(sdm_test$predicted_pres, sdm_test$presence, paired = TRUE, alternative= "
 table(sdm_space_cval$presence, sdm_space_cval$predicted_pres)
 
 
+
+
+##### ROC thresh ####
+temp_25 <- read.csv("Data/temporal_crossval_df_25.csv", header = TRUE)
+temp_5 <- read.csv("Data/temporal_crossval_df_5.csv", header = TRUE)
+temp_75 <- read.csv("Data/temporal_crossval_df_75.csv", header = TRUE)

@@ -19,7 +19,7 @@ comp_plot <- left_join(auc_df_15, auc_df_5, by = "AOU") %>%
   left_join(tax_code, by = c("AOU" = "AOU_OUT")) %>%
   mutate(delta_glm_rmse = glm_diff - glm_diff_5,
          delta_gam_rmse = gam_diff - gam_diff_5,
-         delta_rf_rmse = rf_diff - rf_diff_5) 
+         delta_rf_rmse = rf_diff - rf_diff_5) %>% filter(rmse_gam_pres.x <1e-4)
 
 ggplot(comp_plot, aes(x = delta_rpres, y = delta_rmse)) + geom_text(aes(label = ALPHA.CODE)) + geom_hline(yintercept = 0) 
 

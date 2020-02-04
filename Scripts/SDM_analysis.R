@@ -98,7 +98,8 @@ Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_211') # for 64-bit version
 
 auc_df = c()
 
-  sp_list = unique(bbs_final_occ_ll$aou)
+  sp_list = unique(comp_plot$AOU)
+    # unique(bbs_final_occ_ll$aou) change back when done w overfit
 
 for(i in sp_list){
   sdm_output = c()
