@@ -145,33 +145,34 @@ test_df <- read.csv("Data/temporal_crossval_df_75.csv", header = TRUE)
 
   
 # to account for species not detected in 2015-2016 but are within the range
+# presence.x is 2001-2015, presence.y is 2015-2016
 test_df$presence.y[is.na(test_df$presence.y)] = 0 
 
 # temp measure to avoid error
 #test_df2 <- filter(test_df, !aou %in% c(4090,4900,4950,4860,
       # 7550, 7310, 6120, 3870, 3960,4430,4560,4641,5970,6290,7660))
-empty = data.frame(stateroute = 0,occ = 0,presence.x = 0,latitude = 0,longitude = 0,pred_gam_occ = 0,presence.y = 0,predicted_glm_occ = 0,predicted_glm_pr = 0, predicted_gam_occ = 0,predicted_gam_pr = 0,predicted_rf_occ = 0, predicted_rf_pr = 0, predicted_max_pres = 0)
+empty = data.frame(stateroute = 0,occ = 0,presence.y = 0,latitude = 0,longitude = 0,pred_gam_occ = 0,presence.y = 0,predicted_glm_occ = 0,predicted_glm_pr = 0, predicted_gam_occ = 0,predicted_gam_pr = 0,predicted_rf_occ = 0, predicted_rf_pr = 0, predicted_max_pres = 0)
 
 table_rows <- function(dat, col, name, pos1, pos2){
-if(nrow(table(dat$col, dat$presence.x)) == 1){
+if(nrow(table(dat$col, dat$presence.y)) == 1){
   sub.1 <- bind_rows(dat, empty)
-  name = table(sub.1$col, sub.1$presence.x)[pos1, pos2] 
+  name = table(sub.1$col, sub.1$presence.y)[pos1, pos2] 
 } else{
-  name = table(dat$col, dat$presence.x)[pos1, pos2]
+  name = table(dat$col, dat$presence.y)[pos1, pos2]
   }
 }
 
-#### WORK ON THIS 
+# CONFUSION MATRIX is PREDICTED X ACTUAL
 glmocc <- test_df %>% group_by(aou) %>%
   nest() %>%
   dplyr::mutate(glmocc = purrr::map(data, ~{
       dat <- .
       dat %>%
-        group_by(predicted_glm_occ, presence.x) %>%
+        group_by(predicted_glm_occ, presence.y) %>%
         count()})) %>%
   dplyr::select(-data) %>%
   unnest(cols = c(glmocc)) %>%
-  mutate(cats = paste(predicted_glm_occ, presence.x, sep = "_"),
+  mutate(cats = paste(predicted_glm_occ, presence.y, sep = "_"),
          cats_cat = case_when(cats == "1_1" ~ "pres_pres_glmocc",
                               cats == "1_0" ~ "pres_abs_glmocc",
                               cats == "0_1" ~ "abs_pres_glmocc",
@@ -185,11 +186,11 @@ glmpr <- test_df %>% group_by(aou) %>%
   dplyr::mutate(glmpr = purrr::map(data, ~{
   newdat <- .
   newdat %>%
-    group_by(predicted_glm_pr, presence.x) %>%
+    group_by(predicted_glm_pr, presence.y) %>%
     count()})) %>%
   dplyr::select(-data) %>%
   unnest(cols = c(glmpr)) %>%
-  mutate(cats = paste(predicted_glm_pr, presence.x, sep = "_"),
+  mutate(cats = paste(predicted_glm_pr, presence.y, sep = "_"),
          cats_cat = case_when(cats == "1_1" ~ "pres_pres_glmpr",
                               cats == "1_0" ~ "pres_abs_glmpr",
                               cats == "0_1" ~ "abs_pres_glmpr",
@@ -202,11 +203,11 @@ gamocc <- test_df %>% group_by(aou) %>%
   dplyr::mutate(gamocc = purrr::map(data, ~{
   newdat2 <- .
   newdat2 %>%
-    group_by(predicted_gam_occ, presence.x) %>%
+    group_by(predicted_gam_occ, presence.y) %>%
     count()})) %>%
   dplyr::select(-data) %>%
   unnest(cols = c(gamocc)) %>%
-  mutate(cats = paste(predicted_gam_occ, presence.x, sep = "_"),
+  mutate(cats = paste(predicted_gam_occ, presence.y, sep = "_"),
          cats_cat = case_when(cats == "1_1" ~ "pres_pres_gamocc",
                               cats == "1_0" ~ "pres_abs_gamocc",
                               cats == "0_1" ~ "abs_pres_gamocc",
@@ -219,11 +220,11 @@ gampr <- test_df %>% group_by(aou) %>%
   dplyr::mutate(gampr = purrr::map(data, ~{
   newdat3 <- .
   newdat3 %>%
-    group_by(predicted_gam_pr, presence.x) %>%
+    group_by(predicted_gam_pr, presence.y) %>%
     count()})) %>%
   dplyr::select(-data) %>%
   unnest(cols = c(gampr)) %>%
-  mutate(cats = paste(predicted_gam_pr, presence.x, sep = "_"),
+  mutate(cats = paste(predicted_gam_pr, presence.y, sep = "_"),
          cats_cat = case_when(cats == "1_1" ~ "pres_pres_gampr",
                               cats == "1_0" ~ "pres_abs_gampr",
                               cats == "0_1" ~ "abs_pres_gampr",
@@ -236,11 +237,11 @@ rfocc <- test_df %>% group_by(aou) %>%
   dplyr::mutate(rfocc = purrr::map(data, ~{
   newdat4 <- .
   newdat4 %>%
-    group_by(predicted_rf_occ, presence.x) %>%
+    group_by(predicted_rf_occ, presence.y) %>%
     count()})) %>%
   dplyr::select(-data) %>%
   unnest(cols = c(rfocc)) %>%
-  mutate(cats = paste(predicted_rf_occ, presence.x, sep = "_"),
+  mutate(cats = paste(predicted_rf_occ, presence.y, sep = "_"),
          cats_cat = case_when(cats == "1_1" ~ "pres_pres_rfocc",
                               cats == "1_0" ~ "pres_abs_rfocc",
                               cats == "0_1" ~ "abs_pres_rfocc",
@@ -253,11 +254,11 @@ rfpr <- test_df %>% group_by(aou) %>%
   dplyr::mutate(rfpres = purrr::map(data, ~{
   newdat5 <- .
   newdat5 %>%
-    group_by(predicted_rf_pr, presence.x) %>%
+    group_by(predicted_rf_pr, presence.y) %>%
     count()})) %>%
   dplyr::select(-data) %>%
   unnest(cols = c(rfpres)) %>%
-  mutate(cats = paste(predicted_rf_pr, presence.x, sep = "_"),
+  mutate(cats = paste(predicted_rf_pr, presence.y, sep = "_"),
          cats_cat = case_when(cats == "1_1" ~ "pres_pres_rfpr",
                               cats == "1_0" ~ "pres_abs_rfpr",
                               cats == "0_1" ~ "abs_pres_rfpr",
@@ -270,11 +271,11 @@ maxpr <- test_df %>% group_by(aou) %>%
   dplyr::mutate(maxpres = purrr::map(data, ~{
      newdat6 <- .
      newdat6 %>%
-       group_by(predicted_max_pres, presence.x) %>%
+       group_by(predicted_max_pres, presence.y) %>%
        count()})) %>%
   dplyr::select(-data) %>%
   unnest(cols = c(maxpres)) %>%
-  mutate(cats = paste(predicted_max_pres, presence.x, sep = "_"),
+  mutate(cats = paste(predicted_max_pres, presence.y, sep = "_"),
          cats_cat = case_when(cats == "1_1" ~ "pres_pres_maxpr",
                               cats == "1_0" ~ "pres_abs_maxpr",
                               cats == "0_1" ~ "abs_pres_maxpr",
@@ -300,44 +301,42 @@ pres_matrix <- full_join(glmocc, glmpr, by = "aou") %>%
 
 pres_matrix <- data.frame(pres_matrix)
 
-
-pres_matrix$accuracy_gamocc <- ((pres_matrix$pres_pres_gamocc + pres_matrix$abs_abs_gamocc)/pres_matrix$length)*100
-pres_matrix$sensitivity_gamocc <- (pres_matrix$pres_pres_gamocc/(pres_matrix$pres_pres_gamocc + pres_matrix$pres_abs_gamocc))*100
-pres_matrix$specificity_gamocc <- (pres_matrix$abs_abs_gamocc/(pres_matrix$abs_pres_gamocc + pres_matrix$abs_abs_gamocc))*100
-pres_matrix$pp_gamocc <- (pres_matrix$pres_pres_gamocc/(pres_matrix$pres_pres_gamocc + pres_matrix$abs_pres_gamocc))*100
-pres_matrix$np_gamocc <- (pres_matrix$abs_abs_gamocc/(pres_matrix$abs_abs_gamocc + pres_matrix$pres_abs_gamocc))*100
-
-pres_matrix$accuracy_gampr <- ((pres_matrix$pres_pres_gampr + pres_matrix$abs_abs_gampr)/pres_matrix$length)*100
-pres_matrix$sensitivity_gampr <- (pres_matrix$pres_pres_gampr/(pres_matrix$pres_pres_gampr + pres_matrix$pres_abs_gampr))*100
-pres_matrix$specificity_gampr <- (pres_matrix$abs_abs_gampr/(pres_matrix$abs_pres_gampr + pres_matrix$abs_abs_gampr))*100
-pres_matrix$pp_gampr <- (pres_matrix$pres_pres_gampr/(pres_matrix$pres_pres_gampr + pres_matrix$abs_pres_gampr))*100
-pres_matrix$np_gampr <- (pres_matrix$abs_abs_gampr/(pres_matrix$abs_abs_gampr + pres_matrix$pres_abs_gampr))*100
-
-pres_matrix$accuracy_glmocc <- ((pres_matrix$pres_pres_glmocc + pres_matrix$abs_abs_glmocc)/pres_matrix$length)*100
 pres_matrix$sensitivity_glmocc <- (pres_matrix$pres_pres_glmocc/(pres_matrix$pres_pres_glmocc + pres_matrix$pres_abs_glmocc))*100
 pres_matrix$specificity_glmocc <- (pres_matrix$abs_abs_glmocc/(pres_matrix$abs_pres_glmocc + pres_matrix$abs_abs_glmocc))*100
 pres_matrix$pp_glmocc <- (pres_matrix$pres_pres_glmocc/(pres_matrix$pres_pres_glmocc + pres_matrix$abs_pres_glmocc))*100
 pres_matrix$np_glmocc <- (pres_matrix$abs_abs_glmocc/(pres_matrix$abs_abs_glmocc + pres_matrix$pres_abs_glmocc))*100
 
-pres_matrix$accuracy_glmpr <- ((pres_matrix$pres_pres_glmpr + pres_matrix$abs_abs_glmpr)/pres_matrix$length)*100
+
 pres_matrix$sensitivity_glmpr <- (pres_matrix$pres_pres_glmpr/(pres_matrix$pres_pres_glmpr + pres_matrix$pres_abs_glmpr))*100
 pres_matrix$specificity_glmpr <- (pres_matrix$abs_abs_glmpr/(pres_matrix$abs_pres_glmpr + pres_matrix$abs_abs_glmpr))*100
 pres_matrix$pp_glmpr <- (pres_matrix$pres_pres_glmpr/(pres_matrix$pres_pres_glmpr + pres_matrix$abs_pres_glmpr))*100
 pres_matrix$np_glmpr <- (pres_matrix$abs_abs_glmpr/(pres_matrix$abs_abs_glmpr + pres_matrix$pres_abs_glmpr))*100
 
-pres_matrix$accuracy_rfocc <- ((pres_matrix$pres_pres_rfocc + pres_matrix$abs_abs_rfocc)/pres_matrix$length)*100
+
+pres_matrix$sensitivity_gamocc <- (pres_matrix$pres_pres_gamocc/(pres_matrix$pres_pres_gamocc + pres_matrix$pres_abs_gamocc))*100
+pres_matrix$specificity_gamocc <- (pres_matrix$abs_abs_gamocc/(pres_matrix$abs_pres_gamocc + pres_matrix$abs_abs_gamocc))*100
+pres_matrix$pp_gamocc <- (pres_matrix$pres_pres_gamocc/(pres_matrix$pres_pres_gamocc + pres_matrix$abs_pres_gamocc))*100
+pres_matrix$np_gamocc <- (pres_matrix$abs_abs_gamocc/(pres_matrix$abs_abs_gamocc + pres_matrix$pres_abs_gamocc))*100
+
+
+pres_matrix$sensitivity_gampr <- (pres_matrix$pres_pres_gampr/(pres_matrix$pres_pres_gampr + pres_matrix$pres_abs_gampr))*100
+pres_matrix$specificity_gampr <- (pres_matrix$abs_abs_gampr/(pres_matrix$abs_pres_gampr + pres_matrix$abs_abs_gampr))*100
+pres_matrix$pp_gampr <- (pres_matrix$pres_pres_gampr/(pres_matrix$pres_pres_gampr + pres_matrix$abs_pres_gampr))*100
+pres_matrix$np_gampr <- (pres_matrix$abs_abs_gampr/(pres_matrix$abs_abs_gampr + pres_matrix$pres_abs_gampr))*100
+
+
 pres_matrix$sensitivity_rfocc <- (pres_matrix$pres_pres_rfocc/(pres_matrix$pres_pres_rfocc + pres_matrix$pres_abs_rfocc))*100
 pres_matrix$specificity_rfocc <- (pres_matrix$abs_abs_rfocc/(pres_matrix$abs_pres_rfocc + pres_matrix$abs_abs_rfocc))*100
 pres_matrix$pp_rfocc <- (pres_matrix$pres_pres_rfocc/(pres_matrix$pres_pres_rfocc + pres_matrix$abs_pres_rfocc))*100
 pres_matrix$np_rfocc <- (pres_matrix$abs_abs_rfocc/(pres_matrix$abs_abs_rfocc + pres_matrix$pres_abs_rfocc))*100
 
-pres_matrix$accuracy_rfpr <- ((pres_matrix$pres_pres_rfpr + pres_matrix$abs_abs_rfpr)/pres_matrix$length)*100
+
 pres_matrix$sensitivity_rfpr <- (pres_matrix$pres_pres_rfpr/(pres_matrix$pres_pres_rfpr + pres_matrix$pres_abs_rfpr))*100
 pres_matrix$specificity_rfpr <- (pres_matrix$abs_abs_rfpr/(pres_matrix$abs_pres_rfpr + pres_matrix$abs_abs_rfpr))*100
 pres_matrix$pp_rfpr <- (pres_matrix$pres_pres_rfpr/(pres_matrix$pres_pres_rfpr + pres_matrix$abs_pres_rfpr))*100
 pres_matrix$np_rfpr <- (pres_matrix$abs_abs_rfpr/(pres_matrix$abs_abs_rfpr + pres_matrix$pres_abs_rfpr))*100
 
-pres_matrix$accuracy_max <- ((pres_matrix$pres_pres_max + pres_matrix$abs_abs_max)/pres_matrix$length)*100
+
 pres_matrix$sensitivity_max <- (pres_matrix$pres_pres_max/(pres_matrix$pres_pres_max + pres_matrix$pres_abs_max))*100
 pres_matrix$specificity_max <- (pres_matrix$abs_abs_max/(pres_matrix$abs_pres_max + pres_matrix$abs_abs_max))*100
 pres_matrix$pp_max <- (pres_matrix$pres_pres_max/(pres_matrix$pres_pres_max + pres_matrix$abs_pres_max))*100
@@ -346,44 +345,44 @@ pres_matrix$np_max <- (pres_matrix$abs_abs_max/(pres_matrix$abs_abs_max + pres_m
 pres_matrix_means <- pres_matrix %>%
   na.omit() %>%
   summarise(
-  mean_accuracy_gamocc = mean(accuracy_gamocc),
   mean_sensitivity_gamocc = mean(sensitivity_gamocc),
   mean_specificity_gamocc = mean(specificity_gamocc),
   mean_pp_gamocc = mean(pp_gamocc),          
   mean_np_gamocc = mean(np_gamocc),       
-  mean_accuracy_gampr = mean(accuracy_gampr),  
+ 
   mean_sensitivity_gampr = mean(sensitivity_gampr),
   mean_specificity_gampr = mean(specificity_gampr),
   mean_pp_gampr = mean(pp_gampr),         
   mean_np_gampr = mean(np_gampr),         
-  mean_accuracy_glmocc = mean(accuracy_glmocc),   
+  
  mean_sensitivity_glmocc = mean(sensitivity_glmocc),
  mean_specificity_glmocc = mean(specificity_glmocc),
  mean_pp_glmocc = mean(pp_glmocc),    
  mean_np_glmocc = mean(np_glmocc),     
- mean_accuracy_glmpr = mean(accuracy_glmpr),   
+ 
  mean_sensitivity_glmpr = mean(sensitivity_glmpr),
  mean_specificity_glmpr = mean(specificity_glmpr),
  mean_pp_glmpr = mean(pp_glmpr),      
  mean_np_glmpr = mean(np_glmpr),         
- mean_accuracy_rfocc = mean(accuracy_rfocc),  
+ 
  mean_sensitivity_rfocc = mean(sensitivity_rfocc),
  mean_specificity_rfocc = mean(specificity_rfocc),
  mean_pp_rfocc  = mean(pp_rfocc),        
  mean_np_rfocc = mean(np_rfocc),        
- mean_accuracy_rfpr = mean(accuracy_rfpr),   
+ 
  mean_sensitivity_rfpr = mean(sensitivity_rfpr),
  mean_specificity_rfpr = mean(specificity_rfpr), 
  mean_pp_rfpr = mean(pp_rfpr),        
  mean_np_rfpr = mean(np_rfpr),           
- mean_accuracy_max  = mean(accuracy_max),    
+  
  mean_sensitivity_max  = mean(sensitivity_max), 
  mean_specificity_max  = mean(specificity_max), 
  mean_pp_max = mean(pp_max),           
  mean_np_max = mean(np_max))       
  
-pres_matrix_plot <- gather(pres_matrix_means, "Mod", "inverse", mean_accuracy_gamocc:mean_np_max)
-pres_matrix_plot2 <-  separate(data = pres_matrix_plot, col = Mod, into = c("Mean","Measure", "Modtype"), sep = "_")   %>% mutate(value = 100-inverse)
+pres_matrix_plot <- gather(pres_matrix_means, "Mod", "complement", mean_sensitivity_gamocc:mean_np_max)
+pres_matrix_plot2 <-  separate(data = pres_matrix_plot, col = Mod, into = c("Mean","Measure", "Modtype"), sep = "_")  %>%
+  mutate(value = 100 - complement)
 pres_matrix_plot2$Modtype <- factor(pres_matrix_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"), ordered = TRUE)
 
 pres_matrix_plot2$Measure <- factor(pres_matrix_plot2$Measure, levels = c("pp","np","sensitivity","specificity", "accuracy") , ordered = TRUE)
