@@ -135,7 +135,7 @@ for(i in sp_list){
 # write.csv(test_df, "Data/temporal_crossval_df_75.csv", row.names = FALSE) # wrote _5 for thresh of .5, med for median
 
 ##### temporal processing ####
-test_df <- read.csv("Data/temporal_crossval_df_75.csv", header = TRUE) 
+test_df <- read.csv("Data/temporal_crossval_df_25.csv", header = TRUE) 
 # to account for species not detected in 2015-2016 but are within the range
 # presence.x is 2001-2015, presence.y is 2015-2016
 test_df$presence.y[is.na(test_df$presence.y)] = 0 
@@ -326,6 +326,7 @@ pres_matrix$np_max <- (pres_matrix$abs_abs_max/(pres_matrix$abs_abs_max + pres_m
 pres_matrix_means <- pres_matrix %>%
   filter(!is.nan(np_max)) %>% # removed NaNs, there were 100% predicted presence for these spp.
   filter(!is.nan(np_glmpr)) %>%
+  filter(!is.nan(np_rfpr)) %>%
   summarise(
   mean_sensitivity_gamocc = mean(sensitivity_gamocc),
   mean_specificity_gamocc = mean(specificity_gamocc),

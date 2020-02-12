@@ -154,7 +154,7 @@ mod.r <- SpatialPointsDataFrame(coords = completedData[,c("longitude", "latitude
 r.r = raster(mod.r, res = 1) # 40x40 km/111 (degrees) * 2 tp eliminate holes, bioclim is 4 km
 plot.r <- rasterize(mod.r, r.r)
 mask <- readOGR("Z:/GIS/geography/continent.shp") 
-projection(mask) <- "+proj=longlat +datum=WGS84"
+projection(mask) <- "+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km +ellps=WGS84"
 r_mask <- mask(plot.r, mask)
 
 ###### reg predict #####
@@ -277,14 +277,14 @@ point_map <- tm_shape(routes_sf) +
   tm_layout("  Observed \nOccurences", title.size = 2, title.position = c("right","bottom")) +
   tm_layout(main.title = "A") 
 
-point_map_allen <- tm_shape(routes_sf) + 
-  tm_symbols(size = 0.75, shape="presence", shapes = c(16,4), alpha = 0.5, col = "black") + 
-  tm_legend(show=FALSE) +
-  tm_shape(us_sf) + tm_borders( "black", lwd = 3) + 
-  tm_shape(routes_notrans)  + 
-  tm_symbols(col = "occ", palette = "PRGn", size = 0.75, shapes = c(16,4)) + tm_legend(outside = TRUE)+ 
-  tm_layout("  Observed \nOccurences", title.size = 2, title.position = c("right","bottom")) +
-  tm_layout(main.title = "A") 
+# point_map_allen <- tm_shape(routes_sf) + 
+#   tm_symbols(size = 0.75, shape="presence", shapes = c(16,4), alpha = 0.5, col = "black") + 
+#   tm_legend(show=FALSE) +
+#   tm_shape(us_sf) + tm_borders( "black", lwd = 3) + 
+#   tm_shape(routes_notrans)  + 
+#   tm_symbols(col = "occ", palette = "PRGn", size = 0.75, shapes = c(16,4)) + tm_legend(outside = TRUE)+ 
+#   tm_layout("  Observed \nOccurences", title.size = 2, title.position = c("right","bottom")) +
+#   tm_layout(main.title = "A") 
 
 sdm_maxent_pr <- tm_shape(pred_mask) + tm_raster("max_pred_pres", palette = palette, style = "cont", breaks=quantile(pred_mask$max_pred_pres, probs = seq(0.2,0.8, by = 0.2)) , legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_me_pres, 2)), title.size = 2, title.position = c("right","bottom"), legend.bg.color = "white") +
   tm_layout(main.title = "B") 
@@ -340,12 +340,11 @@ fig_glm <- tmap_arrange(sdm_glm_occ, sdm_glm_pr, sdm_glm_core, ncol = 1)
 fig_gam <- tmap_arrange(sdm_gam_occ, sdm_gam_pr, sdm_gam_core, ncol = 1)
 fig_rf <- tmap_arrange(sdm_rf_occ, sdm_rf_pr, sdm_rf_core, ncol = 1)
 
-# final_fig1 <- tmap_arrange(point_map, sdm_maxent_pr, sdm_maxent_core, sdm_glm_occ, sdm_glm_pr, sdm_glm_core, sdm_gam_occ, sdm_gam_pr, sdm_gam_core, sdm_rf_occ, sdm_rf_pr, sdm_rf_core, nrow = 4, ncol = 3) 
-# tmap_save(final_fig1, "Figures/Figure1.pdf", height = 16, width = 20)
+final_fig1 <- tmap_arrange(point_map, sdm_maxent_pr, sdm_glm_occ, sdm_glm_pr, sdm_gam_occ, sdm_gam_pr, sdm_rf_occ, sdm_rf_pr,nrow = 4, ncol = 2) 
+tmap_save(final_fig1, "Figures/Figure1.pdf", height = 16, width = 20)
 
-
-allen_fig1 <- tmap_arrange(point_map_allen, sdm_maxent_pr, sdm_maxent_core, sdm_glm_occ, sdm_glm_pr, sdm_glm_core, sdm_gam_occ, sdm_gam_pr, sdm_gam_core, sdm_rf_occ, sdm_rf_pr, sdm_rf_core, nrow = 4, ncol = 3) 
-tmap_save(allen_fig1, "Figures/Figure1_allen.pdf", height = 16, width = 20)
+# allen_fig1 <- tmap_arrange(point_map_allen, sdm_maxent_pr, sdm_glm_occ, sdm_glm_pr, sdm_gam_occ, sdm_gam_pr, sdm_rf_occ, sdm_rf_pr,nrow = 4, ncol = 2) 
+# tmap_save(allen_fig1, "Figures/Figure1_allen.pdf", height = 16, width = 20)
 
 
 #### MAPS #####
