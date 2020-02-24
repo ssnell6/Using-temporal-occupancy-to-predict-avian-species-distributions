@@ -135,7 +135,7 @@ for(i in sp_list){
 # write.csv(test_df, "Data/temporal_crossval_df_75.csv", row.names = FALSE) # wrote _5 for thresh of .5, med for median
 
 ##### temporal processing ####
-test_df <- read.csv("Data/temporal_crossval_df_25.csv", header = TRUE) 
+test_df <- read.csv("Data/temporal_crossval_df_5.csv", header = TRUE) 
 # to account for species not detected in 2015-2016 but are within the range
 # presence.x is 2001-2015, presence.y is 2015-2016
 test_df$presence.y[is.na(test_df$presence.y)] = 0 
@@ -327,44 +327,90 @@ pres_matrix_means <- pres_matrix %>%
   filter(!is.nan(np_max)) %>% # removed NaNs, there were 100% predicted presence for these spp.
   filter(!is.nan(np_glmpr)) %>%
   filter(!is.nan(np_rfpr)) %>%
-  summarise(
+  summarise(n = n(),
   mean_sensitivity_gamocc = mean(sensitivity_gamocc),
   mean_specificity_gamocc = mean(specificity_gamocc),
   mean_pp_gamocc = mean(pp_gamocc),          
-  mean_np_gamocc = mean(np_gamocc),       
+  mean_np_gamocc = mean(np_gamocc),   
  
   mean_sensitivity_gampr = mean(sensitivity_gampr),
   mean_specificity_gampr = mean(specificity_gampr),
   mean_pp_gampr = mean(pp_gampr),         
-  mean_np_gampr = mean(np_gampr),         
+  mean_np_gampr = mean(np_gampr), 
   
- mean_sensitivity_glmocc = mean(sensitivity_glmocc),
- mean_specificity_glmocc = mean(specificity_glmocc),
- mean_pp_glmocc = mean(pp_glmocc),    
- mean_np_glmocc = mean(np_glmocc),     
- 
- mean_sensitivity_glmpr = mean(sensitivity_glmpr),
- mean_specificity_glmpr = mean(specificity_glmpr),
- mean_pp_glmpr = mean(pp_glmpr),      
- mean_np_glmpr = mean(np_glmpr),         
- 
+  mean_sensitivity_glmocc = mean(sensitivity_glmocc),
+  mean_specificity_glmocc = mean(specificity_glmocc),
+  mean_pp_glmocc = mean(pp_glmocc),    
+  mean_np_glmocc = mean(np_glmocc),
+    
+  mean_sensitivity_glmpr = mean(sensitivity_glmpr),
+  mean_specificity_glmpr = mean(specificity_glmpr),
+  mean_pp_glmpr = mean(pp_glmpr),      
+  mean_np_glmpr = mean(np_glmpr), 
+  
  mean_sensitivity_rfocc = mean(sensitivity_rfocc),
  mean_specificity_rfocc = mean(specificity_rfocc),
  mean_pp_rfocc  = mean(pp_rfocc),        
- mean_np_rfocc = mean(np_rfocc),        
- 
+ mean_np_rfocc = mean(np_rfocc), 
+
  mean_sensitivity_rfpr = mean(sensitivity_rfpr),
  mean_specificity_rfpr = mean(specificity_rfpr), 
  mean_pp_rfpr = mean(pp_rfpr),        
- mean_np_rfpr = mean(np_rfpr),           
+ mean_np_rfpr = mean(np_rfpr), 
   
  mean_sensitivity_max  = mean(sensitivity_max), 
  mean_specificity_max  = mean(specificity_max), 
  mean_pp_max = mean(pp_max),           
- mean_np_max = mean(np_max))       
+ mean_np_max = mean(np_max),
  
-pres_matrix_plot <- gather(pres_matrix_means, "Mod", "complement", mean_sensitivity_gamocc:mean_np_max)
-pres_matrix_plot2 <-  separate(data = pres_matrix_plot, col = Mod, into = c("Mean","Measure", "Modtype"), sep = "_")  %>%
+ sd_sensitivity_gamocc = sd(sensitivity_gamocc),
+ sd_specificity_gamocc = sd(specificity_gamocc),
+ sd_pp_gamocc = sd(pp_gamocc),          
+ sd_np_gamocc = sd(np_gamocc),
+ 
+ sd_sensitivity_gampr = sd(sensitivity_gampr),
+ sd_specificity_gampr = sd(specificity_gampr),
+ sd_pp_gampr = sd(pp_gampr),         
+ sd_np_gampr = sd(np_gampr),
+ 
+ sd_sensitivity_glmocc = sd(sensitivity_glmocc),
+ sd_specificity_glmocc = sd(specificity_glmocc),
+ sd_pp_glmocc = sd(pp_glmocc),    
+ sd_np_glmocc = sd(np_glmocc), 
+ 
+ sd_sensitivity_glmpr = sd(sensitivity_glmpr),
+ sd_specificity_glmpr = sd(specificity_glmpr),
+ sd_pp_glmpr = sd(pp_glmpr),      
+ sd_np_glmpr = sd(np_glmpr),
+ 
+ sd_sensitivity_rfocc = sd(sensitivity_rfocc),
+ sd_specificity_rfocc = sd(specificity_rfocc),
+ sd_pp_rfocc  = sd(pp_rfocc),        
+ sd_np_rfocc = sd(np_rfocc),
+ 
+ sd_sensitivity_rfpr = sd(sensitivity_rfpr),
+ sd_specificity_rfpr = sd(specificity_rfpr), 
+ sd_pp_rfpr = sd(pp_rfpr),        
+ sd_np_rfpr = sd(np_rfpr),
+ 
+ sd_sensitivity_max  = sd(sensitivity_max), 
+ sd_specificity_max  = sd(specificity_max), 
+ sd_pp_max = sd(pp_max),           
+ sd_np_max = sd(np_max))
+  
+
+pres_matrix_mean <- pivot_longer(pres_matrix_means, mean_sensitivity_gamocc:mean_np_max, "Mod") %>%
+  mutate(complement = value,
+         mod = substring(Mod, 6)) %>%
+  dplyr::select(n, mod, Mod, complement) 
+pres_matrix_sd <- pivot_longer(pres_matrix_means, sd_sensitivity_gamocc:sd_np_max, "Mod", "SD") %>%
+  mutate(SD = value, 
+         mod = substring(Mod, 4)) %>%
+  dplyr::select(n, mod, Mod, SD) %>%
+  mutate(se = SD/sqrt(n))
+
+pres_matrix_plot2 <-  full_join(pres_matrix_mean, pres_matrix_sd, by = c("n", "mod")) %>%
+  separate(col = Mod.x, into = c("Mean","Measure", "Modtype"), sep = "_")  %>%
   mutate(value = 100 - complement)
 pres_matrix_plot2$Modtype <- factor(pres_matrix_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"), ordered = TRUE)
 
@@ -372,9 +418,11 @@ pres_matrix_plot2$Measure <- factor(pres_matrix_plot2$Measure, levels = c("pp","
 #+ scale_color_manual(values=c("#034e7b","#034e7b","steelblue2", "steelblue2","#238b45", "#238b45" ,"purple"), labels=c("rmse_gam", "rmse_gam_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres",  "rmse_me_pres"))
 
 pplot = pres_matrix_plot2 %>%
-  ggplot(aes(x = Measure, y = value)) +   
-  geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity", color = "white", lwd = 3) +
-  theme_classic()+ theme(axis.title.x=element_text(size=54),axis.title.y=element_text(size=54, angle=90)) + xlab(bquote("")) + ylab(bquote("Percent")) +
+  ggplot(aes(x = Measure, y = value, group = Modtype)) +   
+  geom_bar(aes(fill = factor(Modtype)), position='dodge', stat="identity", width=0.75,color = "white", lwd = 3) +
+  geom_errorbar(aes(ymin = value - se, ymax = value + se), position = position_dodge(0.75), width = 0.2) +
+  theme_classic()+ 
+  theme(axis.title.x=element_text(size=54),axis.title.y=element_text(size=54, angle=90)) + xlab(bquote("")) + ylab(bquote("Percent")) +
   scale_fill_manual(values = c("#034e7b","navyblue","steelblue2", "dodgerblue2","#238b45", "darkgreen" ,"purple"),
                     breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
                     labels=c("GAM - Occ","GAM - Pr","GLM - Occ","GLM - Pr","RF - Occ","RF - Pr","MaxEnt - Pr")) +
@@ -579,7 +627,7 @@ rmse <- data.frame(rmse)
 names(rmse) <- c("aou","rmse_occ", "rmse_pres", "rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres", "rmse_me_pres")
 # write.csv(rmse,"Data/space_cval_rmse.csv", row.names = FALSE)
 ##### process spatial data #####
-sdm_space_cval <- read.csv("Data/space_cval_75.csv", header = TRUE) 
+sdm_space_cval <- read.csv("Data/space_cval_5.csv", header = TRUE) 
 
 # CONFUSION MATRIX is PREDICTED X ACTUAL
 glmocc <- sdm_space_cval %>% group_by(aou) %>%
