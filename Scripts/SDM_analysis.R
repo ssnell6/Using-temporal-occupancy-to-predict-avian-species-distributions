@@ -419,14 +419,21 @@ plot_grid(glm + theme(legend.position="none"),
           scale = 0.8) 
 ggsave("Figures/RO_v_diff.pdf", height = 10, width = 14)
 
-
+open_holes <- filter(ro_plot, rmse_gam_pres < 1.0e-5)
 
 ro_plot <- gather(auc_df_merge, "mod", "diff", c(glm_diff, gam_diff, rf_diff))
 ro_plot$mod[ro_plot$mod == "gam_diff"] = "GAM"
 ro_plot$mod[ro_plot$mod == "glm_diff"] = "GLM"
 ro_plot$mod[ro_plot$mod == "rf_diff"] = "RF"
-RO_plot <- ggplot(ro_plot, aes(x = RO, y = diff, group = mod)) +theme_classic()+ theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90)) + xlab(bquote("Range Occupancy")) + ylab(expression(Delta~"RMSE (Occupancy - Presence)")) + 
-  geom_point(size = 6, aes(color = mod, shape = mod)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=35)) +
+
+ro_plot %>%
+  # filter(rmse_gam_pres >= 1.0e-5) %>%
+  ggplot(aes(x = RO, y = diff, group = mod)) +theme_classic()+ 
+  theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90)) + xlab(bquote("Range Occupancy")) + 
+  ylab(expression(Delta~"RMSE (Occupancy - Presence)")) + 
+  geom_point(size = 6, aes(color = mod, shape = mod)) + 
+  geom_point(data = open_holes, aes(color = mod, shape = mod)) +
+  theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=35)) +
   geom_hline(yintercept = 0, lty = 2, lwd =1.5, color = "black") +
   theme(legend.title=element_blank(), legend.text=element_text(size=30), legend.position = c(0.1,0.9), legend.key.width=unit(4, "lines")) + 
   scale_color_manual(values = c("#034e7b","steelblue2","#238b45")) 
