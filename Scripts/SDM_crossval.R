@@ -816,7 +816,7 @@ pres_matrix_means <- pres_matrix %>%
   filter(!is.nan(np_max)) %>% # removed NaNs, there were 100% predicted presence for these spp.
   filter(!is.nan(np_glmpr)) %>%
   filter(!is.nan(np_rfpr)) %>%
-  summarise(
+  summarise(n = n(),
     mean_sensitivity_gamocc = mean(sensitivity_gamocc),
     mean_specificity_gamocc = mean(specificity_gamocc),
     mean_pp_gamocc = mean(pp_gamocc),          
@@ -850,18 +850,67 @@ pres_matrix_means <- pres_matrix %>%
     mean_sensitivity_max  = mean(sensitivity_max), 
     mean_specificity_max  = mean(specificity_max), 
     mean_pp_max = mean(pp_max),           
-    mean_np_max = mean(np_max))       
+    mean_np_max = mean(np_max),
+    
+    
+    sd_sensitivity_gamocc = sd(sensitivity_gamocc),
+    sd_specificity_gamocc = sd(specificity_gamocc),
+    sd_pp_gamocc = sd(pp_gamocc),          
+    sd_np_gamocc = sd(np_gamocc),
+    
+    sd_sensitivity_gampr = sd(sensitivity_gampr),
+    sd_specificity_gampr = sd(specificity_gampr),
+    sd_pp_gampr = sd(pp_gampr),         
+    sd_np_gampr = sd(np_gampr),
+    
+    sd_sensitivity_glmocc = sd(sensitivity_glmocc),
+    sd_specificity_glmocc = sd(specificity_glmocc),
+    sd_pp_glmocc = sd(pp_glmocc),    
+    sd_np_glmocc = sd(np_glmocc), 
+    
+    sd_sensitivity_glmpr = sd(sensitivity_glmpr),
+    sd_specificity_glmpr = sd(specificity_glmpr),
+    sd_pp_glmpr = sd(pp_glmpr),      
+    sd_np_glmpr = sd(np_glmpr),
+    
+    sd_sensitivity_rfocc = sd(sensitivity_rfocc),
+    sd_specificity_rfocc = sd(specificity_rfocc),
+    sd_pp_rfocc  = sd(pp_rfocc),        
+    sd_np_rfocc = sd(np_rfocc),
+    
+    sd_sensitivity_rfpr = sd(sensitivity_rfpr),
+    sd_specificity_rfpr = sd(specificity_rfpr), 
+    sd_pp_rfpr = sd(pp_rfpr),        
+    sd_np_rfpr = sd(np_rfpr),
+    
+    sd_sensitivity_max  = sd(sensitivity_max), 
+    sd_specificity_max  = sd(specificity_max), 
+    sd_pp_max = sd(pp_max),           
+    sd_np_max = sd(np_max))      
 
 pres_matrix_plot <- gather(pres_matrix_means, "Mod", "complement", mean_sensitivity_gamocc:mean_np_max)
-pres_spatial_plot2 <-  separate(data = pres_matrix_plot, col = Mod, into = c("Mean","Measure", "Modtype"), sep = "_")  %>%
+pres_matrix_mean <- pivot_longer(pres_matrix_means, mean_sensitivity_gamocc:mean_np_max, "Mod")  %>%
+  mutate(complement = value,
+         mod = substring(Mod, 6)) %>%
+  dplyr::select(n, mod, Mod, complement) 
+pres_matrix_sd <- pivot_longer(pres_matrix_means, sd_sensitivity_gamocc:sd_np_max, "Mod", "SD") %>%
+  mutate(SD = value, 
+         mod = substring(Mod, 4)) %>%
+  dplyr::select(n, mod, Mod, SD) %>%
+  mutate(se = SD/sqrt(n))
+
+pres_spatial_plot2 <-  full_join(pres_matrix_mean, pres_matrix_sd, by = c("n", "mod")) %>%
+  separate(col = Mod.x, into = c("Mean","Measure", "Modtype"), sep = "_")  %>%
   mutate(value = 100 - complement)
+
 pres_spatial_plot2$Modtype <- factor(pres_spatial_plot2$Modtype, levels = c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"), ordered = TRUE)
 
 pres_spatial_plot2$Measure <- factor(pres_spatial_plot2$Measure, levels = c("pp","np","sensitivity","specificity") , ordered = TRUE)
 
 splot = pres_spatial_plot2 %>%
-  ggplot(aes(x = Measure, y = value)) +   
-  geom_bar(aes(fill = factor(Modtype)), position = "dodge", stat="identity",  color = "white", lwd = 3) +
+  ggplot(aes(x = Measure, y = value, group = Modtype)) +   
+  geom_bar(aes(fill = factor(Modtype)), position='dodge', stat="identity", width=0.75,color = "white", lwd = 3) +
+  geom_errorbar(aes(ymin = value - se, ymax = value + se), position = position_dodge(0.75), width = 0.2) +
   theme_classic()+ theme(axis.title.x=element_text(size=54),axis.title.y=element_text(size=54, angle=90)) + xlab(bquote("")) + ylab(bquote("Percent")) +
   scale_fill_manual(values = c("#034e7b","navyblue","steelblue2", "dodgerblue2","#238b45", "darkgreen" ,"purple"),
                     breaks=c("gamocc","gampr","glmocc","glmpr","rfocc","rfpr","max"),
@@ -882,44 +931,59 @@ grid <- plot_grid(pplot + theme(legend.position="top"),
                   label_x = 0.12, 
                   label_size = 30,
                   nrow = 2) 
-ggsave("Figures/xval_plot_75.pdf", height = 20, width = 24)
+ggsave("Figures/xval_plot_5.pdf", height = 20, width = 24)
 
 
 
-#### test  ######
-test<- c()
-for(i in na.omit(unique(sdm_test$Aou))){
-  pres_matrix <- sdm_test %>% group_by(Aou) %>%
-    filter(Aou == i) %>%
-    na.omit() 
-  if(sum(pres_matrix$predicted_pres) > 0){
-    pres_pres = table(pres_matrix$predicted_pres, pres_matrix$presence)[2,2]
-      pres_abs = table(pres_matrix$predicted_pres, pres_matrix$presence)[1,2]
-      abs_abs = table(pres_matrix$predicted_pres, pres_matrix$presence)[1,1]
-      abs_pres = table(pres_matrix$predicted_pres, pres_matrix$presence)[2,1] 
-      length = length(pres_matrix$pred_gam_test)
-  test = rbind(test, c(i, length, pres_abs, pres_pres, abs_abs, abs_pres))
-  }
-}
-pres_matrix <- data.frame(test)
-names(pres_matrix) <- c("Aou", "length", "pres_abs", "pres_pres", "abs_abs", "abs_pres")
-pres_matrix$pres_pres <- unlist(pres_matrix$pres_pres)
-pres_matrix$abs_pres <- unlist(pres_matrix$abs_pres)
-pres_matrix$abs_abs <- unlist(pres_matrix$abs_abs)
-pres_matrix$pres_abs <- unlist(pres_matrix$pres_abs)
-pres_matrix$length <- unlist(pres_matrix$length)
-pres_matrix$truepos <- pres_matrix$pres_pres/pres_matrix$length
-pres_matrix$falsepos <- pres_matrix$pres_abs/pres_matrix$length
-pres_matrix$accuracy <- ((pres_matrix$pres_pres + pres_matrix$abs_abs)/pres_matrix$length)*100
-pres_matrix$sensitivity <- (pres_matrix$pres_pres/(pres_matrix$pres_pres + pres_matrix$abs_abs))*100
-pres_matrix$specificity <- (pres_matrix$abs_abs/(pres_matrix$pres_pres + pres_matrix$abs_abs))*100
-# 23 species had 0 predicted presences
-  
-kappa(na.omit(sdm_test$presence), na.omit(sdm_test$predicted_pres), cutoff = 0.7)
-t.test(sdm_test$predicted_pres, sdm_test$presence, paired = TRUE, alternative= "two.sided")
-table(sdm_space_cval$presence, sdm_space_cval$predicted_pres)
+#### global t tests  ######
+# kappa(na.omit(sdm_test$presence), na.omit(sdm_test$predicted_pres), cutoff = 0.7)
+
+t_test <- pres_matrix_plot2 %>%
+  mutate(occ_pres = substring(Modtype, 4)) 
+t_test$occ_pres <- case_when(t_test$occ_pres == "occ" ~"occ",
+                             t_test$occ_pres == "pr" ~ "pr",
+                             t_test$occ_pres == "cc" ~ "occ",
+                             t_test$occ_pres == "r" ~ "pr",
+                             t_test$occ_pres == "" ~ "pr")
+
+t_wide <- t_test %>%
+  dplyr::select(Mean, Measure, Modtype, occ_pres, value) %>%
+  group_by(Measure, occ_pres) %>%
+  pivot_wider(names_from = Measure, values_from = value) %>%
+  filter(Modtype != "max") 
+
+ 
+# false disc rate
+t.test(t_wide$pp[t_wide$occ_pres =="occ"], t_wide$pp[t_wide$occ_pres =="pr"], paired = TRUE, alternative= "two.sided")
+# false omission rate
+t.test(t_wide$np[t_wide$occ_pres =="occ"], t_wide$np[t_wide$occ_pres =="pr"], paired = TRUE, alternative= "two.sided")
+# false neg rate
+t.test(t_wide$sensitivity[t_wide$occ_pres =="occ"], t_wide$sensitivity[t_wide$occ_pres =="pr"], paired = TRUE, alternative= "two.sided")
+# false pos rate
+t.test(t_wide$specificity[t_wide$occ_pres =="occ"], t_wide$specificity[t_wide$occ_pres =="pr"], paired = TRUE, alternative= "two.sided")
 
 
+## spatial 
+s_test <- pres_spatial_plot2 %>%
+  mutate(occ_pres = substring(Modtype, 4)) 
+s_test$occ_pres <- case_when(s_test$occ_pres == "occ" ~"occ",
+                             s_test$occ_pres == "pr" ~ "pr",
+                             s_test$occ_pres == "cc" ~ "occ",
+                             s_test$occ_pres == "r" ~ "pr",
+                             s_test$occ_pres == "" ~ "pr")
 
+s_wide <- s_test %>%
+  dplyr::select(Mean, Measure, Modtype, occ_pres, value) %>%
+  group_by(Measure, occ_pres) %>%
+  pivot_wider(names_from = Measure, values_from = value) %>%
+  filter(Modtype != "max") 
 
+# false disc rate
+t.test(s_wide$pp[s_wide$occ_pres =="occ"], s_wide$pp[s_wide$occ_pres =="pr"], paired = TRUE, alternative= "two.sided")
+# false omission rate
+t.test(s_wide$np[s_wide$occ_pres =="occ"], s_wide$np[s_wide$occ_pres =="pr"], paired = TRUE, alternative= "two.sided")
+# false neg rate
+t.test(s_wide$sensitivity[s_wide$occ_pres =="occ"], s_wide$sensitivity[s_wide$occ_pres =="pr"], paired = TRUE, alternative= "two.sided")
+# false pos rate
+t.test(s_wide$specificity[s_wide$occ_pres =="occ"], s_wide$specificity[s_wide$occ_pres =="pr"], paired = TRUE, alternative= "two.sided")
 
