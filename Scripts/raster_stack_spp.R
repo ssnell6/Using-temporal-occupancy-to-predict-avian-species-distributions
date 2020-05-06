@@ -30,10 +30,19 @@ gimms_jul <- rasterizeGimms(as.character(files$file_name)[2])
 gimms_breeding <- stack(c(gimms_jan[[11:12]], gimms_jul[[1:4]]))
 gimms_reclass <- reclassify(gimms_breeding, cbind(0, NA))
 gimms_mean <- mean(gimms_reclass, na.rm=FALSE)
-gimms_crop <- crop(gimms_mean, elev)
-bio_crop <- crop(bioclim.sub, elev)
+# gimms_crop <- crop(gimms_mean, extent(elev))
+elev_agg <- aggregate(elev, fact=10, fun=mean)
 
-ra <- aggregate(elev, fact=10, fun=mean)
+gimms_crop <- raster::crop(gimms_mean, extent(elev_agg))
+gimms_reproj <- raster(vals=values(gimms_crop),ext=extent(elev_agg),crs=crs(elev_agg),
+              nrows=dim(elev_agg)[1],ncols=dim(elev_agg)[2])
+
+bio_crop <- crop(bioclim.sub, extent(elev_agg))
+# not working here
+bio_resample <- raster::resample(bio_crop, elev_agg, method = "nbg")
+gimms_reproj <- raster(vals=values(bio_crop),ext=extent(elev_agg),crs=crs(elev_agg),
+                       nrows=dim(elev_agg)[1],ncols=dim(elev_agg)[2])
+elev_ndvi <- stack(gimms_reproj, elev_agg)
 
 setwd("C:/Git/SDMs")
 # read in lat long data
