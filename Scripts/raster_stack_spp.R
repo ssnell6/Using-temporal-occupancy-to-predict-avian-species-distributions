@@ -33,7 +33,7 @@ gimms_mean <- mean(gimms_reclass, na.rm=FALSE)
 gimms_crop <- crop(gimms_mean, elev)
 bio_crop <- crop(bioclim.sub, elev)
 
-ra <- aggregate(elev, fact=10, fun=max)
+ra <- aggregate(elev, fact=10, fun=mean)
 
 setwd("C:/Git/SDMs")
 # read in lat long data
