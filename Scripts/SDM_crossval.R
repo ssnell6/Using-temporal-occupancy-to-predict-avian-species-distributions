@@ -33,6 +33,8 @@ bi_means = bi_env[,c("stateroute","mat.mean", "elev.mean", "map.mean", "ndvi.mea
 env_bio = read.csv("Data/env_bio.csv", header = TRUE)
 env_bio = na.omit(env_bio)
 env_bio_sub = env_bio[,c(1, 21:39)]
+# NOTE - only 1 raster layer, need to rerun to get stack
+# all_env_raster <- raster("Z:/GIS/gimms/all_env_maxent.tif")
 
 # read in raw bbs data for 2016
 bbs_new <- read.csv("Data/bbs_2016.csv", header = TRUE) 
@@ -98,7 +100,7 @@ for(i in sp_list){
       gam_pres <- mgcv::gam(presence ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = sdm_input)
       rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
       rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
-      max_ind_pres = maxent(sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_input$presence)
+      
       
       pred_glm_occ <- predict(glm_occ,type=c("response"))
       pred_glm_pr <- predict(glm_pres,type=c("response"))
@@ -106,7 +108,11 @@ for(i in sp_list){
       pred_gam_pr <- predict(gam_pres,type=c("response"))
       pred_rf_occ <- predict(rf_occ,type=c("response"))
       pred_rf_pr <- predict(rf_pres,type=c("response"))
-      max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
+      
+      ll <- data.frame(lon = sdm_input$longitude, lat = sdm_input$latitude)
+      max_ind_pres = dismo::maxent(all_env_raster, ll)
+      max_pred_pres <- predict(max_ind_pres, all_env_raster)
+      max_pred_points <- raster::extract(max_pred_pres, ll)
       
       threshglm_occ <-threshfun(pred_glm_occ)
       threshglm_pr <-threshfun(pred_glm_pr)
@@ -114,9 +120,9 @@ for(i in sp_list){
       threshgam_pr <-threshfun(pred_gam_pr)
       threshrf_occ <-threshfun(pred_rf_occ)
       threshrf_pr <-threshfun(pred_rf_pr)
-      threshmax_pres <-threshfun(max_pred_pres)
+      threshmax_pres <-threshfun(max_pred_points)
     
-      sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
+      sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_points) 
       pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "presence")], by = "stateroute") %>%
         mutate(predicted_glm_occ = ifelse(pred_glm_occ > threshglm_occ, 1, 0),
                predicted_glm_pr = ifelse(pred_glm_pr > threshglm_pr, 1, 0),
@@ -124,7 +130,7 @@ for(i in sp_list){
                predicted_gam_pr = ifelse(pred_gam_pr > threshgam_pr, 1, 0),
                predicted_rf_occ = ifelse(pred_rf_occ > threshrf_occ, 1, 0),
                predicted_rf_pr = ifelse(pred_rf_pr > threshrf_pr, 1, 0),
-               predicted_max_pres = ifelse(max_pred_pres > threshmax_pres, 1, 0)) %>%
+               predicted_max_pres = ifelse(max_pred_points > threshmax_pres, 1, 0)) %>%
         dplyr::select(aou, stateroute, occ, presence.x, latitude, longitude, pred_gam_occ, presence.y, predicted_glm_occ, predicted_glm_pr,predicted_gam_occ, predicted_gam_pr, predicted_rf_occ, predicted_rf_pr, predicted_max_pres)
       test_df = rbind(test_df, pred_2016)
     }
@@ -132,7 +138,7 @@ for(i in sp_list){
 }
 
 
-# write.csv(test_df, "Data/temporal_crossval_df_75.csv", row.names = FALSE) # wrote _5 for thresh of .5, med for median
+# write.csv(test_df, "Data/temporal_crossval_df_5.csv", row.names = FALSE) # wrote _5 for thresh of .5, med for median
 
 ##### temporal processing ####
 test_df <- read.csv("Data/temporal_crossval_df_5.csv", header = TRUE) 
@@ -251,15 +257,16 @@ maxpr <- test_df %>% group_by(aou) %>%
      newdat6 %>%
        group_by(predicted_max_pres, presence.y) %>%
        count()})) %>%
-  dplyr::select(-data) %>%
+  dplyr::select(aou, maxpres) %>%
   unnest(cols = c(maxpres)) %>%
-  mutate(cats = paste(predicted_max_pres, presence.y, sep = "_"),
+  mutate(predicted_max_pres = if_else(is.na(predicted_max_pres)|predicted_max_pres == 0, 0, 1),
+         cats = paste(predicted_max_pres, presence.y, sep = "_"),
          cats_cat = case_when(cats == "1_1" ~ "pres_pres_maxpr",
                               cats == "1_0" ~ "pres_abs_maxpr",
                               cats == "0_1" ~ "abs_pres_maxpr",
                               cats == "0_0" ~ "abs_abs_maxpr")) %>%
   dplyr::select(aou, cats_cat, n) %>%
-  pivot_wider(names_from = cats_cat, values_from = n)
+  pivot_wider(names_from = cats_cat, values_from = n,  values_fill = list(n = 0))
 
 length <- test_df %>% group_by(aou) %>%
   nest() %>%
@@ -556,7 +563,7 @@ dev.off()
 bbs_env <- left_join(bbs_final_occ_ll, all_env, by = "stateroute")
 rmse = c()
 sdm_space_cval = c()
-for(i in sp_list){
+for(i in sp_list[124:191]){
   print(i)
   space_sub <- dplyr::filter(bbs_env,  aou == i)
   #Randomly shuffle the data
@@ -580,7 +587,6 @@ for(i in sp_list){
         gam_pres_train <- mgcv::gam(presence ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = trainData)
         rf_occ_train <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = trainData)
         rf_pres_train <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = trainData)
-        max_train = dismo::maxent(trainData[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], trainData$presence)
         
         pred_gam_occ <- predict(gam_occ_train, testData,type= c("response")) 
         pred_gam_pr <- predict(gam_pres_train,  testData,type= c("response"))
@@ -588,7 +594,12 @@ for(i in sp_list){
         pred_glm_pr <- predict(glm_pres_train, testData,type= c("response"))
         pred_rf_occ <- predict(rf_occ_train, testData,type= c("response"))
         pred_rf_pr <- predict(rf_pres_train, testData,type= c("response"))
-        max_pred_pres <- predict(max_train, as.matrix(testData[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")]), type= c("response"))
+
+        lltrain <- data.frame(lon = trainData$longitude, lat = trainData$latitude)
+        lltest <- data.frame(lon = testData$longitude, lat = testData$latitude)
+        max_ind_pres = dismo::maxent(all_env_raster, lltrain)
+        all_env_points <- raster::extract(all_env_raster, lltest)
+        max_pred_points <- predict(max_ind_pres, all_env_points,type= c("response"))
         
         threshglm_occ <-threshfun(pred_glm_occ[!is.na(pred_glm_occ)])
         threshglm_pr <-threshfun(pred_glm_pr[!is.na(pred_glm_pr)])
@@ -596,7 +607,7 @@ for(i in sp_list){
         threshgam_pr <-threshfun(pred_gam_pr[!is.na(pred_gam_pr)])
         threshrf_occ <-threshfun(pred_rf_occ[!is.na(pred_rf_occ)])
         threshrf_pr <-threshfun(pred_rf_pr[!is.na(pred_rf_pr)])
-        threshmax_pres <-threshfun(max_pred_pres[!is.na(max_pred_pres)])
+        threshmax_pres <-threshfun(max_pred_points[!is.na(max_pred_points)])
       
         sdm_test <- sdm_input[testIndexes, ] %>%  
           mutate(predicted_glm_occ = ifelse(pred_glm_occ > threshglm_occ, 1, 0),
@@ -605,7 +616,7 @@ for(i in sp_list){
                  predicted_gam_pr = ifelse(pred_gam_pr > threshgam_pr, 1, 0),
                  predicted_rf_occ = ifelse(pred_rf_occ > threshrf_occ, 1, 0),
                  predicted_rf_pr = ifelse(pred_rf_pr > threshrf_pr, 1, 0),
-                 predicted_max_pres = ifelse(max_pred_pres > threshmax_pres, 1, 0),
+                 predicted_max_pres = ifelse(max_pred_points > threshmax_pres, 1, 0),
                  j = j) 
         rmse_occ <- rmse(pred_glm_occ, sdm_test$occ)
         rmse_pres <- rmse(pred_glm_pr, sdm_test$presence)
@@ -613,7 +624,7 @@ for(i in sp_list){
         rmse_gam_pres <- rmse(as.vector(pred_gam_pr), sdm_test$presence)
         rmse_rf <- rmse(pred_rf_occ, sdm_test$occ)
         rmse_rf_pres <- rmse(as.vector(as.numeric(pred_rf_pr)), sdm_test$presence)
-        rmse_me_pres <- rmse(max_pred_pres, sdm_test$presence)
+        rmse_me_pres <- rmse(max_pred_points, sdm_test$presence)
         rmse = rbind(rmse, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres))
         
         sdm_space_cval <- rbind(sdm_space_cval, sdm_test)
@@ -622,7 +633,7 @@ for(i in sp_list){
   }
 }
 sdm_space_cval <- data.frame(sdm_space_cval)
-# write.csv(sdm_space_cval,"Data/space_cval_75.csv", row.names = FALSE)
+# write.csv(sdm_space_cval,"Data/space_cval_5.csv", row.names = FALSE)
 rmse <- data.frame(rmse)
 names(rmse) <- c("aou","rmse_occ", "rmse_pres", "rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres", "rmse_me_pres")
 # write.csv(rmse,"Data/space_cval_rmse.csv", row.names = FALSE)

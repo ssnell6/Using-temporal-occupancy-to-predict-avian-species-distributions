@@ -8,6 +8,7 @@ library(maptools)
 library(pROC)
 library(hydroGOF)
 library(tmap)
+library(sf)
 library(RColorBrewer)
 
 bbs_occ = read.csv("Data/bbs_2001_2015.csv", header=TRUE)
@@ -86,7 +87,11 @@ gam_pres <- mgcv::gam(presence ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4
 rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
 rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
 
-max_ind_pres = maxent(sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_input$presence)
+ll <- data.frame(lon = sdm_input$longitude, lat = sdm_input$latitude)
+
+max_ind_pres = dismo::maxent(all_env_raster, ll)
+max_pred_pres <- predict(max_ind_pres, all_env_raster)
+max_pred_points <- raster::extract(max_pred_pres, ll)
 
 # predict
 pred_glm_occ <- predict(glm_occ,type=c("response"))
@@ -95,36 +100,25 @@ pred_gam_occ <- predict(gam_occ,type=c("response"))
 pred_gam_pr <- predict(gam_pres,type=c("response"))
 pred_rf_occ <- predict(rf_occ,type=c("response"))
 pred_rf_pr <- predict(rf_pres,type=c("response"))
-max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
 
-sdm_output = data.frame(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
-
+# sdm_output_bin = data.frame(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_points) %>%
+#   mutate(lat_bin = round(latitude, 0),
+#          lon_bin = round(longitude, 0)) %>%
+#   group_by(aou, lat_bin, lon_bin) %>%
+#   summarize(pres_bin = max(presence))
+  
+sdm_output = data.frame(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_points) # %>%
+  # mutate(lat_bin = round(latitude, 0),
+  #        lon_bin = round(longitude, 0)) %>%
+  # left_join(sdm_output_bin, by = c("aou", "lat_bin", "lon_bin"))
 
 ##### plots ######
+# have to change here to bin c("lon_bin", "lat_bin")
 mod.r <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
                                 data = sdm_output[,c("latitude", "longitude", "pred_glm_pr", "pred_glm_occ", "pred_gam_pr", "pred_gam_occ", "pred_rf_occ", "pred_rf_pr", "max_pred_pres")], proj4string = CRS("+proj=longlat +datum=WGS84"))
 r = raster(mod.r, res = 1) # 40x40 km/111 (degrees) * 2 tp eliminate holes
 # bioclim is 4 km
 plot.r = rasterize(mod.r, r)
-
-glm_occ_notrans <- glm(cbind(sp_success, sp_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_notrans)
-glm_pres_notrans <- glm(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_notrans)
-gam_occ_notrans <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = sdm_notrans)
-gam_pres_notrans <- mgcv::gam(presence ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = sdm_notrans)
-rf_occ_notrans <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_notrans)
-rf_pres_notrans <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_notrans)
-max_ind_pres_notrans = maxent(sdm_notrans[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_notrans$presence)
-# predict
-pred_glm_occ_notrans <- predict(glm_occ_notrans,type=c("response"))
-pred_glm_pr_notrans <- predict(glm_pres_notrans,type=c("response"))
-pred_gam_occ_notrans <- predict(gam_occ_notrans,type=c("response"))
-pred_gam_pr_notrans <- predict(gam_pres_notrans,type=c("response"))
-pred_rf_occ_notrans <- predict(rf_occ_notrans,type=c("response"))
-pred_rf_pr_notrans <- predict(rf_pres_notrans,type=c("response"))
-max_pred_pres_notrans <- predict(max_ind_pres_notrans, sdm_notrans[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
-sdm_output_notrans = data.frame(sdm_notrans, pred_glm_pr_notrans, pred_glm_occ_notrans, pred_gam_pr_notrans, pred_gam_occ_notrans, pred_rf_occ_notrans, pred_rf_pr_notrans, max_pred_pres_notrans) 
-
-
 
 rmse_occ <- rmse(sdm_output$pred_glm_occ, sdm_output$occ)
 rmse_pres <- rmse(sdm_output$pred_glm_pr, as.numeric(sdm_output$presence))
@@ -135,16 +129,8 @@ rmse_gam_notrans <- rmse(as.vector(sdm_output_notrans$pred_gam_pr_notrans), as.n
 rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
 rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), as.numeric(sdm_output$presence))
 rmse_rf_notrans <- rmse(as.vector(as.numeric(sdm_output_notrans$pred_rf_pr_notrans)), sdm_output_notrans$presence)
-rmse_me_pres <- rmse(sdm_output$max_pred_pres, as.numeric(sdm_output$presence))
+rmse_me_pres <- rmse(sdm_output$max_pred_points, as.numeric(sdm_output$presence))
 rmse_me_pres_notrans <- rmse(sdm_output_notrans$max_pred_pres_notrans, as.numeric(sdm_output_notrans$presence))
-
-
-
-mod.core <- SpatialPointsDataFrame(coords = sdm_output_notrans[,c("longitude", "latitude")],
-                                   data = sdm_output_notrans[,c("latitude", "longitude", "pred_glm_pr_notrans", "pred_glm_occ_notrans", "pred_gam_pr_notrans", "pred_gam_occ_notrans", "pred_rf_occ_notrans", "pred_rf_pr_notrans", "max_pred_pres_notrans")], proj4string = CRS("+proj=longlat +datum=WGS84"))
-r.core = raster(mod.core, res = 1) # 40x40 km/111 (degrees) * 2 tp eliminate holes
-# bioclim is 4 km
-plot.core = rasterize(mod.core, r.core)
 
 sdm_output$presence <- factor(sdm_output$presence,
                               levels = c(1,0), ordered = TRUE)
@@ -192,7 +178,7 @@ point_map <- tm_shape(routes_sf) +
 #+ tm_legend(outside = TRUE)+ 
   tm_layout("  Observed \nOccurences", title.size = 3.5, title.position = c("right","bottom")) 
 
-sdm_maxent_pr <- tm_shape(plot.r) + tm_raster("max_pred_pres", palette = palette, style = "cont", breaks=quantile(plot.r$max_pred_pres, probs = seq(0.2,0.8, by = 0.2)) , legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_me_pres, 2)), title.size = 3.5, title.position = c("right","bottom"), legend.bg.color = "white") 
+sdm_maxent_pr <- tm_shape(plot.r) + tm_raster("max_pred_points", palette = palette, style = "cont", breaks=quantile(plot.r$max_pred_points, probs = seq(0.2,0.8, by = 0.2)) , legend.show = FALSE) + tm_shape(us_sf) + tm_borders(col = "black", lwd = 3) + tm_layout(paste("RMSE =",signif(rmse_me_pres, 2)), title.size = 3.5, title.position = c("right","bottom"), legend.bg.color = "white") 
 
 sdm_glm_occ <- tm_shape(plot.r) + tm_raster("pred_glm_occ", palette = palette, style = "cont", title = "GLM Occ",breaks=quantile(plot.r$pred_glm_occ, probs = seq(0.2,0.8, by = 0.2)), legend.show = FALSE) + 
   tm_shape(us_sf) + tm_borders( "black", lwd = 3) + 

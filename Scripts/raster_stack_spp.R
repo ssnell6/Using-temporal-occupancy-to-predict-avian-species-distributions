@@ -30,19 +30,70 @@ gimms_jul <- rasterizeGimms(as.character(files$file_name)[2])
 gimms_breeding <- stack(c(gimms_jan[[11:12]], gimms_jul[[1:4]]))
 gimms_reclass <- reclassify(gimms_breeding, cbind(0, NA))
 gimms_mean <- mean(gimms_reclass, na.rm=FALSE)
-# gimms_crop <- crop(gimms_mean, extent(elev))
+# aggregate elev to be same res as gimms
 elev_agg <- aggregate(elev, fact=10, fun=mean)
-
+# crop gimms to elev agg extent
 gimms_crop <- raster::crop(gimms_mean, extent(elev_agg))
 gimms_reproj <- raster(vals=values(gimms_crop),ext=extent(elev_agg),crs=crs(elev_agg),
               nrows=dim(elev_agg)[1],ncols=dim(elev_agg)[2])
-
+# crop bio to elev agg extent
 bio_crop <- crop(bioclim.sub, extent(elev_agg))
-# not working here
-bio_resample <- raster::resample(bio_crop, elev_agg, method = "nbg")
-gimms_reproj <- raster(vals=values(bio_crop),ext=extent(elev_agg),crs=crs(elev_agg),
-                       nrows=dim(elev_agg)[1],ncols=dim(elev_agg)[2])
-elev_ndvi <- stack(gimms_reproj, elev_agg)
+# resample bio by aggregated elev
+bio_resample <- raster::resample(bio_crop, elev_agg)
+
+prj.string <- "+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"
+
+#### apply circular moving window to continuous data - https://www.timassal.com/?p=2092
+#set the focal weight, since we are using a circle, set number to the radius of the circle (in units of CRS)
+#cell resolution is 1.5 x 1.5
+gimms_laea = projectRaster(gimms_reproj, crs = prj.string)
+fw_gimms <- focalWeight(gimms_laea, 40, type='circle') 
+avg_gimms_laea <-focal(gimms_laea, w=fw_gimms, na.rm=TRUE) 
+
+elev_laea = projectRaster(elev_agg, crs = prj.string)
+fw_elev <- focalWeight(elev_laea, 40, type='circle') 
+avg_elev_laea <-focal(elev_laea, w=fw_elev, na.rm=TRUE) 
+
+seasonality <- subset(bio_resample, "bio4")
+seasonality_laea = projectRaster(seasonality, crs = prj.string)
+fw_seasonality <- focalWeight(seasonality_laea, 40, type='circle') 
+avg_seasonality_laea <-focal(seasonality_laea, w=fw_seasonality, na.rm=TRUE) 
+
+maxtemp <- subset(bio_resample, "bio5")
+maxtemp_laea = projectRaster(maxtemp, crs = prj.string)
+fw_maxtemp <- focalWeight(maxtemp_laea, 40, type='circle') 
+avg_maxtemp_laea <-focal(maxtemp_laea, w=fw_maxtemp, na.rm=TRUE) 
+
+mintemp <- subset(bio_resample, "bio6")
+mintemp_laea = projectRaster(mintemp, crs = prj.string)
+fw_mintemp <- focalWeight(mintemp_laea, 40, type='circle') 
+avg_mintemp_laea <-focal(mintemp_laea, w=fw_mintemp, na.rm=TRUE) 
+
+maxprecip <- subset(bio_resample, "bio13")
+maxprecip_laea = projectRaster(maxprecip, crs = prj.string)
+fw_maxprecip <- focalWeight(maxprecip_laea, 40, type='circle') 
+avg_maxprecip_laea <-focal(maxprecip_laea, w=fw_maxprecip, na.rm=TRUE) 
+
+minprecip <- subset(bio_resample, "bio14")
+minprecip_laea = projectRaster(minprecip, crs = prj.string)
+fw_minprecip <- focalWeight(minprecip_laea, 40, type='circle') 
+avg_minprecip_laea <-focal(minprecip_laea, w=fw_minprecip, na.rm=TRUE) 
+
+# stack elev, ndvi, bio
+elev_gimms <- stack(avg_elev_laea, avg_gimms_laea)
+bio_1 <- stack(avg_seasonality_laea, avg_maxtemp_laea)
+bio_2 <- stack(avg_mintemp_laea, avg_maxprecip_laea)
+bio_3 <- stack(elev_gimms, avg_minprecip_laea)
+
+bio_4 <- stack(bio_1, bio_2)
+all_env_raster <- stack(bio_3, bio_4)
+
+# for GLM/GAM/RF
+# elev_ndvi <- stack(gimms_reproj, elev_agg)
+# all_env_raster <- stack(elev_ndvi, bio_resample)
+setwd("Z:/GIS")
+writeRaster(all_env_raster,"all_env_maxent_mw.tif", options="INTERLEAVE=BAND", overwrite = TRUE)
+writeRaster(all_env_maxent_mw, filename=names(all_env_maxent_mw), bylayer=TRUE, format="GTiff", overwrite = TRUE)
 
 setwd("C:/Git/SDMs")
 # read in lat long data

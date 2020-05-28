@@ -29,17 +29,6 @@ env_bio = read.csv("Data/env_bio.csv", header = TRUE)
 env_bio = na.omit(env_bio)
 env_bio_sub = env_bio[,c(1, 21:39)]
 
-#### test ####
-vireos <- full_join(bbs_occ_sub, lat_long, by = "stateroute") %>%
-  filter(aou %in% c(6291, 6292)) 
-
-v_sf <- st_as_sf(vireos, coords = c("longitude", "latitude"))
-plum <- v_sf[v_sf$aou ==6291,]
-pluml <- bbs_final_occ_ll[bbs_final_occ_ll$Aou ==6291,]
-plumll <- st_as_sf(pluml, coords = c("longitude", "latitude"))
-cas <- v_sf[v_sf$aou ==6292,]
-tm_shape(cas) + tm_symbols(size = 0.75, alpha = 0.5, col = 'occ') + tm_shape(us_sf) + tm_borders( "black", lwd = 3) + tm_layout("", legend.title.size = 1.5, legend.text.size = 1, legend.position = c("right","bottom"), legend.bg.color = "white") + tm_legend(outside = TRUE)
-
 ##### read in raw bbs data for 2016 ####
 bbs_new <- read.csv("Data/bbs_2016.csv", header = TRUE) 
 bbs_new$presence = 1
@@ -118,8 +107,6 @@ for(i in sp_list){
     gam_pres <- mgcv::gam(presence ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = sdm_input)
     rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
     rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
-   
-    max_ind_pres = maxent(sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_input$presence)
     
     # predict
     pred_glm_occ <- predict(glm_occ,type=c("response"))
@@ -133,9 +120,8 @@ for(i in sp_list){
     pred_gam_pr <- predict(gam_pres,type=c("response"))
     pred_rf_occ <- predict(rf_occ,type=c("response"))
     pred_rf_pr <- predict(rf_pres,type=c("response"))
-    max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
     
-    sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
+    sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr) 
     pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute")
     thresh <- max(pred_2016$pred_gam_occ) * 0.7
     gam_rescale <- filter(pred_2016, pred_gam_occ > thresh)
@@ -146,8 +132,7 @@ for(i in sp_list){
  rmse_gam_pres <- rmse(as.vector(sdm_output$pred_gam_pr), sdm_output$presence)
  rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
  rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$presence)
- rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$presence)
- auc_df = rbind(auc_df, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres))
+ auc_df = rbind(auc_df, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres))
  j = unique(sdm_input$ALPHA.CODE)
   }
   }
@@ -159,74 +144,19 @@ auc_df = data.frame(auc_df)
 names(auc_df) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres","rmse_me_pres")
 # write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
 
-##### no trans #####
-auc_df_notrans = c()
-sp_list = unique(bbs_final_occ_ll$aou)
-
-for(i in sp_list){
-  sdm_output = c()
-  print(i)
- bbs_sub <- filter(bbs_final_occ_ll, aou == i) %>% 
-    mutate(excl_pres = ifelse(occ <= 0.33, 0, 1),
-           excl_occ = ifelse(occ <= 0.33, 0, occ),
-           excl_success = 15 * excl_occ,
-           excl_fail = 15 * (1 - excl_occ)) 
-  bbs_new_sub <- filter(bbs_new, aou == i) 
-  bbs_new_sub$pres_2016 <- bbs_new_sub$presence
-  sdm_input <- filter(all_env, stateroute %in% bbs_sub$stateroute) %>%
-    full_join(bbs_sub, by = "stateroute")
-  sdm_input <- data.frame(sdm_input)
-  if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
-    if(nrow(filter(sdm_input, presence == 1)) > 59){
-      glm_occ <- glm(cbind(excl_success, excl_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
-      glm_pres <- glm(excl_pres ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
-      gam_occ <- mgcv::gam(cbind(excl_success, excl_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = sdm_input)
-      gam_pres <- mgcv::gam(excl_pres ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = sdm_input)
-      rf_occ <- randomForest(excl_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
-      rf_pres <- randomForest(excl_pres ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
-      
-      max_ind_pres = maxent(sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_input$excl_pres)
-      
-      # predict
-      pred_glm_occ <- predict(glm_occ,type=c("response"))
-      pred_glm_pr <- predict(glm_pres,type=c("response"))
-      pred_gam_occ <- predict(gam_occ,type=c("response"))
-      pred_gam_pr <- predict(gam_pres,type=c("response"))
-      pred_rf_occ <- predict(rf_occ,type=c("response"))
-      pred_rf_pr <- predict(rf_pres,type=c("response"))
-      max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
-      
-      sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
-      pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute")
-      thresh <- max(pred_2016$pred_gam_occ) * 0.7
-      gam_rescale <- filter(pred_2016, pred_gam_occ > thresh)
-      
-      rmse_occ <- rmse(sdm_output$pred_glm_occ, sdm_output$occ)
-      rmse_pres <- rmse(sdm_output$pred_glm_pr, sdm_output$excl_pres)
-      rmse_gam <- rmse(as.vector(sdm_output$pred_gam_occ), sdm_output$occ)
-      rmse_gam_pres <- rmse(as.vector(sdm_output$pred_gam_pr), sdm_output$excl_pres)
-      rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
-      rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$excl_pres)
-      rmse_me_pres <- rmse(sdm_output$max_pred_pres, sdm_output$excl_pres)
-      auc_df_notrans = rbind(auc_df_notrans, c(i, rmse_occ, rmse_pres, rmse_gam, rmse_gam_pres, rmse_rf, rmse_rf_pres, rmse_me_pres))
-      j = unique(sdm_input$ALPHA.CODE)
-    }
-  }
-  # write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
-}
-
-auc_df_notrans = data.frame(auc_df_notrans)
-names(auc_df_notrans) = c("AOU", "rmse_occ_notrans", "rmse_pres_notrans","rmse_gam_notrans", "rmse_gam_pres_notrans", "rmse_rf_notrans", "rmse_rf_pres_notrans","rmse_me_pres_notrans")
-# write.csv(auc_df_notrans, "Data/auc_df_notrans.csv", row.names = FALSE)
-
-# auc_df_notrans$diff <- auc_df_notrans$rmse_me_pres_notrans - auc_df_notrans$rmse_me_pres
-
-bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'), ordered = TRUE)
-
-
 ###### global plots ####
-auc_df <- read.csv("Data/auc_df.csv", header = TRUE)
-auc_df_notrans <- read.csv("Data/auc_df_notrans.csv", header = TRUE)
+me <- read.csv("Data/auc_df_ME_only.csv", header = TRUE) %>%
+  mutate(ME_PB = rmse_me_pres)
+auc_df <- read.csv("Data/auc_df.csv", header = TRUE) %>%
+  left_join(me[,c("AOU", "ME_PB")], by = "AOU")
+
+ggplot(data = auc_df, aes(x = rmse_me_pres, y = ME_PB)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, col = "blue", lwd = 1.5) +
+  xlab("old ME RMSE") + 
+  ylab("new ME RMSE")
+
+# auc_df_notrans <- read.csv("Data/auc_df_notrans.csv", header = TRUE)
 
 num_pres = bbs_final_occ_ll %>%
   group_by(aou) %>% 
