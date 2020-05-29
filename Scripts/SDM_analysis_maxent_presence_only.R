@@ -59,7 +59,7 @@ bbs_occ_code = left_join(bbs_final_occ, tax_code, by = c("aou" = "AOU_OUT"))
 # 319 focal species
 bbs_final_occ_ll = left_join(bbs_occ_code, lat_long, by = "stateroute") %>%
   filter(aou %in% tax_code$AOU_OUT & stateroute %in% bbs_occ_sub$stateroute) 
-  
+
 bbs_final_occ_ll$sp_success = 15 * bbs_final_occ_ll$occ
 bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ) 
 bbs_final_occ_ll$presence <- as.numeric(bbs_final_occ_ll$presence)
@@ -82,13 +82,13 @@ sdm_input_global <- left_join(bbs_final_occ_ll, all_env, by = "stateroute")
 Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_251') # for 64-bit version
 
 ###### main analysis ######
-# doesn't read in all the files
-all_env_raster <- stack("Z:/Snell/all_env_maxent_mw.tif")
+all_env_raster <- stack("Z:/GIS/all_env_maxent_mw.tif")
+# all_env_raster <- projectRaster(all_env_raster, crs = CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"))
 
 auc_df = c()
 
-  sp_list = unique(bbs_final_occ_ll$aou)
-    #  change back when done w overfit
+sp_list = unique(bbs_final_occ_ll$aou)
+#  change back when done w overfit
 
 for(i in sp_list){
   sdm_output = c()
@@ -99,25 +99,30 @@ for(i in sp_list){
   sdm_input <- filter(all_env, stateroute %in% bbs_sub$stateroute) %>%
     full_join(bbs_sub, by = "stateroute") 
   sdm_input <- data.frame(sdm_input) %>%
-     filter(presence == 1)
+    filter(presence == 1)
   if(length(unique(sdm_input$stateroute)) > 40){
-  if(nrow(filter(sdm_input, presence == 1)) > 59){
-    ll <- data.frame(lon = sdm_input$longitude, lat = sdm_input$latitude)
-    
-    max_ind_pres = dismo::maxent(all_env_raster, ll)
-    max_pred_pres <- predict(max_ind_pres, all_env_raster)
-    max_pred_points <- raster::extract(max_pred_pres, ll)
-    sdm_output = cbind(sdm_input, max_pred_points) 
-  
- rmse_me_pres <- rmse(sdm_output$max_pred_points, sdm_output$presence)
- auc_df = rbind(auc_df, c(i, rmse_me_pres))
- j = unique(sdm_input$ALPHA.CODE)
+    if(nrow(filter(sdm_input, presence == 1)) > 59){
+      ll <- data.frame(lon = sdm_input$longitude, lat = sdm_input$latitude)
+      
+      ll_spat <- SpatialPoints(ll, proj4string=CRS("+init=epsg:4326 +proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0"))
+      ll_spat_laea <- spTransform(ll_spat, CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"))
+      
+      max_ind_pres = dismo::maxent(all_env_raster, ll_spat_laea)
+      max_pred_pres <- predict(max_ind_pres, all_env_raster, progress='text')
+      
+      max_pred_points <- raster::extract(max_pred_pres, ll_spat)
+      sdm_output = cbind(sdm_input, max_pred_points) 
+      
+      rmse_me_pres <- rmse(sdm_output$max_pred_points, sdm_output$presence)
+      auc_df = rbind(auc_df, c(i, rmse_me_pres))
+      j = unique(sdm_input$ALPHA.CODE)
+    }
   }
-  }
-# write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
+  # write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
 }
 
 
 auc_df = data.frame(auc_df)
 names(auc_df) = c("AOU","rmse_me_pres")
 write.csv(auc_df, "Data/auc_df_ME_only.csv", row.names = FALSE)
+

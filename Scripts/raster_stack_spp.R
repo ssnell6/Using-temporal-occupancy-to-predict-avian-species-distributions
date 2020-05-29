@@ -7,6 +7,7 @@ library(raster)
 library(tidyverse)
 library(rgdal)
 library(sp)
+library(sf)
 library(maptools)
 library(gimms)
 
@@ -30,16 +31,22 @@ gimms_jul <- rasterizeGimms(as.character(files$file_name)[2])
 gimms_breeding <- stack(c(gimms_jan[[11:12]], gimms_jul[[1:4]]))
 gimms_reclass <- reclassify(gimms_breeding, cbind(0, NA))
 gimms_mean <- mean(gimms_reclass, na.rm=FALSE)
+
 # aggregate elev to be same res as gimms
-elev_agg <- aggregate(elev, fact=10, fun=mean)
+# elev_agg <- aggregate(elev, fact=10, fun=mean)
+elev_agg <- raster("Z:/GIS/aggregated_elev.gri")
+# mask to eliminate ocean points
+us <- read_sf("Z:/GIS/geography/continent.shp")
+elev_mask <- mask(elev_agg, us)
 # crop gimms to elev agg extent
-gimms_crop <- raster::crop(gimms_mean, extent(elev_agg))
-gimms_reproj <- raster(vals=values(gimms_crop),ext=extent(elev_agg),crs=crs(elev_agg),
-              nrows=dim(elev_agg)[1],ncols=dim(elev_agg)[2])
+gimms_crop <- raster::crop(gimms_mean, extent(elev_mask))
+gimms_reproj <- raster(vals=values(gimms_crop),ext=extent(elev_mask),crs=crs(elev_mask),
+              nrows=dim(elev_mask)[1],ncols=dim(elev_mask)[2])
+
 # crop bio to elev agg extent
-bio_crop <- crop(bioclim.sub, extent(elev_agg))
+bio_crop <- crop(bioclim.sub, extent(elev_mask))
 # resample bio by aggregated elev
-bio_resample <- raster::resample(bio_crop, elev_agg)
+bio_resample <- raster::resample(bio_crop, elev_mask)
 
 prj.string <- "+proj=laea +lat_0=45.235 +lon_0=-106.675 +units=km"
 
@@ -50,7 +57,7 @@ gimms_laea = projectRaster(gimms_reproj, crs = prj.string)
 fw_gimms <- focalWeight(gimms_laea, 40, type='circle') 
 avg_gimms_laea <-focal(gimms_laea, w=fw_gimms, na.rm=TRUE) 
 
-elev_laea = projectRaster(elev_agg, crs = prj.string)
+elev_laea = projectRaster(elev_mask, crs = prj.string)
 fw_elev <- focalWeight(elev_laea, 40, type='circle') 
 avg_elev_laea <-focal(elev_laea, w=fw_elev, na.rm=TRUE) 
 
@@ -93,7 +100,7 @@ all_env_raster <- stack(bio_3, bio_4)
 # all_env_raster <- stack(elev_ndvi, bio_resample)
 setwd("Z:/GIS")
 writeRaster(all_env_raster,"all_env_maxent_mw.tif", options="INTERLEAVE=BAND", overwrite = TRUE)
-writeRaster(all_env_maxent_mw, filename=names(all_env_maxent_mw), bylayer=TRUE, format="GTiff", overwrite = TRUE)
+# writeRaster(all_env_maxent_mw, filename=names(all_env_maxent_mw), bylayer=TRUE, format="GTiff", overwrite = TRUE)
 
 setwd("C:/Git/SDMs")
 # read in lat long data

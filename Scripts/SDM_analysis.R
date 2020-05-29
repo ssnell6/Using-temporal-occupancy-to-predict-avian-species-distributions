@@ -145,12 +145,14 @@ names(auc_df) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "r
 # write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
 
 ###### global plots ####
-me <- read.csv("Data/auc_df_ME_only.csv", header = TRUE) %>%
-  mutate(ME_PB = rmse_me_pres)
+me <- read.csv("Data/auc_df_ME_only.csv", header = TRUE) 
+# %>% mutate(ME_PB = rmse_me_pres)
 auc_df <- read.csv("Data/auc_df.csv", header = TRUE) %>%
-  left_join(me[,c("AOU", "ME_PB")], by = "AOU")
+  dplyr::select(-rmse_me_pres) %>%
+  left_join(me, by = "AOU")
 
-ggplot(data = auc_df, aes(x = rmse_me_pres, y = ME_PB)) +
+ggplot(
+  data = auc_df, aes(x = rmse_me_pres, y = ME_PB)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, col = "blue", lwd = 1.5) +
   xlab("old ME RMSE") + 

@@ -31,7 +31,6 @@ env_bio = read.csv("Data/env_bio.csv", header = TRUE)
 env_bio = na.omit(env_bio)
 env_bio_sub = env_bio[,c(1, 21:39)]
 
-
 ##### read in raw bbs data for 2016 ####
 bbs_new <- read.csv("Data/bbs_2016.csv", header = TRUE) 
 bbs_new$presence = 1
@@ -66,13 +65,11 @@ bbs_final_occ_ll = left_join(bbs_occ_code, lat_long, by = "stateroute") %>%
 bbs_final_occ_ll$sp_success = 15 * bbs_final_occ_ll$occ
 bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ) 
 bbs_final_occ_ll$presence <- as.numeric(bbs_final_occ_ll$presence)
-# temp filter for vis purposes
-auc_df = read.csv("Data/auc_df.csv", header = TRUE)
+
 
 #### change spp here ##### 
 sdm_input <- filter(bbs_final_occ_ll, aou == 6280) %>% 
   left_join(all_env, by = "stateroute") 
-sdm_notrans <- filter(sdm_input, occ > 0.33| occ == 0) %>% na.omit(.)
 
 # Determine geographic extent of our data using AOU = i
 max.lat <- ceiling(max(sdm_input$latitude))
@@ -88,10 +85,11 @@ rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio
 rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
 
 ll <- data.frame(lon = sdm_input$longitude, lat = sdm_input$latitude)
-
+all_env_raster <- stack("Z:/GIS/all_env_maxent_mw.tif")
 max_ind_pres = dismo::maxent(all_env_raster, ll)
 max_pred_pres <- predict(max_ind_pres, all_env_raster)
-max_pred_points <- raster::extract(max_pred_pres, ll)
+ll_spat <- SpatialPoints(ll, proj4string=CRS("+proj=longlat +datum=WGS84"))
+max_pred_points <- raster::extract(max_pred_pres, ll_spat)
 
 # predict
 pred_glm_occ <- predict(glm_occ,type=c("response"))
@@ -115,22 +113,21 @@ sdm_output = data.frame(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_
 ##### plots ######
 # have to change here to bin c("lon_bin", "lat_bin")
 mod.r <- SpatialPointsDataFrame(coords = sdm_output[,c("longitude", "latitude")],
-                                data = sdm_output[,c("latitude", "longitude", "pred_glm_pr", "pred_glm_occ", "pred_gam_pr", "pred_gam_occ", "pred_rf_occ", "pred_rf_pr", "max_pred_pres")], proj4string = CRS("+proj=longlat +datum=WGS84"))
+                                data = sdm_output[,c("latitude", "longitude", "pred_glm_pr", "pred_glm_occ", "pred_gam_pr", "pred_gam_occ", "pred_rf_occ", "pred_rf_pr", "max_pred_points")], proj4string = CRS("+proj=longlat +datum=WGS84"))
 r = raster(mod.r, res = 1) # 40x40 km/111 (degrees) * 2 tp eliminate holes
 # bioclim is 4 km
 plot.r = rasterize(mod.r, r)
 
 rmse_occ <- rmse(sdm_output$pred_glm_occ, sdm_output$occ)
 rmse_pres <- rmse(sdm_output$pred_glm_pr, as.numeric(sdm_output$presence))
-rmse_notrans <- rmse(sdm_output_notrans$pred_glm_pr_notrans,as.numeric(sdm_output_notrans$presence))
+
 rmse_gam <- rmse(as.vector(sdm_output$pred_gam_occ), sdm_output$occ)
 rmse_gam_pres <- rmse(as.vector(sdm_output$pred_gam_pr), as.numeric(sdm_output$presence))
-rmse_gam_notrans <- rmse(as.vector(sdm_output_notrans$pred_gam_pr_notrans), as.numeric(sdm_output_notrans$presence))
+
 rmse_rf <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
 rmse_rf_pres <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), as.numeric(sdm_output$presence))
-rmse_rf_notrans <- rmse(as.vector(as.numeric(sdm_output_notrans$pred_rf_pr_notrans)), sdm_output_notrans$presence)
+
 rmse_me_pres <- rmse(sdm_output$max_pred_points, as.numeric(sdm_output$presence))
-rmse_me_pres_notrans <- rmse(sdm_output_notrans$max_pred_pres_notrans, as.numeric(sdm_output_notrans$presence))
 
 sdm_output$presence <- factor(sdm_output$presence,
                               levels = c(1,0), ordered = TRUE)

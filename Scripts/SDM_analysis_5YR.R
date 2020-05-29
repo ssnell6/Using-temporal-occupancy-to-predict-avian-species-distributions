@@ -186,6 +186,7 @@ bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'
 ###### global plots ####
 me <- read.csv("Data/auc_df_ME_only_5.csv", header = TRUE) 
 auc_df <- read.csv("Data/auc_df_5.csv", header = TRUE) %>%
+  dplyr::select(-rmse_me_pres) %>%
   left_join(me, by = "AOU")
 auc_df_notrans <- read.csv("Data/auc_df_notrans_5.csv", header = TRUE)
 
