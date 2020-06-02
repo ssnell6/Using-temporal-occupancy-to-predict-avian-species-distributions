@@ -85,11 +85,13 @@ rf_occ <- randomForest(sp_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio
 rf_pres <- randomForest(presence ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
 
 ll <- data.frame(lon = sdm_input$longitude, lat = sdm_input$latitude)
+ll_spat <- SpatialPoints(ll, proj4string=CRS("+init=epsg:4326 +proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0"))
+ll_spat_laea <- spTransform(ll_spat, CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"))
 all_env_raster <- stack("Z:/GIS/all_env_maxent_mw.tif")
-max_ind_pres = dismo::maxent(all_env_raster, ll)
-max_pred_pres <- predict(max_ind_pres, all_env_raster)
-ll_spat <- SpatialPoints(ll, proj4string=CRS("+proj=longlat +datum=WGS84"))
+max_ind_pres = dismo::maxent(all_env_raster, ll_spat_laea)
+max_pred_pres <- predict(max_ind_pres, all_env_raster, progress='text')
 max_pred_points <- raster::extract(max_pred_pres, ll_spat)
+ 
 
 # predict
 pred_glm_occ <- predict(glm_occ,type=c("response"))

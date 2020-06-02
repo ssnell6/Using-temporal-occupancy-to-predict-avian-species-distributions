@@ -85,13 +85,17 @@ for(i in sp_list){
     if(nrow(filter(sdm_input, presence == 1)) > 59){
       ll <- data.frame(lon = sdm_input$longitude, lat = sdm_input$latitude)
       
-      max_ind_pres = dismo::maxent(all_env_raster, ll)
-      max_pred_pres <- predict(max_ind_pres, all_env_raster)
-      max_pred_points <- raster::extract(max_pred_pres, ll)
+      ll_spat <- SpatialPoints(ll, proj4string=CRS("+init=epsg:4326 +proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0"))
+      ll_spat_laea <- spTransform(ll_spat, CRS("+proj=laea +lat_0=45.235 +lon_0=-106.675 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"))
+      
+      max_ind_pres = dismo::maxent(all_env_raster, ll_spat_laea)
+      max_pred_pres <- predict(max_ind_pres, all_env_raster, progress='text')
+      
+      max_pred_points <- raster::extract(max_pred_pres, ll_spat)
       sdm_output = cbind(sdm_input, max_pred_points) 
       
       rmse_me_pres <- rmse(sdm_output$max_pred_points, sdm_output$presence)
-      auc_df = rbind(auc_df, c(i, rmse_me_pres))
+      auc_df_5 = rbind(auc_df_5, c(i, rmse_me_pres))
       j = unique(sdm_input$ALPHA.CODE)
     }
   }
@@ -99,6 +103,6 @@ for(i in sp_list){
 }
 
 
-auc_df = data.frame(auc_df)
-names(auc_df) = c("AOU","rmse_me_PO_5")
+auc_df_5 = data.frame(auc_df_5)
+names(auc_df_5) = c("AOU","rmse_me_PO_5")
 write.csv(auc_df, "Data/auc_df_ME_only_5.csv", row.names = FALSE)

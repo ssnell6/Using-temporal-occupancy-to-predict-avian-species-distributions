@@ -148,7 +148,7 @@ names(auc_df) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "r
 me <- read.csv("Data/auc_df_ME_only.csv", header = TRUE) 
 # %>% mutate(ME_PB = rmse_me_pres)
 auc_df <- read.csv("Data/auc_df.csv", header = TRUE) %>%
-  dplyr::select(-rmse_me_pres) %>%
+  # dplyr::select(-rmse_me_pres) %>%
   left_join(me, by = "AOU")
 
 ggplot(
