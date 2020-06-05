@@ -105,4 +105,4 @@ for(i in sp_list){
 
 auc_df_5 = data.frame(auc_df_5)
 names(auc_df_5) = c("AOU","rmse_me_PO_5")
-write.csv(auc_df, "Data/auc_df_ME_only_5.csv", row.names = FALSE)
+write.csv(auc_df_5, "Data/auc_df_ME_only_5.csv", row.names = FALSE)

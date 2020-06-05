@@ -184,11 +184,12 @@ names(auc_df_notrans_5) = c("AOU", "rmse_occ_notrans", "rmse_pres_notrans","rmse
 bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'), ordered = TRUE)
 
 ###### global plots ####
-me <- read.csv("Data/auc_df_ME_only_5.csv", header = TRUE) 
+me <- read.csv("Data/auc_df_ME_only_5.csv", header = TRUE) %>%
+  mutate(rmse_me_pres = rmse_me_PO_5)
 auc_df <- read.csv("Data/auc_df_5.csv", header = TRUE) %>%
   dplyr::select(-rmse_me_pres) %>%
-  left_join(me, by = "AOU")
-auc_df_notrans <- read.csv("Data/auc_df_notrans_5.csv", header = TRUE)
+  left_join(me[,(c("AOU", "rmse_me_pres"))], by = "AOU")
+# auc_df_notrans <- read.csv("Data/auc_df_notrans_5.csv", header = TRUE)
 
 num_pres = bbs_final_occ_ll %>%
   group_by(aou) %>% 
