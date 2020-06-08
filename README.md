@@ -2,7 +2,7 @@
 
 Data and code for project "Using temporal occupancy to predict avian species distributions"
 
-# The SDMs repo includes four folders:
+The SDMs repo includes four folders:
 - Data
 - Figures
 - maxent
