@@ -76,11 +76,12 @@ bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ)
 
 
 threshfun <- function(pred_vals){ 
- thresh <-  max(pred_vals) * 0.25
+ thresh <-  max(pred_vals) * 0.75
 }
 
 sp_list = unique(auc_df$AOU)
 all_env_raster <- stack("C:/Users/ssnell/Desktop/all_env_maxent_mw.tif")
+
 #### temporal crossval ######
 test_df = c()
 for(i in sp_list){
@@ -112,14 +113,14 @@ for(i in sp_list){
   }
 }
 
-write.csv(test_df, "Data/temporal_crossval_df_25_maxent.csv", row.names = FALSE) # wrote _5 for thresh of .5, med for median
+# write.csv(test_df, "Data/temporal_crossval_df_75_maxent.csv", row.names = FALSE) # wrote _5 for thresh of .5, med for median
 # write.csv(test_df, "Data/temporal_crossval_df_5.csv", row.names = FALSE) # wrote _5 for thresh of .5, med for median
 
 #### write csv then join back to full data set
 
 ##### temporal processing ####
-test_df_m <- read.csv("Data/temporal_crossval_df_25_maxent.csv", header = TRUE) 
-test_df <- read.csv("Data/temporal_crossval_df_25.csv", header = TRUE) %>%
+test_df_m <- read.csv("Data/temporal_crossval_df_75_maxent.csv", header = TRUE) 
+test_df <- read.csv("Data/temporal_crossval_df_75.csv", header = TRUE) %>%
   dplyr::select(-predicted_max_pres) %>%
   left_join(test_df_m[,c("aou", "stateroute","predicted_max_pres")], by = c("aou", "stateroute"))
 
@@ -589,13 +590,13 @@ for(i in sp_list){
   }
 }
 sdm_space_cval <- data.frame(sdm_space_cval)
-# write.csv(sdm_space_cval,"Data/space_cval_maxent.csv", row.names = FALSE)
+# write.csv(sdm_space_cval,"Data/space_cval_maxent_75.csv", row.names = FALSE)
 rmse <- data.frame(rmse)
 names(rmse) <- c("aou", "rmse_me_pres")
 # write.csv(rmse,"Data/space_cval_rmse_maxent.csv", row.names = FALSE)
 ##### process spatial data #####
-sdm_space_cval_m <- read.csv("Data/space_cval_maxent.csv", header = TRUE) 
-sdm_space_cval <- read.csv("Data/space_cval_5.csv", header = TRUE) %>%
+sdm_space_cval_m <- read.csv("Data/space_cval_maxent_25.csv", header = TRUE) 
+sdm_space_cval <- read.csv("Data/space_cval_25.csv", header = TRUE) %>%
   dplyr::select(-predicted_max_pres) %>%
   left_join(sdm_space_cval_m[,c("aou", "stateroute","predicted_max_pres")], by = c("aou", "stateroute"))
 
@@ -901,7 +902,7 @@ grid <- plot_grid(pplot + theme(legend.position="top"),
                   label_x = 0.12, 
                   label_size = 30,
                   nrow = 2) 
-ggsave("Figures/xval_plot_5.pdf", height = 20, width = 24)
+ggsave("Figures/xval_plot_25.pdf", height = 20, width = 24)
 
 
 
