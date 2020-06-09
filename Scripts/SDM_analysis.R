@@ -236,7 +236,7 @@ grid <- plot_grid(r1 + theme(legend.position="top"),
           nrow = 2) 
 
 
-ggsave("Figures/rmse_plot.pdf", height = 10, width = 14)
+ggsave("Figures/Figure_2.pdf", height = 10, width = 14)
 
 # t test for each occ:pres
 t.test(auc_df$rmse_occ, auc_df$rmse_pres)
@@ -309,7 +309,7 @@ plot_grid(r1 + theme(legend.position="top"),
           label_size = 30,
           nrow = 2, 
           scale = 0.9) 
-ggsave("Figures/rmse_pres_pres.pdf", height = 14, width = 20)
+# ggsave("Figures/rmse_pres_pres.pdf", height = 14, width = 20)
 
 # experimental figure 3
 ##### stacked bar chart
@@ -349,7 +349,7 @@ plot_grid(glm + theme(legend.position="none"),
           label_size = 30,
           nrow = 1, 
           scale = 0.8) 
-ggsave("Figures/RO_v_diff.pdf", height = 10, width = 14)
+# ggsave("Figures/RO_v_diff.pdf", height = 10, width = 14)
 
 open_holes <- filter(ro_plot, rmse_gam_pres < 1.0e-5)
 
@@ -369,25 +369,6 @@ ro_plot %>%
   geom_hline(yintercept = 0, lty = 2, lwd =1.5, color = "black") +
   theme(legend.title=element_blank(), legend.text=element_text(size=30), legend.position = c(0.1,0.9), legend.key.width=unit(4, "lines")) + 
   scale_color_manual(values = c("#034e7b","steelblue2","#238b45")) 
-ggsave("Figures/RO_v_diff.pdf", height = 10, width = 14)
-#### diff vs. number of presence 
-ggplot(auc_df_merge, aes(x = glm_diff, y = n_pres)) +theme_classic()+ theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90)) + ylab(bquote("Number Present")) + xlab(bquote("TO - Presence RMSE")) + 
-  geom_point(shape=16, aes(color = sign)) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
-  guides(colour = guide_legend(override.aes = list(shape = 15))) +
-  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
+ggsave("Figures/Figure_4.pdf", height = 10, width = 14)
 
-ggplot(auc_df_merge, aes(x = glm_diff, y = n)) +theme_classic()+ theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + ylab(bquote("Pres ME RMSE")) + xlab(bquote("ME No Transients")) + 
-  geom_point(shape=16) + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) +
-  guides(colour = guide_legend(override.aes = list(shape = 15))) +
-  theme(legend.title=element_blank(), legend.text=element_text(size=15), legend.position = c(0.1,0.9), legend.key.width=unit(2, "lines")) 
-
-#### desnity plots for each sign
-auc_df_merge$sign <- ifelse(auc_df_merge$glm_diff > 0, "pos", "neg")
-ggplot(auc_df_merge) + geom_density(lwd = 1.5, aes(glm_diff, col = sign)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90)) + scale_color_manual(values=c("#034e7b","purple"), labels=c("neg","pos")) +  xlab("Difference") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
-
-auc_df_merge$sign <- ifelse(auc_df_merge$gam_diff > 0, "pos", "neg")
-ggplot(auc_df_merge) + geom_density(lwd = 1.5, aes(gam_diff, col = sign)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","purple"), labels=c("neg","pos")) +  xlab("Difference") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
-
-auc_df_merge$sign <- ifelse(auc_df_merge$rf_diff > 0, "pos", "neg")
-ggplot(auc_df_merge) + geom_density(lwd = 1.5, aes(rf_diff, col = sign)) + theme_classic() + theme(axis.text.x=element_text(size = 30),axis.ticks=element_blank(), axis.text.y=element_text(size=30)) + theme(axis.title.x=element_text(size=34, vjust = -4),axis.title.y=element_text(size=34, angle=90, vjust = 5)) + scale_color_manual(values=c("#034e7b","purple"), labels=c("neg","pos")) +  xlab("Difference") + ylab("Density") + guides(colour = guide_legend(override.aes = list(shape = 15)))+theme(legend.title=element_blank(), legend.text=element_blank()) 
 

@@ -439,125 +439,6 @@ pplot = pres_matrix_plot2 %>%
   theme(legend.title=element_blank(), legend.text=element_text(size=50), legend.key.width=unit(2, "lines"), legend.key.size = unit(2, "cm")) + theme(plot.margin=unit(c(1.2,1.2,1.2,1.2),"cm")) 
 # ggsave("Figures/temp_crossval_5.pdf", width = 30, height = 20)
 
-####### dummy data #####
-bbs_occ = read.csv("Data/bbs_sub1.csv", header=TRUE)
-bbs_occ_sub = bbs_occ %>% filter(Aou > 2880) %>%
-  filter(Aou < 3650 | Aou > 3810) %>%
-  filter(Aou < 3900 | Aou > 3910) %>%
-  filter(Aou < 4160 | Aou > 4210) %>%
-  filter(Aou != 7010)
-
-exp_pres = read.csv("Data/expect_pres.csv", header = TRUE)
-exp_pres = exp_pres[,c("stateroute","spAOU")] 
-traits = read.csv("Data/Master_RO_Correlates.csv", header = TRUE)
-bsize = read.csv("data/DunningBodySize_old_2008.11.12.csv", header = TRUE)
-lat_long = read.csv("Data/latlongs.csv", header = TRUE)
-tax_code = read.csv("Data/Tax_AOU_Alpha.csv", header = TRUE)
-bi_env = read.csv("Data/all_env.csv", header = TRUE)
-bi_means = bi_env[,c("stateroute","mat.mean", "elev.mean", "map.mean", "ndvi.mean")]
-env_bio = read.csv("Data/env_bio.csv", header = TRUE)
-env_bio = na.omit(env_bio)
-env_bio_sub = env_bio[,c(1, 21:39)]
-
-# read in raw bbs data for 2016
-bbs_new <- read.csv("Data/bbs_2015_on.csv", header = TRUE) %>%
-  filter(Year == 2016)
-bbs_new$presence = 1
-bbs_new_exp_pres <- read.csv("Data/expect_pres_2016.csv", header = TRUE)
-bbs_new_all <- left_join(bbs_new_exp_pres, bbs_new, by = c("spAOU"="aou", "stateroute" = "stateroute"))
-bbs_new_all$presence <- case_when(is.na(bbs_new_all$presence) == TRUE ~ 0, 
-                                  bbs_new_all$presence == 1 ~ 1)
-
-all_env = left_join(bi_means, env_bio_sub, by = "stateroute")
-
-#update tax_code Winter Wren
-tax_code$AOU_OUT[tax_code$AOU_OUT == 7220] <- 7222
-tax_code$AOU_OUT[tax_code$AOU_OUT == 4810] = 4812
-tax_code$AOU_OUT[tax_code$AOU_OUT == 4123] = 4120
-
-# BBS cleaning
-bbs_inc_absence = full_join(bbs_occ_sub, exp_pres, by = c("Aou" ="spAOU", "stateroute" = "stateroute"))
-bbs_inc_absence$occ[is.na(bbs_inc_absence$occ)] <- 0
-bbs_inc_absence$presence = 0
-bbs_inc_absence$presence[bbs_inc_absence$occ > 0] <- 1
-num_occ = bbs_inc_absence %>% group_by(Aou) %>% tally(presence) %>% left_join(bbs_inc_absence, ., by = "Aou")
-
-# 412 focal species
-bbs_final_occ = filter(num_occ,nn > 1)
-bbs_occ_code = left_join(bbs_final_occ, tax_code, by = c("Aou" = "AOU_OUT"))
-
-# 319 focal species
-bbs_focal_spp = filter(bbs_occ_code, Aou %in% tax_code$AOU_OUT)
-
-bbs_final_occ_ll = left_join(bbs_focal_spp, lat_long, by = "stateroute")
-bbs_final_occ_ll = bbs_final_occ_ll[,c("aou", "stateroute", "occ", "presence", "ALPHA.CODE",
-                                       "latitude", "longitude")]
-bbs_final_occ_ll$sp_success = 15 * bbs_final_occ_ll$occ
-bbs_final_occ_ll$sp_fail = 15 * (1 - bbs_final_occ_ll$occ) 
-# write.csv(bbs_occ_code, "Data/final_focal_spp.csv", row.names = FALSE)
-
-
-
-# Thuiller 2014 source for choosing these vars
-# http://worldclim.org/bioclim
-# BIO4 = temperature seasonality (intra-annual standard deviation * 100)
-# BIO5 = maximum temperature of the warmest month
-# BIO6 = minimum temperature of the coldest month
-# BIO13 = precipitation of the wettest month 
-# BIO14 = precipitation of the driest month
-
-# all_bio.pca <- prcomp(env_bio[,c(21:39)], center = TRUE,scale. = TRUE)
-# library(ggbiplot)
-# ggbiplot(all_bio.pca)
-
-# you need to do cor.test and not excede 5 vars for power. Need  >= 50 presences
-sdm_input_global <- left_join(bbs_final_occ_ll, all_env, by = "stateroute")
-
-
-# test = cor(na.omit(sdm_input_global))
-# corrplot(test)
-bbs_final_occ_ll <- read.csv("Data/test_val_wide.csv", header = TRUE) %>%
-  gather( "Aou","p_o", AOU1:AOU2_occ) 
-
-bbs_final_occ_ll$sp_success = case_when(bbs_final_occ_ll$Aou == "AOU1_occ"|bbs_final_occ_ll$Aou == "AOU2_occ" ~ 15 * bbs_final_occ_ll$p_o)
-bbs_final_occ_ll$sp_fail = case_when(bbs_final_occ_ll$Aou == "AOU1_occ"|bbs_final_occ_ll$Aou == "AOU2_occ" ~ 15 * (1 - bbs_final_occ_ll$p_o))
-
-setwd("Data/sdm_dfs/")
-pdf('AUC_Curves.pdf', height = 8, width = 10)
-par(mfrow = c(2, 3))
-auc_df = c()
-
-sp_list = unique(bbs_final_occ_ll$Aou)
-
-for(i in sp_list){
-  sdm_output = c()
-  
-  sdm_input <- filter(bbs_final_occ_ll, Aou == "AOU2"| Aou == "AOU2_occ") # %>% filter(occ <= 0.33333333) RUN FOR EXCL TRANS
-  occ = filter(sdm_input, Aou == "AOU2_occ")   
-  gam_occ <- mgcv::gam(cbind(sp_success, sp_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = occ)
-  presence = filter(sdm_input, Aou == "AOU2")
-  gam_pres <- mgcv::gam(p_o ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = presence)
-  
-  pred_gam_occ <- predict(gam_occ,type=c("response"))
-  pred_gam_pr <- predict(gam_pres,type=c("response"))
-  
-  
-  # sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
-  #pred_2016 <- left_join(sdm_output, bbs_new_sub[c("stateroute", "pres_2016")], by = "stateroute")
-  #thresh <- max(pred_2016$pred_gam_occ) * 0.7
-  #gam_rescale <- filter(pred_2016, pred_gam_occ > thresh)
-  
-  
-  rmse_gam <- rmse(as.vector(pred_gam_occ), occ$p_o)
-  
-  rmse_gam_pres <- rmse(as.vector(pred_gam_pr), occ$p_o)
-  
-  
-  auc_df = rbind(auc_df, c(i, rmse_occ, auc, rmse_pres, auc_pres, rmse_gam, auc_gam, rmse_gam_pres, auc_gam_pres,  rmse_rf, auc_rf, rmse_rf_pres, auc_rf_pres, rmse_me_pres, auc_me_pres, pred_2016))
-  j = unique(sdm_input$ALPHA.CODE)
-  plot = plot(auc, main = paste("AUC Curve for ", j, ".csv", sep=""))
-}
-dev.off()
 
 ##### spatial_crossval #######
 bbs_env <- left_join(bbs_final_occ_ll, all_env, by = "stateroute")
@@ -942,7 +823,7 @@ grid <- plot_grid(pplot + theme(legend.position="top"),
                   label_x = 0.12, 
                   label_size = 30,
                   nrow = 2) 
-ggsave("Figures/xval_plot_5.pdf", height = 20, width = 24)
+ggsave("Figures/Figure_5.pdf", height = 20, width = 24)
 
 
 

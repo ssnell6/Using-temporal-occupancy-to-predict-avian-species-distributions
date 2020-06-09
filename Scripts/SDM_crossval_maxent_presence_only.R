@@ -593,10 +593,10 @@ sdm_space_cval <- data.frame(sdm_space_cval)
 # write.csv(sdm_space_cval,"Data/space_cval_maxent_75.csv", row.names = FALSE)
 rmse <- data.frame(rmse)
 names(rmse) <- c("aou", "rmse_me_pres")
-# write.csv(rmse,"Data/space_cval_rmse_maxent.csv", row.names = FALSE)
+# write.csv(rmse,"Data/space_cval_rmse_maxent_75.csv", row.names = FALSE)
 ##### process spatial data #####
-sdm_space_cval_m <- read.csv("Data/space_cval_maxent_25.csv", header = TRUE) 
-sdm_space_cval <- read.csv("Data/space_cval_25.csv", header = TRUE) %>%
+sdm_space_cval_m <- read.csv("Data/space_cval_maxent_75.csv", header = TRUE) 
+sdm_space_cval <- read.csv("Data/space_cval_75.csv", header = TRUE) %>%
   dplyr::select(-predicted_max_pres) %>%
   left_join(sdm_space_cval_m[,c("aou", "stateroute","predicted_max_pres")], by = c("aou", "stateroute"))
 
@@ -902,7 +902,7 @@ grid <- plot_grid(pplot + theme(legend.position="top"),
                   label_x = 0.12, 
                   label_size = 30,
                   nrow = 2) 
-ggsave("Figures/xval_plot_25.pdf", height = 20, width = 24)
+ggsave("Figures/xval_plot_75.pdf", height = 20, width = 24)
 
 
 

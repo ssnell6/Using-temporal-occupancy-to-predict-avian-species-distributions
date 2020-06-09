@@ -122,67 +122,6 @@ auc_df_5 = data.frame(auc_df_5)
 names(auc_df_5) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "rmse_rf", "rmse_rf_pres","rmse_me_pres")
 # write.csv(auc_df_5, "Data/auc_df_5.csv", row.names = FALSE)
 
-
-##### no trans #####
-auc_df_notrans_5 = c()
-sp_list = unique(bbs_final_occ_ll$aou)
-
-for(i in sp_list){
-  sdm_output = c()
-  print(i)
-  bbs_sub <- filter(bbs_final_occ_ll, aou == i) %>% 
-    mutate(excl_pres = ifelse(occ <= 0.33, 0, 1),
-           excl_occ = ifelse(occ <= 0.33, 0, occ),
-           excl_success = 15 * excl_occ,
-           excl_fail = 15 * (1 - excl_occ)) 
-  bbs_new_sub <- filter(bbs_new, aou == i) 
-  bbs_new_sub$pres_2016 <- bbs_new_sub$presence
-  sdm_input <- filter(all_env, stateroute %in% bbs_sub$stateroute) %>%
-    full_join(bbs_sub, by = "stateroute")
-  sdm_input <- data.frame(sdm_input)
-  if(length(unique(sdm_input$stateroute)) > 40 & length(unique(sdm_input$presence)) >1){
-    if(nrow(filter(sdm_input, presence == 1)) > 59){
-      glm_occ <- glm(cbind(excl_success, excl_fail) ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
-      glm_pres <- glm(excl_pres ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
-      gam_occ <- mgcv::gam(cbind(excl_success, excl_fail) ~ s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14) , family = binomial(link = logit), data = sdm_input)
-      gam_pres <- mgcv::gam(excl_pres ~   s(elev.mean) + s(ndvi.mean) + s(bio.mean.bio4) + s(bio.mean.bio5) + s(bio.mean.bio6) + s(bio.mean.bio13) + s(bio.mean.bio14), family = binomial(link = logit), data = sdm_input)
-      rf_occ <- randomForest(excl_success/15 ~elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
-      rf_pres <- randomForest(excl_pres ~ elev.mean + ndvi.mean +bio.mean.bio4 + bio.mean.bio5 + bio.mean.bio6 + bio.mean.bio13 + bio.mean.bio14, family = binomial(link = logit), data = sdm_input)
-      
-      max_ind_pres = maxent(sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")], sdm_input$excl_pres)
-      
-      
-      # predict
-      pred_glm_occ <- predict(glm_occ,type=c("response"))
-      pred_glm_pr <- predict(glm_pres,type=c("response"))
-      pred_gam_occ <- predict(gam_occ,type=c("response"))
-      pred_gam_pr <- predict(gam_pres,type=c("response"))
-      pred_rf_occ <- predict(rf_occ,type=c("response"))
-      pred_rf_pr <- predict(rf_pres,type=c("response"))
-      max_pred_pres <- predict(max_ind_pres, sdm_input[,c("elev.mean", "bio.mean.bio4","bio.mean.bio5","bio.mean.bio6","bio.mean.bio13","bio.mean.bio14", "ndvi.mean")])
-      
-      sdm_output = cbind(sdm_input, pred_glm_pr, pred_glm_occ, pred_gam_pr, pred_gam_occ, pred_rf_occ, pred_rf_pr, max_pred_pres) 
-
-      rmse_occ_notrans <- rmse(sdm_output$pred_glm_occ, sdm_output$occ)
-      rmse_pres_notrans <- rmse(sdm_output$pred_glm_pr, sdm_output$excl_pres)
-      rmse_gam_notrans <- rmse(as.vector(sdm_output$pred_gam_occ), sdm_output$occ)
-      rmse_gam_pres_notrans <- rmse(as.vector(sdm_output$pred_gam_pr), sdm_output$excl_pres)
-      rmse_rf_notrans <- rmse(sdm_output$pred_rf_occ, sdm_output$occ)
-      rmse_rf_pres_notrans <- rmse(as.vector(as.numeric(sdm_output$pred_rf_pr)), sdm_output$excl_pres)
-      rmse_me_pres_notrans <- rmse(sdm_output$max_pred_pres, sdm_output$excl_pres)
-      auc_df_notrans_5 = rbind(auc_df_notrans_5, c(i, rmse_occ_notrans, rmse_pres_notrans, rmse_gam_notrans, rmse_gam_pres_notrans, rmse_rf_notrans, rmse_rf_pres_notrans, rmse_me_pres_notrans))
-      j = unique(sdm_input$ALPHA.CODE)
-    }
-  }
-  # write.csv(sdm_output, paste("sdm_output_notrans_", i, ".csv",  sep=""), row.names = FALSE)
-}
-
-auc_df_notrans_5 = data.frame(auc_df_notrans_5)
-names(auc_df_notrans_5) = c("AOU", "rmse_occ_notrans", "rmse_pres_notrans","rmse_gam_notrans", "rmse_gam_pres_notrans", "rmse_rf_notrans", "rmse_rf_pres_notrans","rmse_me_pres_notrans")
-# write.csv(auc_df_notrans_5, "Data/auc_df_notrans_5.csv", row.names = FALSE)
-
-bbs_final_occ_ll$presence <- factor(bbs_final_occ_ll$presence,levels = c('1','0'), ordered = TRUE)
-
 ###### global plots ####
 me <- read.csv("Data/auc_df_ME_only_5.csv", header = TRUE) %>%
   mutate(rmse_me_pres = rmse_me_PO_5)
@@ -248,7 +187,7 @@ grid <- plot_grid(r1 + theme(legend.position="top"),
           label_x = 0.22, 
           label_size = 30,
           nrow = 2) 
-ggsave("Figures/rmse_plot_5.pdf", height = 10, width = 14)
+ggsave("Figures/Figure_3.pdf", height = 10, width = 14)
 
 # pres:pres
 pres_pres <- left_join(auc_df_notrans, auc_df, by = "AOU") %>%
