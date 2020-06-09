@@ -24,18 +24,20 @@ The SDMs repository includes four folders and the R project used for all anlayse
 - The maxent folder contains the maxent software required to run analyses.
 
 # Scripts
-- The scripts folder includes all scripts used in analyses.
-- The abiotic script and abiotic script LL were used to process the raw environmental data in 40 km averages.
-- The BBS analysis script filtered and cleaned the raw Breeding Bird Survey data for our anlayses.
-- The Figure 1 MS script created the maps for the Yellow-throated Viero, figure 1 in the manuscript.
-- The GIS script cleaned all spatial data for analyses, such as creating the set of absences falling within each species range.
-- The raster stack spp script cleaned all raw enviromental data for maxent analyses.
-- The SDM analysis script creates the final input data frame for analysis, and runs a loop to calculate RMSE for each method and each species. It also creates the RMSE scatter and density plots, as well as the range occupancy plot (Figures 2 and 4).
-- The SDM analysis 5 year script runs all the same analyses as the SDM analysis script, using 5 years of BBS sampling as input rather than 15 years, and creates Figure 3.
-- The SDM analysis maxent presence only script runs all main analyses for maxent, which required slightly different input format in order to run the maxent program.
-- The SDM analysis 5 year maxent presence only script runs all main analyses for maxent using 5 years of BBS data rather than 15, which required slightly different input format in order to run the maxent program.
-- The SDM crossval script runs all cross-valiation analyses and creates the cross-validation figure in the manuscript and creates Figure 5 and supplemental figures.
-- The SDM crossval maxent presence only script runs all cross-validation analyses for maxent, which required slightly different input format in order to run the maxent program.
+- The scripts folder includes all scripts used in analyses. Data cleaning occurred in the follow scripts:
+        - The abiotic script and abiotic script LL were used to process the raw environmental data in 40 km averages.
+        - The BBS analysis script filtered and cleaned the raw Breeding Bird Survey data for our anlayses.
+        - The GIS script cleaned all spatial data for analyses, such as creating the set of absences falling within each species range.
+        - The raster stack spp script cleaned all raw enviromental data for maxent analyses.
+       
+- Data analysis occurred in the following scripts:
+        - The Figure 1 MS script created the maps for the Yellow-throated Viero, figure 1 in the manuscript.
+        - The SDM analysis script creates the final input data frame for analysis, and runs a loop to calculate RMSE for each method and each species. It also creates the RMSE scatter and density plots, as well as the range occupancy plot (Figures 2 and 4).
+        - The SDM analysis 5 year script runs all the same analyses as the SDM analysis script, using 5 years of BBS sampling as input rather than 15 years, and creates Figure 3.
+        - The SDM analysis maxent presence only script runs all main analyses for maxent, which required slightly different input format in order to run the maxent program.
+        - The SDM analysis 5 year maxent presence only script runs all main analyses for maxent using 5 years of BBS data rather than 15, which required slightly different input format in order to run the maxent program.
+        - The SDM crossval script runs all cross-valiation analyses and creates the cross-validation figure in the manuscript and creates Figure 5 and supplemental figures.
+        - The SDM crossval maxent presence only script runs all cross-validation analyses for maxent, which required slightly different input format in order to run the maxent program.
 
 
 
