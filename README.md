@@ -2,11 +2,12 @@
 
 Data and code for project "Using temporal occupancy to predict avian species distributions"
 
-The SDMs repo includes four folders:
+The SDMs repo includes four folders and the R project used for all anlayses:
 - Data
 - Figures
 - maxent
 - Scripts
+- SDMs.Rproj
 
 # Data 
 - The data folder contains all processed data frames used in analyses, including RMSE output, temporal, and spatial cross-validations.
