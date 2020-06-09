@@ -18,7 +18,7 @@ The SDMs repository includes four folders and the R project used for all anlayse
     - space_cval_rmse is the output of the k-fold spatial cross-validation analysis. The number suffix indicates the threshold used to indicate predicted presences (0.25, 0.5, 0.75).
 
 # Figures
-- The figures folder contains all visual output in PDF form.
+- The figures folder contains all visual output in PDF form resported in the manuscript. Supplemental or old files are in the scratch subfolder.
 
 # maxent
 - The maxent folder contains the maxent software required to run analyses.
