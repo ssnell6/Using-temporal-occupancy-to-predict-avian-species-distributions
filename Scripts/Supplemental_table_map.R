@@ -56,7 +56,9 @@ na_map <- read_sf("Data/maps/ne_50m_admin_1_states_provinces_lakes.shp") %>%
   filter(sr_adm0_a3 == "USA" | sr_adm0_a3 == "CAN", iso_3166_2 != "US-HI")
 
 bbs_map <- tm_shape(na_map) + tm_polygons(col = "gray") + 
-  tm_shape(bbs_sf) + tm_dots(col = "black", size = 0.05)
+  tm_shape(bbs_sf) + tm_dots(col = "black", size = 0.05) + tm_layout("BBS routes",
+                        legend.title.size = 1)
+
 
 tmap_save(bbs_map, "Figures/bbs_route_map.pdf", units = "in", height = 5, width = 8)
 
