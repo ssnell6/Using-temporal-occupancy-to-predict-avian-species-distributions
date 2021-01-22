@@ -26,17 +26,18 @@ num_routes <- bbs_final_occ_ll %>%
 
 model_out <- auc_df %>%
   full_join(auc_df_5, by= c("AOU"), suffix = c("_15yr", "_5yr")) %>%
-  left_join(select(pres_matrix, c(aou,sensitivity_glmocc:np_max)), by = c("AOU"="aou")) %>%
-  left_join(select(pres_spat, c(aou,sensitivity_glmocc:np_max)), by= c("AOU"="aou"))
+  left_join(dplyr::select(pres_matrix, c(aou,sensitivity_glmocc:np_max)), by = c("AOU"="aou")) %>%
+  left_join(dplyr::select(pres_spat, c(aou,sensitivity_glmocc:np_max)), by= c("AOU"="aou"))
 
 spec_trait <- spec_info %>%
   left_join(bird_taxo, by = c("AOU" = "AOU_OUT")) %>%
-  select(AOU, CommonName, CRC_SCI_NAME, migclass) %>%
+  dplyr::select(AOU, CommonName, CRC_SCI_NAME, migclass) %>%
   distinct()
 
 res_table <- spec_trait %>%
   left_join(num_routes, by = c("AOU" = "aou")) %>%
-  right_join(model_out)
+  right_join(model_out) %>%
+  filter(!AOU %in% c(3250, 3390))
 write.csv(res_table, "Data/species_model_output_table2.csv", row.names = F)
 
 ## Map of BBS routes used in analysis

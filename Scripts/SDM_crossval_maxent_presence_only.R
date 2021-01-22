@@ -119,10 +119,11 @@ for(i in sp_list){
 #### write csv then join back to full data set
 
 ##### temporal processing ####
-test_df_m <- read.csv("Data/temporal_crossval_df_75_maxent.csv", header = TRUE) 
-test_df <- read.csv("Data/temporal_crossval_df_75.csv", header = TRUE) %>%
+test_df_m <- read.csv("Data/temporal_crossval_df_maxent.csv", header = TRUE) 
+test_df <- read.csv("Data/temporal_crossval_df_5.csv", header = TRUE) %>%
   dplyr::select(-predicted_max_pres) %>%
-  left_join(test_df_m[,c("aou", "stateroute","predicted_max_pres")], by = c("aou", "stateroute"))
+  left_join(test_df_m[,c("aou", "stateroute","predicted_max_pres")], by = c("aou", "stateroute")) %>%
+  filter(!aou %in% c(3250, 3390))
 
 # to account for species not detected in 2015-2016 but are within the range
 # presence.x is 2001-2015, presence.y is 2015-2016
@@ -406,6 +407,8 @@ pres_matrix_plot2$Modtype <- factor(pres_matrix_plot2$Modtype, levels = c("gamoc
 pres_matrix_plot2$Measure <- factor(pres_matrix_plot2$Measure, levels = c("pp","np","sensitivity","specificity") , ordered = TRUE)
 #+ scale_color_manual(values=c("#034e7b","#034e7b","steelblue2", "steelblue2","#238b45", "#238b45" ,"purple"), labels=c("rmse_gam", "rmse_gam_pres", "rmse_occ", "rmse_pres", "rmse_rf", "rmse_rf_pres",  "rmse_me_pres"))
 
+# write.csv(pres_matrix, "Data/pres_matrix.csv", row.names = F)
+
 pplot = pres_matrix_plot2 %>%
   ggplot(aes(x = Measure, y = value, group = Modtype)) +   
   geom_bar(aes(fill = factor(Modtype)), position='dodge', stat="identity", width=0.75,color = "white", lwd = 3) +
@@ -595,10 +598,11 @@ rmse <- data.frame(rmse)
 names(rmse) <- c("aou", "rmse_me_pres")
 # write.csv(rmse,"Data/space_cval_rmse_maxent_75.csv", row.names = FALSE)
 ##### process spatial data #####
-sdm_space_cval_m <- read.csv("Data/space_cval_maxent_75.csv", header = TRUE) 
-sdm_space_cval <- read.csv("Data/space_cval_75.csv", header = TRUE) %>%
+sdm_space_cval_m <- read.csv("Data/space_cval_maxent.csv", header = TRUE) 
+sdm_space_cval <- read.csv("Data/space_cval_5.csv", header = TRUE) %>%
   dplyr::select(-predicted_max_pres) %>%
-  left_join(sdm_space_cval_m[,c("aou", "stateroute","predicted_max_pres")], by = c("aou", "stateroute"))
+  left_join(sdm_space_cval_m[,c("aou", "stateroute","predicted_max_pres")], by = c("aou", "stateroute"))  %>%
+  filter(!aou %in% c(3250, 3390))
 
 # CONFUSION MATRIX is PREDICTED X ACTUAL
 glmocc <- sdm_space_cval %>% group_by(aou) %>%
@@ -740,7 +744,6 @@ pres_matrix <- full_join(glmocc, glmpr, by = "aou") %>%
                   abs_pres_glmpr=0, pres_abs_glmpr=0, pres_pres_glmpr=0, abs_abs_gamocc=0, abs_pres_gamocc=0, pres_abs_gamocc=0, pres_pres_gamocc=0, abs_abs_gampr=0, abs_pres_gampr=0, pres_abs_gampr=0, pres_pres_gampr=0, abs_abs_rfocc=0, abs_pres_rfocc=0, pres_abs_rfocc=0, pres_pres_rfocc=0, abs_abs_rfpr=0, abs_pres_rfpr=0, pres_abs_rfpr=0, pres_pres_rfpr=0, abs_abs_maxpr=0, abs_pres_maxpr=0, pres_abs_maxpr=0, pres_pres_maxpr=0))
 
 pres_matrix <- data.frame(pres_matrix)
-
 pres_matrix$sensitivity_glmocc <- (pres_matrix$pres_pres_glmocc/(pres_matrix$pres_pres_glmocc + pres_matrix$abs_pres_glmocc))*100
 pres_matrix$specificity_glmocc <- (pres_matrix$abs_abs_glmocc/(pres_matrix$pres_abs_glmocc + pres_matrix$abs_abs_glmocc))*100
 pres_matrix$pp_glmocc <- (pres_matrix$pres_pres_glmocc/(pres_matrix$pres_pres_glmocc + pres_matrix$pres_abs_glmocc))*100
@@ -878,6 +881,7 @@ pres_spatial_plot2$Modtype <- factor(pres_spatial_plot2$Modtype, levels = c("gam
 
 pres_spatial_plot2$Measure <- factor(pres_spatial_plot2$Measure, levels = c("pp","np","sensitivity","specificity") , ordered = TRUE)
 
+# write.csv(pres_matrix, "Data/pres_spat.csv", row.names = F)
 splot = pres_spatial_plot2 %>%
   ggplot(aes(x = Measure, y = value, group = Modtype)) +   
   geom_bar(aes(fill = factor(Modtype)), position='dodge', stat="identity", width=0.75,color = "white", lwd = 3) +
@@ -902,7 +906,7 @@ grid <- plot_grid(pplot + theme(legend.position="top"),
                   label_x = 0.12, 
                   label_size = 30,
                   nrow = 2) 
-ggsave("Figures/xval_plot_75.pdf", height = 20, width = 24)
+ggsave("Figures/xval_plot_25.pdf", height = 20, width = 24)
 
 
 

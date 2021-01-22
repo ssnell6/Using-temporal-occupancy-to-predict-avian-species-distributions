@@ -145,10 +145,10 @@ names(auc_df) = c("AOU", "rmse_occ", "rmse_pres","rmse_gam", "rmse_gam_pres", "r
 # write.csv(auc_df, "Data/auc_df.csv", row.names = FALSE)
 
 ###### global plots ####
-me <- read.csv("Data/auc_df_ME_only.csv", header = TRUE) %>%
+me <- read.csv("Data/auc_df_ME_only.csv", header = TRUE)
 #  mutate(ME_PB = rmse_me_pres)
 auc_df <- read.csv("Data/auc_df.csv", header = TRUE) %>%
-  # dplyr::select(-rmse_me_pres) %>%
+  dplyr::select(-rmse_me_pres) %>%
   left_join(me, by = "AOU")
 
 ggplot(
@@ -179,12 +179,14 @@ auc_df_merge = left_join(auc_df, num_pres, by = c("AOU" = "aou")) %>%
   left_join(num_abs, by = c("AOU" = "aou"))
 
 auc_df_traits = left_join(auc_df_merge, traits, by = "AOU") %>%
-  left_join(., tax_code, by = c("AOU" = "AOU_OUT"))
+  left_join(., tax_code, by = c("AOU" = "AOU_OUT")) %>%
+  filter(!AOU %in% c(3250, 3390))
 
 auc_df_merge$glm_diff <- auc_df_merge$rmse_occ - auc_df_merge$rmse_pres
 auc_df_merge$gam_diff <- auc_df_merge$rmse_gam - auc_df_merge$rmse_gam_pres
 auc_df_merge$rf_diff <- auc_df_merge$rmse_rf - auc_df_merge$rmse_rf_pres
 auc_df_merge$RO <- auc_df_merge$n_pres/auc_df_merge$n
+
 
 # plot GLM occ v pres 
 #  + geom_label(data = auc_df_traits, aes(x = AUC, y = AUC_pres, label = ALPHA.CODE))
@@ -359,7 +361,7 @@ ro_plot$mod[ro_plot$mod == "glm_diff"] = "GLM"
 ro_plot$mod[ro_plot$mod == "rf_diff"] = "RF"
 
 ro_plot %>%
-  # filter(rmse_gam_pres >= 1.0e-5) %>%
+  filter(!AOU %in% c(3250, 3390)) %>%
   ggplot(aes(x = RO, y = diff, group = mod)) +theme_classic()+ 
   theme(axis.title.x=element_text(size=34),axis.title.y=element_text(size=34, angle=90)) + xlab(bquote("Range Occupancy")) + 
   ylab(expression(Delta~"RMSE (Occupancy - Presence)")) + 

@@ -127,7 +127,8 @@ me <- read.csv("Data/auc_df_ME_only_5.csv", header = TRUE) %>%
   mutate(rmse_me_pres = rmse_me_PO_5)
 auc_df <- read.csv("Data/auc_df_5.csv", header = TRUE) %>%
   dplyr::select(-rmse_me_pres) %>%
-  left_join(me[,(c("AOU", "rmse_me_pres"))], by = "AOU")
+  left_join(me[,(c("AOU", "rmse_me_pres"))], by = "AOU") %>%
+  filter(!AOU %in% c(3250, 3390)) 
 # auc_df_notrans <- read.csv("Data/auc_df_notrans_5.csv", header = TRUE)
 
 num_pres = bbs_final_occ_ll %>%
