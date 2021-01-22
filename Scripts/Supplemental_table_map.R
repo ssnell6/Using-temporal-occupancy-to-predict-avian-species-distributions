@@ -25,7 +25,7 @@ num_routes <- bbs_final_occ_ll %>%
 # Join to make results table w/ spec, traits, model output
 
 model_out <- auc_df %>%
-  right_join(auc_df_5, by= c("AOU"), suffix = c("_15yr", "_5yr")) %>%
+  full_join(auc_df_5, by= c("AOU"), suffix = c("_15yr", "_5yr")) %>%
   left_join(select(pres_matrix, c(aou,sensitivity_glmocc:np_max)), by = c("AOU"="aou")) %>%
   left_join(select(pres_spat, c(aou,sensitivity_glmocc:np_max)), by= c("AOU"="aou"))
 
@@ -37,7 +37,7 @@ spec_trait <- spec_info %>%
 res_table <- spec_trait %>%
   left_join(num_routes, by = c("AOU" = "aou")) %>%
   right_join(model_out)
-write.csv(res_table, "Data/species_model_output_table.csv", row.names = F)
+write.csv(res_table, "Data/species_model_output_table2.csv", row.names = F)
 
 ## Map of BBS routes used in analysis
 
