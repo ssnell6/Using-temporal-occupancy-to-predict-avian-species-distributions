@@ -241,11 +241,11 @@ grid <- plot_grid(r1 + theme(legend.position="top"),
 ggsave("Figures/Figure_2.pdf", height = 10, width = 14)
 
 # t test for each occ:pres
-t.test(auc_df$rmse_occ, auc_df$rmse_pres)
-t.test(auc_df$rmse_gam, auc_df$rmse_gam_pres)
-t.test(auc_df$rmse_rf, auc_df$rmse_rf_pres)
+t.test(auc_df_traits$rmse_occ, auc_df_traits$rmse_pres)
+t.test(auc_df_traits$rmse_gam, auc_df_traits$rmse_gam_pres)
+t.test(auc_df_traits$rmse_rf, auc_df_traits$rmse_rf_pres)
 # pres:pres
-pres_pres1 <- left_join(auc_df_notrans, auc_df[,c("AOU","rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres")], by = "AOU") %>%
+pres_pres1 <- left_join(auc_df[,c("AOU","rmse_pres","rmse_gam_pres", "rmse_rf_pres", "rmse_me_pres")], by = "AOU") %>%
   left_join(num_pres, by = c("AOU" = "aou"))
 
 
@@ -372,5 +372,3 @@ ro_plot %>%
   theme(legend.title=element_blank(), legend.text=element_text(size=30), legend.position = c(0.1,0.9), legend.key.width=unit(4, "lines")) + 
   scale_color_manual(values = c("#034e7b","steelblue2","#238b45")) 
 ggsave("Figures/Figure_4.pdf", height = 10, width = 14)
-
-
