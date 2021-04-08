@@ -1,6 +1,6 @@
-# SDMs
+# Using temporal occupancy to predict avian species distributions
 
-Data and code for project "Using temporal occupancy to predict avian species distributions", in preparation for publication.
+Data and code for project "Using temporal occupancy to predict avian species distributions", published in Diversity and distributions, 2021.
 
 The SDMs repository includes four folders and the R project used for all anlayses:
 - Data
